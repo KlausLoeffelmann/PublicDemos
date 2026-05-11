@@ -12,4 +12,8 @@
     <ProjectReference Include="..\Northwind.DataLayer\Northwind.DataLayer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Copilot\" />
+  </ItemGroup>
+
 </Project>
