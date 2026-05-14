@@ -29,14 +29,14 @@
         private void InitializeComponent()
         {
             SuspendLayout();
-            // 
-            // Form1
-            // 
-            AutoScaleDimensions = new SizeF(17F, 41F);
+            //
+            // FrmMain
+            //
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1638, 1003);
-            Name = "Form1";
-            Text = "Form1";
+            ClientSize = new Size(800, 450);
+            Name = "FrmMain";
+            Text = "Northwind";
             ResumeLayout(false);
         }
 
