@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Northwind.App/Northwind.App.csproj" />
+  <Project Path="Northwind.DataLayer/Northwind.DataLayer.csproj" />
+</Solution>
