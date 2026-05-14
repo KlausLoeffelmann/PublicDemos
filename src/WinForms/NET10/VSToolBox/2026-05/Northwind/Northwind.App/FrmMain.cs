@@ -7,13 +7,6 @@ namespace Northwind.App
 {
     public partial class FrmMain : Form
     {
-        private enum EditMode
-        {
-            View,
-            Add,
-            Edit
-        }
-
         private readonly BindingSource _customerBindingSource = new();
         private readonly Dictionary<TextBox, Func<Customer, string?>> _textBoxGetters;
         private readonly Dictionary<TextBox, Action<Customer, string?>> _textBoxSetters;
@@ -24,7 +17,6 @@ namespace Northwind.App
         private bool _isDirty;
         private bool _suppressChanges;
         private readonly System.Windows.Forms.Timer _clockTimer = new();
-        private readonly ImageFactory _imageFactory = new();
 
         public FrmMain()
         {
@@ -95,10 +87,6 @@ namespace Northwind.App
         private void ConfigureToolStrip()
         {
             toolStripMain.Renderer = new ToolStripProfessionalRenderer();
-            toolStripButtonAdd.Image = _imageFactory.CreateAddIcon(toolStripMain.ImageScalingSize, 6);
-            toolStripButtonEdit.Image = _imageFactory.CreateEditIcon(toolStripMain.ImageScalingSize, 6);
-            toolStripButtonCancel.Image = _imageFactory.CreateCancelIcon(toolStripMain.ImageScalingSize, 6);
-            toolStripButtonSave.Image = _imageFactory.CreateSaveIcon(toolStripMain.ImageScalingSize, 6);
         }
 
         private void ConfigureClock()
@@ -429,38 +417,6 @@ namespace Northwind.App
             }
 
             SelectCustomerById(_lastChangedCustomer.CustomerId);
-        }
-
-        private sealed class ImageFactory
-        {
-            private readonly Font _iconFont = new("Segoe Fluent Icons", 20, FontStyle.Regular, GraphicsUnit.Pixel);
-
-            public Image CreateAddIcon(Size size, int padding) => CreateIcon("\uE710", size, padding);
-
-            public Image CreateEditIcon(Size size, int padding) => CreateIcon("\uE70F", size, padding);
-
-            public Image CreateCancelIcon(Size size, int padding) => CreateIcon("\uE711", size, padding);
-
-            public Image CreateSaveIcon(Size size, int padding) => CreateIcon("\uE74E", size, padding);
-
-            private Image CreateIcon(string glyph, Size size, int padding)
-            {
-                var bitmap = new Bitmap(size.Width, size.Height);
-                using var graphics = Graphics.FromImage(bitmap);
-                graphics.Clear(Color.Transparent);
-                graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-
-                var rect = new Rectangle(padding, padding, size.Width - padding * 2, size.Height - padding * 2);
-                using var brush = new SolidBrush(Color.DimGray);
-                using var format = new StringFormat
-                {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center
-                };
-
-                graphics.DrawString(glyph, _iconFont, brush, rect, format);
-                return bitmap;
-            }
         }
     }
 }

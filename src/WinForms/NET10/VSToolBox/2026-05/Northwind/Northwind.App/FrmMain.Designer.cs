@@ -222,6 +222,7 @@
             // 
             // toolStripButtonAdd
             // 
+            toolStripButtonAdd.Image = ImageFactory.CreateAddIcon(toolStripMain.ImageScalingSize, 6);
             toolStripButtonAdd.Name = "toolStripButtonAdd";
             toolStripButtonAdd.Size = new Size(70, 41);
             toolStripButtonAdd.Text = "Add";
@@ -230,6 +231,7 @@
             // 
             // toolStripButtonEdit
             // 
+            toolStripButtonEdit.Image = ImageFactory.CreateEditIcon(toolStripMain.ImageScalingSize, 6);
             toolStripButtonEdit.Name = "toolStripButtonEdit";
             toolStripButtonEdit.Size = new Size(67, 41);
             toolStripButtonEdit.Text = "Edit";
@@ -238,6 +240,7 @@
             // 
             // toolStripButtonCancel
             // 
+            toolStripButtonCancel.Image = ImageFactory.CreateCancelIcon(toolStripMain.ImageScalingSize, 6);
             toolStripButtonCancel.Name = "toolStripButtonCancel";
             toolStripButtonCancel.Size = new Size(100, 41);
             toolStripButtonCancel.Text = "Cancel";
@@ -246,6 +249,7 @@
             // 
             // toolStripButtonSave
             // 
+            toolStripButtonSave.Image = ImageFactory.CreateSaveIcon(toolStripMain.ImageScalingSize, 6);
             toolStripButtonSave.Name = "toolStripButtonSave";
             toolStripButtonSave.Size = new Size(180, 41);
             toolStripButtonSave.Text = "Save changes";
