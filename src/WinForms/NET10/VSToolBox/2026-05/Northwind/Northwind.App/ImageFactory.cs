@@ -4,7 +4,7 @@ namespace Northwind.App
     {
         private static readonly Font s_iconFont = new("Segoe Fluent Icons", 20, FontStyle.Regular, GraphicsUnit.Pixel);
 
-        public static Image CreateAddIcon(Size size, int padding) => CreateIcon("\uE710", size, padding);
+        public static Image CreateAddIcon(Size size, int padding) => CreateIcon("\uE709", size, padding);
 
         public static Image CreateEditIcon(Size size, int padding) => CreateIcon("\uE70F", size, padding);
 
