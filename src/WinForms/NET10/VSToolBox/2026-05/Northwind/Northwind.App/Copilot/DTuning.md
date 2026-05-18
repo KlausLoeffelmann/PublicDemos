@@ -25,3 +25,9 @@ Re-apply the palette when the system theme changes at runtime — handle `System
 - Selection: `Color.FromArgb(0, 120, 215)` / Foreground `Color.White`
 
 Use this `ThemedDataGridView` in place of the default `DataGridView` in the main form.
+
+# Autosizing of the Columns
+- Make sure, the Sizes of the columns are set to `DataGridViewAutoSizeColumnMode.Fill`, 
+  so that they fill the available horizontal space in the grid, 
+  and resize dynamically when the form is resized.
+
