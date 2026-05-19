@@ -8,3 +8,4 @@ We have been ending up with this scenario (OK - I did go in one more time, and a
 
 How did we get here? Well - wait for the Episode, and tune in! :-)
 
+<img width="1977" height="1534" alt="image" src="https://github.com/user-attachments/assets/4c5ce283-ba26-4d08-b04d-221445948404" />
