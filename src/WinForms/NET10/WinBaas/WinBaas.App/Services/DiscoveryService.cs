@@ -109,7 +109,7 @@ public sealed class DiscoveryService(
                 Source = entry,
                 Name = fi.Name,
                 FullPath = fi.FullName,
-                FileTypeLabel = _fileTypeMap.GetLabel(fi.Name),
+                FileTypeLabel = _fileTypeMap.GetLabel(fi.Name, entry),
                 LastChanged = fi.LastWriteTime,
                 Created = fi.CreationTime,
                 SizeBytes = fi.Length,

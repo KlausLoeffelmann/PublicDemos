@@ -107,6 +107,11 @@ public sealed class CatalogService : ICatalogService
             yield return entry;
         }
 
+        foreach (CatalogEntry entry in BuildAiToolsSeed())
+        {
+            yield return entry;
+        }
+
         foreach (CatalogEntry entry in BuildDeveloperSeed())
         {
             yield return entry;
@@ -124,6 +129,7 @@ public sealed class CatalogService : ICatalogService
     }
 
     private const string CategorySystem = "System";
+    private const string CategoryAiTools = "AI Tools";
     private const string CategoryDeveloper = "Developer Tools";
     private const string CategoryCreator = "Creator / Design / Photo";
     private const string CategoryMusician = "Musician / Audio";
@@ -221,6 +227,68 @@ public sealed class CatalogService : ICatalogService
         };
     }
 
+    private static IEnumerable<CatalogEntry> BuildAiToolsSeed()
+    {
+        yield return Folder(CategoryAiTools,
+            "Cursor",
+            "Cursor user settings, keybindings, snippets and installed extensions.",
+            [
+                @"%APPDATA%\Cursor\User",
+                @"%USERPROFILE%\.cursor",
+                @"%APPDATA%\Cursor\User\globalStorage",
+            ],
+            [".json", ".jsonc", ".code-snippets", ".md"],
+            recursive: true,
+            shortTag: "Cursor");
+
+        yield return Folder(CategoryAiTools,
+            "Claude Code (Anthropic CLI)",
+            "Claude Code config, credentials, agents, slash commands and project instructions (CLAUDE.md) under %USERPROFILE%\\.claude.",
+            [@"%USERPROFILE%\.claude"],
+            [".json", ".jsonc", ".md", ".yaml", ".yml", ".toml"],
+            recursive: true,
+            shortTag: "Claude Code");
+
+        yield return Folder(CategoryAiTools,
+            "OpenAI Codex CLI",
+            "Codex CLI config (config.toml), MCP server list and history under %USERPROFILE%\\.codex.",
+            [@"%USERPROFILE%\.codex"],
+            [".toml", ".json", ".jsonc", ".md", ".log"],
+            recursive: true,
+            shortTag: "Codex");
+
+        yield return Folder(CategoryAiTools,
+            "GitHub Copilot CLI",
+            "Copilot CLI user-level config, session state, custom agents, skills and MCP server list under %USERPROFILE%\\.copilot.",
+            [@"%USERPROFILE%\.copilot"],
+            [".json", ".jsonc", ".md", ".yaml", ".yml", ".toml"],
+            recursive: true,
+            shortTag: "Copilot CLI");
+
+        yield return Folder(CategoryAiTools,
+            "Visual Studio Copilot",
+            "Visual Studio Copilot extension state and signed-in auth: %APPDATA%\\GitHub Copilot and %LOCALAPPDATA%\\GitHub Copilot.",
+            [
+                @"%APPDATA%\GitHub Copilot",
+                @"%LOCALAPPDATA%\GitHub Copilot",
+            ],
+            [".json", ".jsonc", ".md", ".log"],
+            recursive: true,
+            shortTag: "VS Copilot");
+
+        yield return Folder(CategoryAiTools,
+            "VS Code Copilot",
+            "VS Code Copilot extension global storage (chat history, prompts, agent config).",
+            [
+                @"%APPDATA%\Code\User\globalStorage\github.copilot",
+                @"%APPDATA%\Code\User\globalStorage\github.copilot-chat",
+                @"%APPDATA%\Code\User\prompts",
+            ],
+            [".json", ".jsonc", ".md", ".log", ".db"],
+            recursive: true,
+            shortTag: "VS Code Copilot");
+    }
+
     private static IEnumerable<CatalogEntry> BuildDeveloperSeed()
     {
         yield return Folder(CategoryDeveloper,
@@ -239,7 +307,8 @@ public sealed class CatalogService : ICatalogService
                 ".vssettings", ".snippet", ".vsix", ".user",
                 ".db", ".sqlite", ".sqlite3",
             ],
-            recursive: true);
+            recursive: true,
+            shortTag: "Visual Studio");
 
         yield return Folder(CategoryDeveloper,
             "Visual Studio – ASP.NET / web",
@@ -250,14 +319,16 @@ public sealed class CatalogService : ICatalogService
                 ".asmx", ".svc", ".css", ".scss", ".js", ".ts", ".json", ".config",
                 ".pubxml", ".publishsettings",
             ],
-            recursive: true);
+            recursive: true,
+            shortTag: "VS Web");
 
         yield return Folder(CategoryDeveloper,
             "VS Code",
             "User settings/keybindings/snippets and installed extensions.",
             [@"%APPDATA%\Code\User", @"%USERPROFILE%\.vscode\extensions"],
             [".code-workspace", ".code-profile", ".json"],
-            recursive: true);
+            recursive: true,
+            shortTag: "VS Code");
 
         yield return Folder(CategoryDeveloper,
             "VB6 / VBA legacy",
@@ -267,28 +338,32 @@ public sealed class CatalogService : ICatalogService
                 ".vbp", ".vbg", ".frm", ".frx", ".bas", ".cls",
                 ".ctl", ".ctx", ".dsr", ".dsx", ".res", ".ocx", ".dll",
             ],
-            recursive: false);
+            recursive: false,
+            shortTag: "VB6");
 
         yield return Folder(CategoryDeveloper,
             "JetBrains Rider",
             "Rider settings/config (Settings Repository export is cleaner than copying raw).",
             [@"%APPDATA%\JetBrains\Rider<wildcard>", @"%LOCALAPPDATA%\JetBrains\Rider<wildcard>"],
             [".sln", ".slnx", ".csproj", ".cs", ".vb", ".editorconfig", ".DotSettings", ".json"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Rider");
 
         yield return Folder(CategoryDeveloper,
             "JetBrains IntelliJ / others",
             "JetBrains config & caches/plugins. Project-local config sits in .idea\\ alongside the project.",
             [@"%APPDATA%\JetBrains\<wildcard>", @"%LOCALAPPDATA%\JetBrains\<wildcard>"],
             [".iml", ".java", ".kt", ".gradle", ".xml", ".properties"],
-            recursive: true);
+            recursive: true,
+            shortTag: "JetBrains");
 
         yield return Folder(CategoryDeveloper,
             "Eclipse workspace",
             "Workspace dir holds preferences and project metadata under .metadata. Back up the whole workspace.",
             [@"%USERPROFILE%\workspace", @"%USERPROFILE%\eclipse-workspace"],
             [".project", ".classpath", ".java", ".target", ".launch", ".epf"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Eclipse");
 
         yield return Folder(CategoryDeveloper,
             "Android Studio",
@@ -300,7 +375,8 @@ public sealed class CatalogService : ICatalogService
                 @"%USERPROFILE%\.gradle",
             ],
             [".gradle", ".kts", ".kt", ".java", ".xml", ".jks", ".keystore", ".properties"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Android Studio");
 
         yield return Folder(CategoryDeveloper,
             "Git (global)",
@@ -311,28 +387,32 @@ public sealed class CatalogService : ICatalogService
                 @"%USERPROFILE%\.ssh",
             ],
             [".gitconfig", ".gitignore", ".gitattributes", ".pub"],
-            recursive: false);
+            recursive: false,
+            shortTag: "Git");
 
         yield return Folder(CategoryDeveloper,
             "WSL distros",
             "WSL state under %LOCALAPPDATA%\\Packages. The clean way is `wsl --export <distro> <file>.tar`.",
             [@"%LOCALAPPDATA%\Packages", @"%USERPROFILE%\.wslconfig"],
             [".tar", ".wslconfig"],
-            recursive: false);
+            recursive: false,
+            shortTag: "WSL");
 
         yield return Folder(CategoryDeveloper,
             "Node / npm",
             "Registry config + tokens and globally installed packages.",
             [@"%USERPROFILE%\.npmrc", @"%APPDATA%\npm"],
             [".npmrc", ".json", ".nvmrc"],
-            recursive: false);
+            recursive: false,
+            shortTag: "npm");
 
         yield return Folder(CategoryDeveloper,
             "Docker Desktop",
             "Docker Desktop settings. WSL2 backend VHDX is huge — usually rebuild rather than copy.",
             [@"%APPDATA%\Docker"],
             [".json", ".yaml", ".yml"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Docker");
 
         yield return Folder(CategoryDeveloper,
             "SQL Server Management Studio (SSMS)",
@@ -342,7 +422,8 @@ public sealed class CatalogService : ICatalogService
                 @"%APPDATA%\Microsoft\SQL Server Management Studio",
             ],
             [".sql", ".ssmssln", ".ssmssqlproj", ".bak", ".regsrvr"],
-            recursive: true);
+            recursive: true,
+            shortTag: "SSMS");
     }
 
     private static IEnumerable<CatalogEntry> BuildCreatorSeed()
@@ -352,7 +433,8 @@ public sealed class CatalogService : ICatalogService
             "Cross-app presets, libraries cache, sync settings. CC Libraries are cloud-synced; local presets are not.",
             [@"%APPDATA%\Adobe", @"%LOCALAPPDATA%\Adobe"],
             [".xml", ".json"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Adobe CC");
 
         yield return Folder(CategoryCreator,
             "Adobe Photoshop",
@@ -363,14 +445,16 @@ public sealed class CatalogService : ICatalogService
                 ".abr", ".atn", ".asl", ".grd", ".pat", ".csh",
                 ".aco", ".act", ".tpl", ".psp",
             ],
-            recursive: true);
+            recursive: true,
+            shortTag: "Photoshop");
 
         yield return Folder(CategoryCreator,
             "Photoshop Actions",
             "Custom action sets. Export each set explicitly to .atn — the Actions Palette cache is not a substitute.",
             [@"%APPDATA%\Adobe\Adobe Photoshop <wildcard>"],
             [".atn"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Photoshop Actions");
 
         yield return Folder(CategoryCreator,
             "Adobe Lightroom Classic",
@@ -381,35 +465,40 @@ public sealed class CatalogService : ICatalogService
                 @"%APPDATA%\Adobe\CameraRaw\Camera Profiles",
             ],
             [".lrcat", ".lrdata", ".lrtemplate", ".xmp", ".dng"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Lightroom");
 
         yield return Folder(CategoryCreator,
             "Adobe Camera Raw",
             "Shared with Lightroom: develop settings, camera and lens profiles.",
             [@"%APPDATA%\Adobe\CameraRaw"],
             [".xmp", ".dcp", ".lcp"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Camera Raw");
 
         yield return Folder(CategoryCreator,
             "Adobe Illustrator",
             "Presets, workspaces, swatches (custom workspaces are the easy thing to lose).",
             [@"%APPDATA%\Adobe\Adobe Illustrator <wildcard>"],
             [".ai", ".ait", ".eps", ".svg", ".ase", ".aia", ".grd"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Illustrator");
 
         yield return Folder(CategoryCreator,
             "Adobe InDesign",
             "Presets, workspaces, autocorrect, defaults, glyph sets, scripts.",
             [@"%APPDATA%\Adobe\InDesign\Version <wildcard>"],
             [".indd", ".indt", ".indb", ".idml", ".indl", ".jsx"],
-            recursive: true);
+            recursive: true,
+            shortTag: "InDesign");
 
         yield return Folder(CategoryCreator,
             "Adobe Premiere Pro",
             "Workspaces, presets, autosave under Documents\\Adobe\\Premiere Pro.",
             [@"%USERPROFILE%\Documents\Adobe\Premiere Pro\<wildcard>"],
             [".prproj", ".prtl", ".epr", ".prfpset", ".aaf", ".xml"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Premiere Pro");
 
         yield return Folder(CategoryCreator,
             "Adobe After Effects",
@@ -419,14 +508,16 @@ public sealed class CatalogService : ICatalogService
                 @"%APPDATA%\Adobe\After Effects <wildcard>",
             ],
             [".aep", ".aepx", ".aet", ".ffx"],
-            recursive: true);
+            recursive: true,
+            shortTag: "After Effects");
 
         yield return Folder(CategoryCreator,
             "Adobe Acrobat",
             "Custom stamps, security policies, preferences.",
             [@"%APPDATA%\Adobe\Acrobat\<wildcard>"],
             [".pdf", ".fdf", ".xfdf", ".acrobatsecuritysettings"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Acrobat");
 
         yield return Folder(CategoryCreator,
             "Affinity (Photo / Designer / Publisher) v2",
@@ -436,63 +527,72 @@ public sealed class CatalogService : ICatalogService
                 ".afphoto", ".afdesign", ".afpub",
                 ".afassets", ".afbrushes", ".afstyles", ".afmacros", ".afpalette", ".aftemplate",
             ],
-            recursive: true);
+            recursive: true,
+            shortTag: "Affinity");
 
         yield return Folder(CategoryCreator,
             "GIMP",
             "One folder: brushes, scripts, plug-ins, prefs.",
             [@"%APPDATA%\GIMP\<wildcard>"],
             [".xcf", ".gbr", ".vbr", ".gih", ".pat", ".gpl", ".scm"],
-            recursive: true);
+            recursive: true,
+            shortTag: "GIMP");
 
         yield return Folder(CategoryCreator,
             "Inkscape",
             "Preferences, extensions, templates and palettes.",
             [@"%APPDATA%\inkscape"],
             [".svg", ".svgz"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Inkscape");
 
         yield return Folder(CategoryCreator,
             "Blender",
             "Config, startup file, addons (startup.blend and userpref.blend are the must-haves).",
             [@"%APPDATA%\Blender Foundation\Blender\<wildcard>"],
             [".blend", ".blend1", ".blendswap", ".py"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Blender");
 
         yield return Folder(CategoryCreator,
             "DaVinci Resolve",
             "Project DB (if local) plus support config. Easiest: Project Manager → .drp export.",
             [@"%APPDATA%\Blackmagic Design\DaVinci Resolve\Support"],
             [".drp", ".drt", ".drx", ".drb"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Resolve");
 
         yield return Folder(CategoryCreator,
             "Capture One",
             "Styles & presets (catalog/session folders hold the data itself).",
             [@"%LOCALAPPDATA%\CaptureOne", @"%APPDATA%\Capture One"],
             [".cocatalog", ".cosessiondb", ".costyle", ".copreset", ".coproof"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Capture One");
 
         yield return Folder(CategoryCreator,
             "Figma (desktop)",
             "Files are cloud-side. Local cache is mostly disposable.",
             [@"%LOCALAPPDATA%\Figma"],
             [".fig", ".figma"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Figma");
 
         yield return Folder(CategoryCreator,
             "OBS Studio",
             "Scenes, profiles, settings — everything under %APPDATA%\\obs-studio.",
             [@"%APPDATA%\obs-studio"],
             [".json", ".ini"],
-            recursive: true);
+            recursive: true,
+            shortTag: "OBS");
 
         yield return Folder(CategoryCreator,
             "ScreenToGif",
             "Settings (Settings.xaml) and shared recordings. Portable builds keep it next to the .exe.",
             [@"%LOCALAPPDATA%\ScreenToGif"],
             [".gif", ".apng", ".webp", ".mp4", ".stg", ".psd", ".xaml"],
-            recursive: true);
+            recursive: true,
+            shortTag: "ScreenToGif");
     }
 
     private static IEnumerable<CatalogEntry> BuildMusicianSeed()
@@ -502,14 +602,16 @@ public sealed class CatalogService : ICatalogService
             "Preferences, key commands, templates, track/channel presets (Defaults.xml + Key Commands.xml + Presets folders).",
             [@"%APPDATA%\Steinberg\Cubase <wildcard>"],
             [".cpr", ".bak", ".npr", ".steinbergproject", ".track", ".vstpreset", ".xml"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Cubase");
 
         yield return Folder(CategoryMusician,
             "Steinberg Nuendo",
             "Same layout as Cubase: preferences, key commands, templates, track/channel presets.",
             [@"%APPDATA%\Steinberg\Nuendo <wildcard>"],
             [".npr", ".vstpreset", ".track", ".xml"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Nuendo");
 
         yield return Folder(CategoryMusician,
             "Ableton Live",
@@ -519,14 +621,16 @@ public sealed class CatalogService : ICatalogService
                 @"%APPDATA%\Ableton\Live <wildcard>\Preferences",
             ],
             [".als", ".alc", ".adv", ".adg", ".alp", ".amxd", ".asd"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Ableton");
 
         yield return Folder(CategoryMusician,
             "FL Studio",
             "User projects and presets, plus app data + registration.",
             [@"%USERPROFILE%\Documents\Image-Line", @"%APPDATA%\Image-Line"],
             [".flp", ".fst", ".fsc", ".zip", ".flm"],
-            recursive: true);
+            recursive: true,
+            shortTag: "FL Studio");
 
         yield return Folder(CategoryMusician,
             "PreSonus Studio One",
@@ -536,14 +640,16 @@ public sealed class CatalogService : ICatalogService
                 @"%APPDATA%\PreSonus\Studio One <wildcard>",
             ],
             [".song", ".project", ".instrument", ".fxchain", ".multipreset", ".preset"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Studio One");
 
         yield return Folder(CategoryMusician,
             "Reaper",
             "reaper.ini, KeyMaps, ColorThemes, FX chains, track templates — all in %APPDATA%\\REAPER.",
             [@"%APPDATA%\REAPER"],
             [".rpp", ".rpp-bak", ".RfxChain", ".RTrackTemplate", ".ReaperTheme", ".ReaperThemeZip"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Reaper");
 
         yield return Folder(CategoryMusician,
             "Bitwig Studio",
@@ -553,14 +659,16 @@ public sealed class CatalogService : ICatalogService
                 @"%LOCALAPPDATA%\Bitwig Studio",
             ],
             [".bwproject", ".bwpreset", ".bwclip", ".bwpackage", ".bwdevice"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Bitwig");
 
         yield return Folder(CategoryMusician,
             "Pro Tools",
             "Avid preferences, I/O setups, key commands (the easy losses).",
             [@"%APPDATA%\Avid\Pro Tools", @"%LOCALAPPDATA%\Avid"],
             [".ptx", ".ptf", ".pts", ".ptt", ".aaf", ".omf"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Pro Tools");
 
         yield return Folder(CategoryMusician,
             "Native Instruments",
@@ -570,14 +678,16 @@ public sealed class CatalogService : ICatalogService
                 @"%APPDATA%\Native Instruments",
             ],
             [".nki", ".nkm", ".nkx", ".nkr", ".nksn", ".nksf", ".ncw"],
-            recursive: true);
+            recursive: true,
+            shortTag: "NI");
 
         yield return Folder(CategoryMusician,
             "Spectrasonics STEAM",
             "STEAM folder holds the whole library. Location is registry-tracked under HKCU\\Software\\Spectrasonics.",
             [@"%USERPROFILE%\Documents\STEAM"],
             [".prt_omn", ".mlt_omn", ".db"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Spectrasonics");
 
         yield return Folder(CategoryMusician,
             "MuseScore",
@@ -587,14 +697,16 @@ public sealed class CatalogService : ICatalogService
                 @"%LOCALAPPDATA%\MuseScore",
             ],
             [".mscz", ".mscx", ".mss", ".mpal", ".sf2", ".sf3", ".mid", ".midi", ".musicxml", ".mxl"],
-            recursive: true);
+            recursive: true,
+            shortTag: "MuseScore");
 
         yield return Folder(CategoryMusician,
             "Audacity",
             "Settings, custom chains/macros, plug-ins.",
             [@"%APPDATA%\audacity"],
             [".aup3", ".aup", ".ny"],
-            recursive: true);
+            recursive: true,
+            shortTag: "Audacity");
     }
 
     private static CatalogEntry Folder(
@@ -603,12 +715,14 @@ public sealed class CatalogService : ICatalogService
         string description,
         string[] paths,
         string[] extensions,
-        bool recursive)
+        bool recursive,
+        string? shortTag = null)
         => new()
         {
             Category = category,
             Kind = CatalogEntryKind.Folder,
             Name = name,
+            ShortTag = shortTag ?? string.Empty,
             Description = description,
             Paths = paths,
             Extensions = extensions,

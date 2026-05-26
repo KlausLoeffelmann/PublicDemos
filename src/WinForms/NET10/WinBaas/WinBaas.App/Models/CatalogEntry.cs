@@ -21,6 +21,12 @@ public sealed class CatalogEntry
     /// <summary>Human-readable name shown in the TreeView.</summary>
     public string Name { get; init; } = string.Empty;
 
+    /// <summary>
+    ///  Short tag used to qualify file-type labels (e.g. "VS Code", "Photoshop",
+    ///  "Cubase"). When empty, callers fall back to <see cref="Name"/>.
+    /// </summary>
+    public string ShortTag { get; init; } = string.Empty;
+
     /// <summary>Long-form description shown as tooltip / details.</summary>
     public string Description { get; init; } = string.Empty;
 
