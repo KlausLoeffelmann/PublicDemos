@@ -1,18 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
 using BranchComposer.App.Models;
 using BranchComposer.App.Services;
+using Microsoft.Extensions.DependencyInjection;
 using WarpToolkit.WinForms.Github.Git;
 
 namespace BranchComposer.App;
 
 public partial class MainForm : Form, IServiceProvider
 {
-    [AllowNull]
-    private readonly IServiceProvider _serviceProvider;
-
-    private readonly AppStateStore? _stateStore;
-    private readonly ILocalGitRepositoryService? _repositoryService;
-    private readonly IGitBranchCompositionService? _branchCompositionService;
+    private AppStateStore? _stateStore;
+    private ILocalGitRepositoryService? _repositoryService;
+    private IGitBranchCompositionService? _branchCompositionService;
     private AppState _state = new();
 
     public MainForm()
@@ -22,41 +20,13 @@ public partial class MainForm : Form, IServiceProvider
         UpdateCommandState();
     }
 
-    public MainForm(
-        IServiceProvider serviceProvider,
-        AppStateStore stateStore,
-        ILocalGitRepositoryService repositoryService,
-        IGitBranchCompositionService branchCompositionService)
-    {
-        ArgumentNullException.ThrowIfNull(serviceProvider);
-        ArgumentNullException.ThrowIfNull(stateStore);
-        ArgumentNullException.ThrowIfNull(repositoryService);
-        ArgumentNullException.ThrowIfNull(branchCompositionService);
-
-        _serviceProvider = serviceProvider;
-        _stateStore = stateStore;
-        _repositoryService = repositoryService;
-        _branchCompositionService = branchCompositionService;
-
-        InitializeComponent();
-        WireEvents();
-        UpdateCommandState();
-    }
-
-    object? IServiceProvider.GetService(Type serviceType)
-        => _serviceProvider?.GetService(serviceType);
-
     protected override async void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
 
-        if (_stateStore is null)
-        {
-            return;
-        }
-
         await RunUiActionAsync(async () =>
         {
+            EnsureServices();
             _state = await _stateStore.LoadAsync().ConfigureAwait(true);
             RenderRepositories();
             RestoreSelection();
@@ -436,10 +406,17 @@ public partial class MainForm : Form, IServiceProvider
     [MemberNotNull(nameof(_stateStore), nameof(_repositoryService), nameof(_branchCompositionService))]
     private void EnsureServices()
     {
-        if (_stateStore is null || _repositoryService is null || _branchCompositionService is null)
+        if (_stateStore is not null && _repositoryService is not null && _branchCompositionService is not null)
         {
-            throw new InvalidOperationException("Application services are not available.");
+            return;
         }
+
+        IServiceProvider serviceProvider = _serviceProvider
+            ?? throw new InvalidOperationException("MainForm must be resolved from WinFormsApplication so DI can provide the service provider.");
+
+        _stateStore = serviceProvider.GetRequiredService<AppStateStore>();
+        _repositoryService = serviceProvider.GetRequiredService<ILocalGitRepositoryService>();
+        _branchCompositionService = serviceProvider.GetRequiredService<IGitBranchCompositionService>();
     }
 
     private RepositoryEntry? SelectedRepository
@@ -448,4 +425,3 @@ public partial class MainForm : Form, IServiceProvider
     private BranchSetDefinition? SelectedBranchSet
         => branchSetListView.SelectedItems.Count == 0 ? null : branchSetListView.SelectedItems[0].Tag as BranchSetDefinition;
 }
-

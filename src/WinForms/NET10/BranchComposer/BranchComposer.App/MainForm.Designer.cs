@@ -3,6 +3,7 @@ namespace BranchComposer.App;
 partial class MainForm
 {
     private System.ComponentModel.IContainer components = null!;
+    private IServiceProvider _serviceProvider = null!;
     private MenuStrip menuStrip;
     private ToolStripMenuItem fileToolStripMenuItem;
     private ToolStripMenuItem addGithubRepoToolStripMenuItem;
@@ -27,11 +28,55 @@ partial class MainForm
     private StatusStrip statusStrip;
     private ToolStripStatusLabel selectedBranchStatusLabel;
 
+    public MainForm(IServiceProvider serviceProvider) : this()
+    {
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+
+        _serviceProvider = new DeferredServiceProvider(serviceProvider);
+        EnsureServices();
+    }
+
+    object IServiceProvider.GetService(Type serviceType)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+
+        if (_serviceProvider is null)
+        {
+            throw new InvalidOperationException(
+                "MainForm was constructed without a DI service provider. Resolve it from WinFormsApplication instead of calling new MainForm().");
+        }
+
+        return _serviceProvider.GetService(serviceType)
+            ?? throw new InvalidOperationException(
+                $"Service of type '{serviceType.Name}' is not registered.");
+    }
+
+#pragma warning disable WFOWARP9901 // Code-behind files should only contain InitializeComponent, Dispose, and constructors
+    private sealed class DeferredServiceProvider : IServiceProvider
+    {
+        private readonly Func<IServiceProvider> _serviceProviderFactory;
+
+        public DeferredServiceProvider(IServiceProvider serviceProvider)
+        {
+            _serviceProviderFactory = () => serviceProvider;
+        }
+
+        public object GetService(Type serviceType)
+        {
+            ArgumentNullException.ThrowIfNull(serviceType);
+
+            return _serviceProviderFactory().GetService(serviceType)
+                ?? throw new InvalidOperationException(
+                    $"Service of type '{serviceType.Name}' is not registered.");
+        }
+    }
+#pragma warning restore WFOWARP9901
+
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
+        if (disposing && (components != null))
         {
-            components?.Dispose();
+            components.Dispose();
         }
 
         base.Dispose(disposing);
@@ -74,7 +119,7 @@ partial class MainForm
         // menuStrip
         // 
         menuStrip.ImageScalingSize = new Size(20, 20);
-        menuStrip.Items.AddRange([fileToolStripMenuItem, branchSetToolStripMenuItem]);
+        menuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, branchSetToolStripMenuItem });
         menuStrip.Location = new Point(0, 0);
         menuStrip.Name = "menuStrip";
         menuStrip.Size = new Size(1184, 24);
@@ -82,7 +127,7 @@ partial class MainForm
         // 
         // fileToolStripMenuItem
         // 
-        fileToolStripMenuItem.DropDownItems.AddRange([addGithubRepoToolStripMenuItem, removeGithubRepoToolStripMenuItem, fileToolStripSeparator, quitToolStripMenuItem]);
+        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { addGithubRepoToolStripMenuItem, removeGithubRepoToolStripMenuItem, fileToolStripSeparator, quitToolStripMenuItem });
         fileToolStripMenuItem.Name = "fileToolStripMenuItem";
         fileToolStripMenuItem.Size = new Size(37, 20);
         fileToolStripMenuItem.Text = "&File";
@@ -112,7 +157,7 @@ partial class MainForm
         // 
         // branchSetToolStripMenuItem
         // 
-        branchSetToolStripMenuItem.DropDownItems.AddRange([createBranchSetToolStripMenuItem, deleteBranchSetToolStripMenuItem, branchSetToolStripSeparator, composeBranchSetToolStripMenuItem]);
+        branchSetToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { createBranchSetToolStripMenuItem, deleteBranchSetToolStripMenuItem, branchSetToolStripSeparator, composeBranchSetToolStripMenuItem });
         branchSetToolStripMenuItem.Name = "branchSetToolStripMenuItem";
         branchSetToolStripMenuItem.Size = new Size(76, 20);
         branchSetToolStripMenuItem.Text = "Branch-Set";
@@ -160,7 +205,7 @@ partial class MainForm
         // 
         // repositoryListView
         // 
-        repositoryListView.Columns.AddRange([repositoryNameColumnHeader, repositoryPathColumnHeader, repositoryDefaultBranchColumnHeader]);
+        repositoryListView.Columns.AddRange(new ColumnHeader[] { repositoryNameColumnHeader, repositoryPathColumnHeader, repositoryDefaultBranchColumnHeader });
         repositoryListView.Dock = DockStyle.Fill;
         repositoryListView.FullRowSelect = true;
         repositoryListView.GridLines = true;
@@ -188,7 +233,7 @@ partial class MainForm
         // 
         // branchSetListView
         // 
-        branchSetListView.Columns.AddRange([branchSetNameColumnHeader, branchSetBaseColumnHeader, branchSetSourcesColumnHeader, branchSetTargetColumnHeader]);
+        branchSetListView.Columns.AddRange(new ColumnHeader[] { branchSetNameColumnHeader, branchSetBaseColumnHeader, branchSetSourcesColumnHeader, branchSetTargetColumnHeader });
         branchSetListView.Dock = DockStyle.Fill;
         branchSetListView.FullRowSelect = true;
         branchSetListView.GridLines = true;
@@ -222,7 +267,7 @@ partial class MainForm
         // statusStrip
         // 
         statusStrip.ImageScalingSize = new Size(20, 20);
-        statusStrip.Items.AddRange([selectedBranchStatusLabel]);
+        statusStrip.Items.AddRange(new ToolStripItem[] { selectedBranchStatusLabel });
         statusStrip.Location = new Point(0, 739);
         statusStrip.Name = "statusStrip";
         statusStrip.Size = new Size(1184, 22);
@@ -258,4 +303,3 @@ partial class MainForm
         PerformLayout();
     }
 }
-
