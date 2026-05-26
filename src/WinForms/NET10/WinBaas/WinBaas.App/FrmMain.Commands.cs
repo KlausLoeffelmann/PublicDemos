@@ -154,9 +154,15 @@ public sealed partial class FrmMain
         try
         {
             var progress = new Progress<string>(msg => _statusInfo.Text = msg);
-            await _backup.BackupAsync(selected, options, progress);
-            _statusInfo.Text = $"Backup complete: {options.Destination}";
-            _logger.LogInformation("Backup written to {Destination}.", options.Destination);
+            BackupResult result = await _backup.BackupAsync(selected, options, progress);
+            _statusInfo.Text = $"Backup complete: {result.FinalDestination}";
+            _logger.LogInformation(
+                "Backup written to {Destination}. Report: {ReportPath}",
+                result.FinalDestination,
+                result.ReportPath);
+
+            var viewer = new DlgReportViewer(result.ReportPath) { Owner = this };
+            viewer.Show(this);
         }
         catch (Exception ex)
         {
@@ -175,14 +181,14 @@ public sealed partial class FrmMain
         var stored = _settings.Get<BackupMode>("WinBaas.BackupMode", BackupMode.CopyToFolder);
         if (stored == BackupMode.ZipArchive)
         {
-            using var dlg = new SaveFileDialog
+            using var dlg = new FolderBrowserDialog
             {
-                Title = "Save WinBaas backup",
-                Filter = "ZIP archive (*.zip)|*.zip",
-                FileName = $"WinBaas-Backup-{DateTime.Now:yyyyMMdd-HHmmss}.zip",
+                Description = "Select root folder for the WinBaas .zip backup",
+                UseDescriptionForTitle = true,
+                ShowNewFolderButton = true,
             };
             return dlg.ShowDialog(this) == DialogResult.OK
-                ? new BackupOptions { Mode = BackupMode.ZipArchive, Destination = dlg.FileName }
+                ? new BackupOptions { Mode = BackupMode.ZipArchive, Destination = dlg.SelectedPath }
                 : null;
         }
 
