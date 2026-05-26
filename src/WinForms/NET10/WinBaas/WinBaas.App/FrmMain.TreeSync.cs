@@ -161,6 +161,7 @@ public sealed partial class FrmMain
                 item.IsChecked,
                 item.Name,
                 item.FileTypeLabel,
+                item.FullPath,
                 item.LastChanged?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) ?? string.Empty,
                 item.Created?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty,
                 item.SizeBytes is null ? "\u2026" : FormatSizeShort(item.SizeBytes.Value));

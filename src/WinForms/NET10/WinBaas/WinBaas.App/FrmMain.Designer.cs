@@ -60,6 +60,7 @@ partial class FrmMain
         _colCheck = new DataGridViewCheckBoxColumn();
         _colName = new DataGridViewTextBoxColumn();
         _colType = new DataGridViewTextBoxColumn();
+        _colPath = new DataGridViewTextBoxColumn();
         _colChanged = new DataGridViewTextBoxColumn();
         _colCreated = new DataGridViewTextBoxColumn();
         _colSize = new DataGridViewTextBoxColumn();
@@ -195,7 +196,7 @@ partial class FrmMain
         _grid.MultiSelect = true;
         _grid.RowHeadersVisible = false;
         _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        _grid.Columns.AddRange(new DataGridViewColumn[] { _colCheck, _colName, _colType, _colChanged, _colCreated, _colSize });
+        _grid.Columns.AddRange(new DataGridViewColumn[] { _colCheck, _colName, _colType, _colPath, _colChanged, _colCreated, _colSize });
 
         _colCheck.HeaderText = string.Empty;
         _colCheck.Name = "_colCheck";
@@ -206,23 +207,27 @@ partial class FrmMain
         _colName.HeaderText = "Filename";
         _colName.Name = "_colName";
         _colName.ReadOnly = true;
-        _colName.FillWeight = 40;
+        _colName.FillWeight = 24;
         _colType.HeaderText = "File type";
         _colType.Name = "_colType";
         _colType.ReadOnly = true;
-        _colType.FillWeight = 20;
+        _colType.FillWeight = 18;
+        _colPath.HeaderText = "Path";
+        _colPath.Name = "_colPath";
+        _colPath.ReadOnly = true;
+        _colPath.FillWeight = 30;
         _colChanged.HeaderText = "Changed";
         _colChanged.Name = "_colChanged";
         _colChanged.ReadOnly = true;
-        _colChanged.FillWeight = 14;
+        _colChanged.FillWeight = 12;
         _colCreated.HeaderText = "Created";
         _colCreated.Name = "_colCreated";
         _colCreated.ReadOnly = true;
-        _colCreated.FillWeight = 10;
+        _colCreated.FillWeight = 8;
         _colSize.HeaderText = "Size";
         _colSize.Name = "_colSize";
         _colSize.ReadOnly = true;
-        _colSize.FillWeight = 12;
+        _colSize.FillWeight = 8;
         _colSize.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
 
         // FluentTabControl (Console + future tool windows)
@@ -308,6 +313,7 @@ partial class FrmMain
     private DataGridViewCheckBoxColumn _colCheck;
     private DataGridViewTextBoxColumn _colName;
     private DataGridViewTextBoxColumn _colType;
+    private DataGridViewTextBoxColumn _colPath;
     private DataGridViewTextBoxColumn _colChanged;
     private DataGridViewTextBoxColumn _colCreated;
     private DataGridViewTextBoxColumn _colSize;

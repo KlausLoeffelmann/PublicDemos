@@ -343,8 +343,8 @@ public sealed partial class FrmMain : Form
 
     private sealed class DesignTimeBackup : IBackupService
     {
-        public Task BackupAsync(IReadOnlyList<DiscoveredItem> items, BackupOptions options, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task<BackupResult> BackupAsync(IReadOnlyList<DiscoveredItem> items, BackupOptions options, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+            => Task.FromResult(new BackupResult(options.Destination, options.Destination, Guid.Empty, 0));
     }
 
     private sealed class DesignTimeExceptionService : IWinFormsAppExceptionService
