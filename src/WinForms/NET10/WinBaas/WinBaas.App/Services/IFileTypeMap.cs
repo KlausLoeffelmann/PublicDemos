@@ -1,3 +1,5 @@
+using WinBaas.Models;
+
 namespace WinBaas.Services;
 
 /// <summary>
@@ -8,7 +10,9 @@ public interface IFileTypeMap
 {
     /// <summary>
     ///  Gets a friendly label for the file represented by <paramref name="path"/>,
-    ///  or its extension if no specific label exists.
+    ///  qualified by the owning <paramref name="source"/> entry where helpful
+    ///  (e.g. <c>"VS Code · User Settings"</c>).
     /// </summary>
-    string GetLabel(string path);
+    string GetLabel(string path, CatalogEntry? source = null);
 }
+

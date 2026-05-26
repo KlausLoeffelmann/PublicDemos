@@ -10,6 +10,7 @@ public sealed class DlgAddObject : Form
     private static readonly string[] s_categories =
     [
         "User",
+        "AI Tools",
         "Developer Tools",
         "Creator / Design / Photo",
         "Musician / Audio",
