@@ -6,7 +6,8 @@ namespace WinBaas;
 /// <summary>
 ///  Tree/grid synchronization: clicks on a tree node refresh the grid; tree
 ///  check/uncheck propagates to grid rows; grid checkbox edits propagate
-///  back to the tree (tri-state when partially checked).
+///  back to the tree (tri-state when partially checked). Parent (category)
+///  nodes toggle every leaf entry below them.
 /// </summary>
 public sealed partial class FrmMain
 {
@@ -27,11 +28,34 @@ public sealed partial class FrmMain
         try
         {
             bool target = e.Node.Checked;
-            if (_nodeItems.TryGetValue(e.Node, out var items))
+
+            if (e.Node.Tag is CategoryTag)
             {
-                foreach (var item in items)
+                foreach (TreeNode leaf in EnumerateLeafNodes(e.Node.Nodes))
                 {
-                    item.IsChecked = target;
+                    leaf.Checked = target;
+                    if (_nodeItems.TryGetValue(leaf, out var leafItems))
+                    {
+                        foreach (var item in leafItems)
+                        {
+                            item.IsChecked = target;
+                        }
+                    }
+                }
+            }
+            else if (e.Node.Tag is CatalogEntry)
+            {
+                if (_nodeItems.TryGetValue(e.Node, out var items))
+                {
+                    foreach (var item in items)
+                    {
+                        item.IsChecked = target;
+                    }
+                }
+
+                if (e.Node.Parent is { } parent && parent.Tag is CategoryTag)
+                {
+                    parent.Checked = parent.Nodes.Cast<TreeNode>().All(n => n.Checked);
                 }
             }
 
@@ -68,13 +92,18 @@ public sealed partial class FrmMain
             item.IsChecked = (bool)(_grid.Rows[e.RowIndex].Cells[_colCheck.Index].Value ?? false);
         }
 
-        if (_treeSources.SelectedNode is { } node && _nodeItems.TryGetValue(node, out var items))
+        if (_treeSources.SelectedNode is { Tag: CatalogEntry } leaf
+            && _nodeItems.TryGetValue(leaf, out var items))
         {
             bool allChecked = items.Count > 0 && items.All(i => i.IsChecked);
             _syncing = true;
             try
             {
-                node.Checked = allChecked;
+                leaf.Checked = allChecked;
+                if (leaf.Parent is { } parent && parent.Tag is CategoryTag)
+                {
+                    parent.Checked = parent.Nodes.Cast<TreeNode>().All(n => n.Checked);
+                }
             }
             finally
             {
@@ -110,7 +139,18 @@ public sealed partial class FrmMain
             return;
         }
 
-        if (!_nodeItems.TryGetValue(node, out var items))
+        IEnumerable<DiscoveredItem> items;
+        if (node.Tag is CategoryTag)
+        {
+            items = EnumerateLeafNodes(node.Nodes)
+                .Where(l => _nodeItems.ContainsKey(l))
+                .SelectMany(l => _nodeItems[l]);
+        }
+        else if (_nodeItems.TryGetValue(node, out var leafItems))
+        {
+            items = leafItems;
+        }
+        else
         {
             return;
         }
@@ -133,6 +173,24 @@ public sealed partial class FrmMain
         foreach (DataGridViewRow row in _grid.Rows)
         {
             row.Cells[_colCheck.Index].Value = target;
+        }
+    }
+
+    private static IEnumerable<TreeNode> EnumerateLeafNodes(TreeNodeCollection nodes)
+    {
+        foreach (TreeNode node in nodes)
+        {
+            if (node.Nodes.Count == 0 && node.Tag is CatalogEntry)
+            {
+                yield return node;
+            }
+            else
+            {
+                foreach (TreeNode descendant in EnumerateLeafNodes(node.Nodes))
+                {
+                    yield return descendant;
+                }
+            }
         }
     }
 
@@ -163,3 +221,4 @@ public sealed partial class FrmMain
             : string.Format(CultureInfo.InvariantCulture, "{0:0.##} {1}", value, units[unit]);
     }
 }
+

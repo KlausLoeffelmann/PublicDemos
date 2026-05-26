@@ -33,15 +33,47 @@ public sealed class DiscoveryService(
     private IReadOnlyList<DiscoveredItem> DiscoverFolder(CatalogEntry entry, CancellationToken ct)
     {
         var results = new List<DiscoveredItem>();
-        if (string.IsNullOrWhiteSpace(entry.Path) || !Directory.Exists(entry.Path))
+        foreach (string rawPath in entry.Paths)
         {
-            _logger.LogDebug("Skipping folder source {Path} (does not exist).", entry.Path);
-            return results;
+            if (ct.IsCancellationRequested)
+            {
+                break;
+            }
+
+            foreach (string resolved in ExpandPath(rawPath))
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                if (File.Exists(resolved))
+                {
+                    AddFile(results, entry, resolved);
+                    continue;
+                }
+
+                if (!Directory.Exists(resolved))
+                {
+                    _logger.LogDebug("Skipping folder source {Path} (does not exist).", resolved);
+                    continue;
+                }
+
+                EnumerateFolderInto(results, entry, resolved, ct);
+            }
         }
 
-        SearchOption opt = entry.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+        return results;
+    }
 
-        foreach (string ext in entry.Extensions)
+    private void EnumerateFolderInto(List<DiscoveredItem> results, CatalogEntry entry, string root, CancellationToken ct)
+    {
+        SearchOption opt = entry.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+        IReadOnlyList<string> patterns = entry.Extensions.Count > 0
+            ? entry.Extensions.Select(e => "*" + e).ToArray()
+            : ["*"];
+
+        foreach (string pattern in patterns)
         {
             if (ct.IsCancellationRequested)
             {
@@ -50,87 +82,162 @@ public sealed class DiscoveryService(
 
             try
             {
-                IEnumerable<string> matches = Directory.EnumerateFiles(entry.Path, "*" + ext, opt);
-                foreach (string file in matches)
+                foreach (string file in Directory.EnumerateFiles(root, pattern, opt))
                 {
                     if (ct.IsCancellationRequested)
                     {
                         break;
                     }
 
-                    try
-                    {
-                        var fi = new FileInfo(file);
-                        results.Add(new DiscoveredItem
-                        {
-                            Source = entry,
-                            Name = fi.Name,
-                            FullPath = fi.FullName,
-                            FileTypeLabel = _fileTypeMap.GetLabel(fi.Name),
-                            LastChanged = fi.LastWriteTime,
-                            Created = fi.CreationTime,
-                            SizeBytes = fi.Length,
-                            IsFolder = false,
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "Skipping inaccessible file {File}.", file);
-                    }
+                    AddFile(results, entry, file);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Could not enumerate {Path} for extension {Ext}.", entry.Path, ext);
+                _logger.LogWarning(ex, "Could not enumerate {Path} for pattern {Pattern}.", root, pattern);
+            }
+        }
+    }
+
+    private void AddFile(List<DiscoveredItem> results, CatalogEntry entry, string file)
+    {
+        try
+        {
+            var fi = new FileInfo(file);
+            results.Add(new DiscoveredItem
+            {
+                Source = entry,
+                Name = fi.Name,
+                FullPath = fi.FullName,
+                FileTypeLabel = _fileTypeMap.GetLabel(fi.Name),
+                LastChanged = fi.LastWriteTime,
+                Created = fi.CreationTime,
+                SizeBytes = fi.Length,
+                IsFolder = false,
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Skipping inaccessible file {File}.", file);
+        }
+    }
+
+    /// <summary>
+    ///  Expands a raw catalog path: substitutes env vars, the
+    ///  <c>%DOCUMENTS%</c> token, and any <c>&lt;wildcard&gt;</c> segments
+    ///  by enumerating the parent directory.
+    /// </summary>
+    private IEnumerable<string> ExpandPath(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            yield break;
+        }
+
+        string expanded = raw.Replace(
+            "%DOCUMENTS%",
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            StringComparison.OrdinalIgnoreCase);
+        expanded = Environment.ExpandEnvironmentVariables(expanded);
+
+        if (!expanded.Contains('<'))
+        {
+            yield return expanded;
+            yield break;
+        }
+
+        foreach (string match in ExpandWildcardSegments(expanded))
+        {
+            yield return match;
+        }
+    }
+
+    private IEnumerable<string> ExpandWildcardSegments(string path)
+    {
+        string[] parts = path.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries);
+
+        bool isAbsolute = Path.IsPathRooted(path);
+        var stack = new List<string> { isAbsolute ? Path.GetPathRoot(path)! : string.Empty };
+
+        foreach (string part in parts)
+        {
+            if (part == Path.GetPathRoot(path)?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+            {
+                continue;
+            }
+
+            bool hasWildcard = part.Contains('<');
+            var next = new List<string>(stack.Count);
+            foreach (string current in stack)
+            {
+                if (!hasWildcard)
+                {
+                    next.Add(string.IsNullOrEmpty(current) ? part : Path.Combine(current, part));
+                    continue;
+                }
+
+                string parent = string.IsNullOrEmpty(current) ? Directory.GetCurrentDirectory() : current;
+                if (!Directory.Exists(parent))
+                {
+                    continue;
+                }
+
+                string mask = System.Text.RegularExpressions.Regex.Replace(part, "<[^>]+>", "*");
+                try
+                {
+                    foreach (string sub in Directory.EnumerateDirectories(parent, mask))
+                    {
+                        next.Add(sub);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Wildcard expansion failed for {Mask} in {Parent}.", mask, parent);
+                }
+            }
+
+            stack = next;
+            if (stack.Count == 0)
+            {
+                break;
+            }
+        }
+
+        return stack;
+    }
+
+    private IReadOnlyList<DiscoveredItem> DiscoverFile(CatalogEntry entry)
+    {
+        var results = new List<DiscoveredItem>();
+        foreach (string raw in entry.Paths)
+        {
+            foreach (string resolved in ExpandPath(raw))
+            {
+                if (!File.Exists(resolved))
+                {
+                    continue;
+                }
+
+                AddFile(results, entry, resolved);
             }
         }
 
         return results;
     }
 
-    private IReadOnlyList<DiscoveredItem> DiscoverFile(CatalogEntry entry)
-    {
-        if (!File.Exists(entry.Path))
-        {
-            return [];
-        }
-
-        try
-        {
-            var fi = new FileInfo(entry.Path);
-            return
-            [
-                new DiscoveredItem
-                {
-                    Source = entry,
-                    Name = fi.Name,
-                    FullPath = fi.FullName,
-                    FileTypeLabel = _fileTypeMap.GetLabel(fi.Name),
-                    LastChanged = fi.LastWriteTime,
-                    Created = fi.CreationTime,
-                    SizeBytes = fi.Length,
-                    IsFolder = false,
-                }
-            ];
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not stat single-file entry {Path}.", entry.Path);
-            return [];
-        }
-    }
-
     private IReadOnlyList<DiscoveredItem> DiscoverEnvironmentVariables(CatalogEntry entry)
     {
         var results = new List<DiscoveredItem>();
+        string target = entry.Paths.Count > 0 ? entry.Paths[0] : "User";
 
-        EnvironmentVariableTarget target = entry.Path.Equals("Machine", StringComparison.OrdinalIgnoreCase)
+        EnvironmentVariableTarget envTarget = target.Equals("Machine", StringComparison.OrdinalIgnoreCase)
             ? EnvironmentVariableTarget.Machine
             : EnvironmentVariableTarget.User;
 
         try
         {
-            foreach (var kv in Environment.GetEnvironmentVariables(target).Cast<System.Collections.DictionaryEntry>())
+            foreach (var kv in Environment.GetEnvironmentVariables(envTarget).Cast<System.Collections.DictionaryEntry>())
             {
                 string name = kv.Key?.ToString() ?? string.Empty;
                 string value = kv.Value?.ToString() ?? string.Empty;
@@ -151,7 +258,7 @@ public sealed class DiscoveryService(
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Could not enumerate {Target} environment variables.", target);
+            _logger.LogWarning(ex, "Could not enumerate {Target} environment variables.", envTarget);
         }
 
         return results;
@@ -181,7 +288,8 @@ public sealed class DiscoveryService(
     private IReadOnlyList<DiscoveredItem> DiscoverSqlServer(CatalogEntry entry, CancellationToken ct)
     {
         var results = new List<DiscoveredItem>();
-        bool isLocalDb = entry.Path.Equals("LocalDB", StringComparison.OrdinalIgnoreCase);
+        string flavor = entry.Paths.Count > 0 ? entry.Paths[0] : "LocalDB";
+        bool isLocalDb = flavor.Equals("LocalDB", StringComparison.OrdinalIgnoreCase);
         string[] instances = isLocalDb ? GetLocalDbInstances() : ["(local)\\SQLEXPRESS"];
 
         foreach (string instance in instances)

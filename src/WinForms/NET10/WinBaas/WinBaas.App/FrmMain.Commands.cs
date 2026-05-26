@@ -92,31 +92,24 @@ public sealed partial class FrmMain
         try
         {
             await Task.Yield();
-            foreach (TreeNode node in _treeSources.Nodes.Cast<TreeNode>().ToArray())
+            foreach (TreeNode leaf in EnumerateLeafNodes(_treeSources.Nodes).ToArray())
             {
                 if (ct.IsCancellationRequested)
                 {
                     break;
                 }
 
-                if (node.Tag is not CatalogEntry entry)
+                if (leaf.Tag is not CatalogEntry entry)
                 {
                     continue;
                 }
 
                 _statusInfo.Text = $"Discovering {entry.Name}\u2026";
                 IReadOnlyList<DiscoveredItem> items = await _discovery.DiscoverAsync(entry, ct);
-                _nodeItems[node] = [.. items];
+                _nodeItems[leaf] = [.. items];
 
-                node.Nodes.Clear();
-                if (items.Count == 0)
-                {
-                    node.ForeColor = SystemColors.GrayText;
-                    continue;
-                }
-
-                node.ForeColor = SystemColors.ControlText;
-                node.Text = $"{entry.Name} ({items.Count})";
+                leaf.Text = items.Count == 0 ? entry.Name : $"{entry.Name} ({items.Count})";
+                leaf.ForeColor = items.Count == 0 ? SystemColors.GrayText : SystemColors.ControlText;
             }
 
             _statusInfo.Text = $"Discovered {_nodeItems.Values.Sum(v => v.Count)} item(s).";

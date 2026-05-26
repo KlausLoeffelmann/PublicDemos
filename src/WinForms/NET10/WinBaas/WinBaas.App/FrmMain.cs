@@ -16,6 +16,9 @@ public sealed partial class FrmMain : Form
     private const string SettingsKeyWindowState = "FrmMain.WindowState";
     private const string SettingsKeySplitOuter = "FrmMain.SplitOuter";
     private const string SettingsKeySplitInner = "FrmMain.SplitInner";
+    private const string SettingsKeyTreeExpandedEntries = "WinBaas.Tree.ExpandedEntries";
+    private const string SettingsKeyTreeExpandedCategories = "WinBaas.Tree.ExpandedCategories";
+    private const string SettingsKeyTreeSelectedEntry = "WinBaas.Tree.SelectedEntry";
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ICatalogService _catalog;
@@ -87,11 +90,13 @@ public sealed partial class FrmMain : Form
         ConfigureCommands();
         RestoreWindowState();
         PopulateSourceTree();
+        RestoreTreeState();
         _logger.LogInformation("WinBaas ready.");
     }
 
     private void FrmMain_FormClosing(object? sender, FormClosingEventArgs e)
     {
+        PersistTreeState();
         PersistWindowState();
         _exceptionService.UnregisterExceptionHandler(OnUnhandledThreadException);
     }
@@ -113,14 +118,28 @@ public sealed partial class FrmMain : Form
         try
         {
             _treeSources.Nodes.Clear();
-            foreach (CatalogEntry entry in _catalog.GetAll())
+            _nodeItems.Clear();
+
+            var grouped = _catalog.GetAll().GroupBy(e => e.Category ?? string.Empty);
+            foreach (var group in grouped.OrderBy(g => CategoryOrder(g.Key)))
             {
-                var node = new TreeNode(entry.Name)
+                var categoryNode = new TreeNode(group.Key)
                 {
-                    Tag = entry,
-                    ToolTipText = entry.Description,
+                    NodeFont = new Font(_treeSources.Font, FontStyle.Bold),
+                    Tag = new CategoryTag(group.Key),
                 };
-                _treeSources.Nodes.Add(node);
+
+                foreach (CatalogEntry entry in group.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    var leaf = new TreeNode(entry.Name)
+                    {
+                        Tag = entry,
+                        ToolTipText = entry.Description,
+                    };
+                    categoryNode.Nodes.Add(leaf);
+                }
+
+                _treeSources.Nodes.Add(categoryNode);
             }
         }
         finally
@@ -128,6 +147,21 @@ public sealed partial class FrmMain : Form
             _treeSources.EndUpdate();
         }
     }
+
+    /// <summary>
+    ///  Marker that a tree node represents a category root (not a leaf entry).
+    /// </summary>
+    private sealed record CategoryTag(string Name);
+
+    private static int CategoryOrder(string category) => category switch
+    {
+        "Developer Tools" => 0,
+        "Creator / Design / Photo" => 1,
+        "Musician / Audio" => 2,
+        "System" => 3,
+        "User" => 4,
+        _ => 100,
+    };
 
     private void RestoreWindowState()
     {
@@ -166,6 +200,87 @@ public sealed partial class FrmMain : Form
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Could not persist window state.");
+        }
+    }
+
+    private void RestoreTreeState()
+    {
+        string expandedCats = _settings.Get(SettingsKeyTreeExpandedCategories, string.Empty);
+        var expandedCatSet = expandedCats
+            .Split('|', StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        string expandedEntries = _settings.Get(SettingsKeyTreeExpandedEntries, string.Empty);
+        var expandedEntrySet = expandedEntries
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => Guid.TryParse(s, out var g) ? g : Guid.Empty)
+            .Where(g => g != Guid.Empty)
+            .ToHashSet();
+
+        Guid selectedEntry = Guid.TryParse(_settings.Get(SettingsKeyTreeSelectedEntry, string.Empty), out var sel)
+            ? sel
+            : Guid.Empty;
+
+        foreach (TreeNode node in _treeSources.Nodes)
+        {
+            if (node.Tag is CategoryTag cat && expandedCatSet.Contains(cat.Name))
+            {
+                node.Expand();
+            }
+
+            foreach (TreeNode child in node.Nodes)
+            {
+                if (child.Tag is CatalogEntry e && expandedEntrySet.Contains(e.Id))
+                {
+                    child.Expand();
+                }
+            }
+        }
+
+        if (selectedEntry != Guid.Empty)
+        {
+            TreeNode? match = EnumerateLeafNodes(_treeSources.Nodes)
+                .FirstOrDefault(n => n.Tag is CatalogEntry e && e.Id == selectedEntry);
+            if (match is not null)
+            {
+                _treeSources.SelectedNode = match;
+                match.EnsureVisible();
+            }
+        }
+    }
+
+    private void PersistTreeState()
+    {
+        try
+        {
+            var expandedCategories = new List<string>();
+            var expandedEntries = new List<string>();
+            foreach (TreeNode node in _treeSources.Nodes)
+            {
+                if (node.Tag is CategoryTag cat && node.IsExpanded)
+                {
+                    expandedCategories.Add(cat.Name);
+                }
+
+                foreach (TreeNode child in node.Nodes)
+                {
+                    if (child.Tag is CatalogEntry e && child.IsExpanded)
+                    {
+                        expandedEntries.Add(e.Id.ToString());
+                    }
+                }
+            }
+
+            _settings.Set(SettingsKeyTreeExpandedCategories, string.Join('|', expandedCategories));
+            _settings.Set(SettingsKeyTreeExpandedEntries, string.Join(',', expandedEntries));
+            _settings.Set(
+                SettingsKeyTreeSelectedEntry,
+                _treeSources.SelectedNode?.Tag is CatalogEntry sel ? sel.Id.ToString() : string.Empty);
+            _settings.Flush();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not persist tree state.");
         }
     }
 
