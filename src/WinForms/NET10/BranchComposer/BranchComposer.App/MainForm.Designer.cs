@@ -15,16 +15,17 @@ partial class MainForm
     private ToolStripMenuItem deleteBranchSetToolStripMenuItem;
     private ToolStripSeparator branchSetToolStripSeparator;
     private ToolStripMenuItem composeBranchSetToolStripMenuItem;
-    private SplitContainer splitContainer;
-    private ListView repositoryListView;
-    private ColumnHeader repositoryNameColumnHeader;
-    private ColumnHeader repositoryPathColumnHeader;
-    private ColumnHeader repositoryDefaultBranchColumnHeader;
-    private ListView branchSetListView;
-    private ColumnHeader branchSetNameColumnHeader;
-    private ColumnHeader branchSetBaseColumnHeader;
-    private ColumnHeader branchSetSourcesColumnHeader;
-    private ColumnHeader branchSetTargetColumnHeader;
+    private ToolStripMenuItem viewToolStripMenuItem;
+    private ToolStripMenuItem gitConsoleToolStripMenuItem;
+    private SplitContainer mainSplitContainer;
+    private TreeView repositoryTreeView;
+    private SplitContainer branchSetSplitContainer;
+    private BranchSetDataGridView branchSetDataGridView;
+    private DataGridViewTextBoxColumn branchSetNameColumn;
+    private DataGridViewTextBoxColumn branchSetBaseColumn;
+    private DataGridViewTextBoxColumn branchSetSourcesColumn;
+    private DataGridViewTextBoxColumn branchSetTargetColumn;
+    private WarpToolkit.WinForms.Containers.FluentTabControl gitConsoleTabControl;
     private StatusStrip statusStrip;
     private ToolStripStatusLabel selectedBranchStatusLabel;
 
@@ -96,30 +97,36 @@ partial class MainForm
         deleteBranchSetToolStripMenuItem = new ToolStripMenuItem();
         branchSetToolStripSeparator = new ToolStripSeparator();
         composeBranchSetToolStripMenuItem = new ToolStripMenuItem();
-        splitContainer = new SplitContainer();
-        repositoryListView = new ListView();
-        repositoryNameColumnHeader = new ColumnHeader();
-        repositoryPathColumnHeader = new ColumnHeader();
-        repositoryDefaultBranchColumnHeader = new ColumnHeader();
-        branchSetListView = new ListView();
-        branchSetNameColumnHeader = new ColumnHeader();
-        branchSetBaseColumnHeader = new ColumnHeader();
-        branchSetSourcesColumnHeader = new ColumnHeader();
-        branchSetTargetColumnHeader = new ColumnHeader();
+        viewToolStripMenuItem = new ToolStripMenuItem();
+        gitConsoleToolStripMenuItem = new ToolStripMenuItem();
+        mainSplitContainer = new SplitContainer();
+        repositoryTreeView = new TreeView();
+        branchSetSplitContainer = new SplitContainer();
+        branchSetDataGridView = new BranchSetDataGridView();
+        branchSetNameColumn = new DataGridViewTextBoxColumn();
+        branchSetBaseColumn = new DataGridViewTextBoxColumn();
+        branchSetSourcesColumn = new DataGridViewTextBoxColumn();
+        branchSetTargetColumn = new DataGridViewTextBoxColumn();
+        gitConsoleTabControl = new WarpToolkit.WinForms.Containers.FluentTabControl();
         statusStrip = new StatusStrip();
         selectedBranchStatusLabel = new ToolStripStatusLabel();
         menuStrip.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)splitContainer).BeginInit();
-        splitContainer.Panel1.SuspendLayout();
-        splitContainer.Panel2.SuspendLayout();
-        splitContainer.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)mainSplitContainer).BeginInit();
+        mainSplitContainer.Panel1.SuspendLayout();
+        mainSplitContainer.Panel2.SuspendLayout();
+        mainSplitContainer.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)branchSetSplitContainer).BeginInit();
+        branchSetSplitContainer.Panel1.SuspendLayout();
+        branchSetSplitContainer.Panel2.SuspendLayout();
+        branchSetSplitContainer.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)branchSetDataGridView).BeginInit();
         statusStrip.SuspendLayout();
         SuspendLayout();
         // 
         // menuStrip
         // 
         menuStrip.ImageScalingSize = new Size(20, 20);
-        menuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, branchSetToolStripMenuItem });
+        menuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, branchSetToolStripMenuItem, viewToolStripMenuItem });
         menuStrip.Location = new Point(0, 0);
         menuStrip.Name = "menuStrip";
         menuStrip.Size = new Size(1184, 24);
@@ -185,84 +192,107 @@ partial class MainForm
         composeBranchSetToolStripMenuItem.Size = new Size(152, 22);
         composeBranchSetToolStripMenuItem.Text = "Compose ...";
         // 
-        // splitContainer
+        // viewToolStripMenuItem
         // 
-        splitContainer.Dock = DockStyle.Fill;
-        splitContainer.Location = new Point(0, 24);
-        splitContainer.Name = "splitContainer";
-        splitContainer.Orientation = Orientation.Horizontal;
+        viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { gitConsoleToolStripMenuItem });
+        viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+        viewToolStripMenuItem.Size = new Size(44, 20);
+        viewToolStripMenuItem.Text = "&View";
         // 
-        // splitContainer.Panel1
+        // gitConsoleToolStripMenuItem
         // 
-        splitContainer.Panel1.Controls.Add(repositoryListView);
+        gitConsoleToolStripMenuItem.Checked = true;
+        gitConsoleToolStripMenuItem.CheckOnClick = true;
+        gitConsoleToolStripMenuItem.CheckState = CheckState.Checked;
+        gitConsoleToolStripMenuItem.Name = "gitConsoleToolStripMenuItem";
+        gitConsoleToolStripMenuItem.Size = new Size(134, 22);
+        gitConsoleToolStripMenuItem.Text = "Git Console";
         // 
-        // splitContainer.Panel2
+        // mainSplitContainer
         // 
-        splitContainer.Panel2.Controls.Add(branchSetListView);
-        splitContainer.Size = new Size(1184, 715);
-        splitContainer.SplitterDistance = 320;
-        splitContainer.TabIndex = 1;
+        mainSplitContainer.Dock = DockStyle.Fill;
+        mainSplitContainer.Location = new Point(0, 24);
+        mainSplitContainer.Name = "mainSplitContainer";
+        mainSplitContainer.Panel1.Controls.Add(repositoryTreeView);
+        mainSplitContainer.Panel1MinSize = 220;
+        mainSplitContainer.Panel2.Controls.Add(branchSetSplitContainer);
+        mainSplitContainer.Panel2MinSize = 500;
+        mainSplitContainer.Size = new Size(1184, 715);
+        mainSplitContainer.SplitterDistance = 280;
+        mainSplitContainer.TabIndex = 1;
         // 
-        // repositoryListView
+        // repositoryTreeView
         // 
-        repositoryListView.Columns.AddRange(new ColumnHeader[] { repositoryNameColumnHeader, repositoryPathColumnHeader, repositoryDefaultBranchColumnHeader });
-        repositoryListView.Dock = DockStyle.Fill;
-        repositoryListView.FullRowSelect = true;
-        repositoryListView.GridLines = true;
-        repositoryListView.MultiSelect = false;
-        repositoryListView.Name = "repositoryListView";
-        repositoryListView.Size = new Size(1184, 320);
-        repositoryListView.TabIndex = 0;
-        repositoryListView.UseCompatibleStateImageBehavior = false;
-        repositoryListView.View = View.Details;
+        repositoryTreeView.Dock = DockStyle.Fill;
+        repositoryTreeView.HideSelection = false;
+        repositoryTreeView.Location = new Point(0, 0);
+        repositoryTreeView.Name = "repositoryTreeView";
+        repositoryTreeView.Size = new Size(280, 715);
+        repositoryTreeView.TabIndex = 0;
         // 
-        // repositoryNameColumnHeader
+        // branchSetSplitContainer
         // 
-        repositoryNameColumnHeader.Text = "Github Repo";
-        repositoryNameColumnHeader.Width = 260;
+        branchSetSplitContainer.Dock = DockStyle.Fill;
+        branchSetSplitContainer.Location = new Point(0, 0);
+        branchSetSplitContainer.Name = "branchSetSplitContainer";
+        branchSetSplitContainer.Orientation = Orientation.Horizontal;
+        branchSetSplitContainer.Panel1.Controls.Add(branchSetDataGridView);
+        branchSetSplitContainer.Panel1MinSize = 220;
+        branchSetSplitContainer.Panel2.Controls.Add(gitConsoleTabControl);
+        branchSetSplitContainer.Panel2MinSize = 120;
+        branchSetSplitContainer.Size = new Size(900, 715);
+        branchSetSplitContainer.SplitterDistance = 470;
+        branchSetSplitContainer.TabIndex = 0;
         // 
-        // repositoryPathColumnHeader
+        // branchSetDataGridView
         // 
-        repositoryPathColumnHeader.Text = "Local Path";
-        repositoryPathColumnHeader.Width = 700;
+        branchSetDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        branchSetDataGridView.Columns.AddRange(new DataGridViewColumn[] { branchSetNameColumn, branchSetBaseColumn, branchSetSourcesColumn, branchSetTargetColumn });
+        branchSetDataGridView.Dock = DockStyle.Fill;
+        branchSetDataGridView.Location = new Point(0, 0);
+        branchSetDataGridView.Name = "branchSetDataGridView";
+        branchSetDataGridView.Size = new Size(900, 470);
+        branchSetDataGridView.TabIndex = 0;
         // 
-        // repositoryDefaultBranchColumnHeader
+        // branchSetNameColumn
         // 
-        repositoryDefaultBranchColumnHeader.Text = "Default Branch";
-        repositoryDefaultBranchColumnHeader.Width = 160;
+        branchSetNameColumn.HeaderText = "Branch-Set";
+        branchSetNameColumn.Name = "branchSetNameColumn";
+        branchSetNameColumn.ReadOnly = true;
+        branchSetNameColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
+        branchSetNameColumn.Width = 220;
         // 
-        // branchSetListView
+        // branchSetBaseColumn
         // 
-        branchSetListView.Columns.AddRange(new ColumnHeader[] { branchSetNameColumnHeader, branchSetBaseColumnHeader, branchSetSourcesColumnHeader, branchSetTargetColumnHeader });
-        branchSetListView.Dock = DockStyle.Fill;
-        branchSetListView.FullRowSelect = true;
-        branchSetListView.GridLines = true;
-        branchSetListView.MultiSelect = false;
-        branchSetListView.Name = "branchSetListView";
-        branchSetListView.Size = new Size(1184, 391);
-        branchSetListView.TabIndex = 0;
-        branchSetListView.UseCompatibleStateImageBehavior = false;
-        branchSetListView.View = View.Details;
+        branchSetBaseColumn.HeaderText = "Base Branch";
+        branchSetBaseColumn.Name = "branchSetBaseColumn";
+        branchSetBaseColumn.ReadOnly = true;
+        branchSetBaseColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
+        branchSetBaseColumn.Width = 220;
         // 
-        // branchSetNameColumnHeader
+        // branchSetSourcesColumn
         // 
-        branchSetNameColumnHeader.Text = "Branch-Set";
-        branchSetNameColumnHeader.Width = 220;
+        branchSetSourcesColumn.HeaderText = "Source Branches";
+        branchSetSourcesColumn.Name = "branchSetSourcesColumn";
+        branchSetSourcesColumn.ReadOnly = true;
+        branchSetSourcesColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
+        branchSetSourcesColumn.Width = 360;
         // 
-        // branchSetBaseColumnHeader
+        // branchSetTargetColumn
         // 
-        branchSetBaseColumnHeader.Text = "Base Branch";
-        branchSetBaseColumnHeader.Width = 220;
+        branchSetTargetColumn.HeaderText = "Target";
+        branchSetTargetColumn.Name = "branchSetTargetColumn";
+        branchSetTargetColumn.ReadOnly = true;
+        branchSetTargetColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
+        branchSetTargetColumn.Width = 260;
         // 
-        // branchSetSourcesColumnHeader
+        // gitConsoleTabControl
         // 
-        branchSetSourcesColumnHeader.Text = "Source Branches";
-        branchSetSourcesColumnHeader.Width = 420;
-        // 
-        // branchSetTargetColumnHeader
-        // 
-        branchSetTargetColumnHeader.Text = "Target";
-        branchSetTargetColumnHeader.Width = 260;
+        gitConsoleTabControl.Dock = DockStyle.Fill;
+        gitConsoleTabControl.Location = new Point(0, 0);
+        gitConsoleTabControl.Name = "gitConsoleTabControl";
+        gitConsoleTabControl.Size = new Size(900, 241);
+        gitConsoleTabControl.TabIndex = 0;
         // 
         // statusStrip
         // 
@@ -276,15 +306,17 @@ partial class MainForm
         // selectedBranchStatusLabel
         // 
         selectedBranchStatusLabel.Name = "selectedBranchStatusLabel";
-        selectedBranchStatusLabel.Size = new Size(119, 17);
-        selectedBranchStatusLabel.Text = "No branch selected.";
+        selectedBranchStatusLabel.Size = new Size(1169, 17);
+        selectedBranchStatusLabel.Spring = true;
+        selectedBranchStatusLabel.Text = "No repository selected.";
+        selectedBranchStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // MainForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1184, 761);
-        Controls.Add(splitContainer);
+        Controls.Add(mainSplitContainer);
         Controls.Add(statusStrip);
         Controls.Add(menuStrip);
         MainMenuStrip = menuStrip;
@@ -293,10 +325,15 @@ partial class MainForm
         Text = "BranchComposer";
         menuStrip.ResumeLayout(false);
         menuStrip.PerformLayout();
-        splitContainer.Panel1.ResumeLayout(false);
-        splitContainer.Panel2.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)splitContainer).EndInit();
-        splitContainer.ResumeLayout(false);
+        mainSplitContainer.Panel1.ResumeLayout(false);
+        mainSplitContainer.Panel2.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)mainSplitContainer).EndInit();
+        mainSplitContainer.ResumeLayout(false);
+        branchSetSplitContainer.Panel1.ResumeLayout(false);
+        branchSetSplitContainer.Panel2.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)branchSetSplitContainer).EndInit();
+        branchSetSplitContainer.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)branchSetDataGridView).EndInit();
         statusStrip.ResumeLayout(false);
         statusStrip.PerformLayout();
         ResumeLayout(false);

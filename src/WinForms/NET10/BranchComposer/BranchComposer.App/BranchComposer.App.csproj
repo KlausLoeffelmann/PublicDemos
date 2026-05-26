@@ -9,13 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="WarpToolkit.WinForms.AppServices" Version="0.9.79-preview.g5a320ad311" />
-    <PackageReference Include="WarpToolkit.WinForms" Version="0.9.79-preview.g5a320ad311" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.AppServices\WarpToolkit.WinForms.AppServices.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Extensions\WarpToolkit.WinForms.Extensions.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Github\WarpToolkit.WinForms.Github.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Tooling\WarpToolkit.WinForms.Tooling.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms\WarpToolkit.WinForms.csproj" />
   </ItemGroup>
 
 </Project>
-

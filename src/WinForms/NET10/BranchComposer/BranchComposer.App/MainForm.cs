@@ -2,16 +2,28 @@ using System.Diagnostics.CodeAnalysis;
 using BranchComposer.App.Models;
 using BranchComposer.App.Services;
 using Microsoft.Extensions.DependencyInjection;
+using WarpToolkit.ComponentModel;
+using WarpToolkit.WinForms.Extensions.UI;
 using WarpToolkit.WinForms.Github.Git;
 
 namespace BranchComposer.App;
 
 public partial class MainForm : Form, IServiceProvider
 {
+    private const string MainSplitterSettingsKey = "MainForm.MainSplitter";
+    private const string BranchSetSplitterSettingsKey = "MainForm.BranchSetSplitter";
+    private const string BranchSetGridSettingsKey = "MainForm.BranchSetGrid";
+    private const string GitConsoleVisibleSettingsKey = "MainForm.GitConsoleVisible";
+
     private AppStateStore? _stateStore;
     private ILocalGitRepositoryService? _repositoryService;
     private IGitBranchCompositionService? _branchCompositionService;
+    private GitConsoleService? _gitConsoleService;
+    private IUserSettingsService? _userSettingsService;
     private AppState _state = new();
+    private TreeNode? _githubReposRootNode;
+    private GitConsoleView? _gitConsoleView;
+    private bool _gitConsoleTabInitialized;
 
     public MainForm()
     {
@@ -27,11 +39,34 @@ public partial class MainForm : Form, IServiceProvider
         await RunUiActionAsync(async () =>
         {
             EnsureServices();
+            InitializeGitConsoleTab();
+            ApplyPersistedUiSettings();
+            if (_gitConsoleView is not null)
+            {
+                await _gitConsoleService.AttachAsync(_gitConsoleView.Console).ConfigureAwait(true);
+            }
+
             _state = await _stateStore.LoadAsync().ConfigureAwait(true);
             RenderRepositories();
             RestoreSelection();
             UpdateCommandState();
         }).ConfigureAwait(true);
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        SaveUiSettings();
+        base.OnFormClosing(e);
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        if (_gitConsoleView is not null && _gitConsoleService is not null)
+        {
+            _gitConsoleService.Detach(_gitConsoleView.Console);
+        }
+
+        base.OnFormClosed(e);
     }
 
     private void WireEvents()
@@ -42,15 +77,21 @@ public partial class MainForm : Form, IServiceProvider
         createBranchSetToolStripMenuItem.Click += async (_, _) => await RunUiActionAsync(CreateBranchSetAsync).ConfigureAwait(true);
         deleteBranchSetToolStripMenuItem.Click += async (_, _) => await RunUiActionAsync(DeleteBranchSetAsync).ConfigureAwait(true);
         composeBranchSetToolStripMenuItem.Click += async (_, _) => await RunUiActionAsync(ComposeBranchSetAsync).ConfigureAwait(true);
-        repositoryListView.SelectedIndexChanged += (_, _) =>
+        gitConsoleToolStripMenuItem.Click += (_, _) => SetGitConsoleVisible(gitConsoleToolStripMenuItem.Checked, persist: true);
+        repositoryTreeView.AfterSelect += (_, _) =>
         {
             RenderBranchSets();
+            UpdateSelectedRepositoryStatus();
             UpdateCommandState();
         };
-        branchSetListView.SelectedIndexChanged += async (_, _) =>
+        branchSetDataGridView.SelectionChanged += async (_, _) =>
         {
             UpdateCommandState();
             await RunUiActionAsync(UpdateSelectedBranchStatusAsync).ConfigureAwait(true);
+        };
+        branchSetDataGridView.ColumnHeaderMouseClick += (_, e) =>
+        {
+            SetStatus($"Column '{branchSetDataGridView.Columns[e.ColumnIndex].HeaderText}' selected. Sorting is not implemented yet.");
         };
     }
 
@@ -93,7 +134,7 @@ public partial class MainForm : Form, IServiceProvider
         await SaveStateAsync().ConfigureAwait(true);
         RenderRepositories();
         SelectRepository(entry.Key);
-        selectedBranchStatusLabel.Text = $"Added {entry.DisplayName}.";
+        SetStatus($"Added {entry.DisplayName}.");
     }
 
     private async Task RemoveRepositoryAsync()
@@ -125,7 +166,7 @@ public partial class MainForm : Form, IServiceProvider
         await SaveStateAsync().ConfigureAwait(true);
         RenderRepositories();
         RenderBranchSets();
-        selectedBranchStatusLabel.Text = $"Removed {repository.DisplayName}.";
+        SetStatus($"Removed {repository.DisplayName}.");
     }
 
     private async Task CreateBranchSetAsync()
@@ -185,7 +226,7 @@ public partial class MainForm : Form, IServiceProvider
 
         await SaveStateAsync().ConfigureAwait(true);
         RenderBranchSets();
-        selectedBranchStatusLabel.Text = $"Deleted Branch-Set '{branchSet.Name}'.";
+        SetStatus($"Deleted Branch-Set '{branchSet.Name}'.");
     }
 
     private async Task ComposeBranchSetAsync()
@@ -226,7 +267,7 @@ public partial class MainForm : Form, IServiceProvider
             }
         }).ConfigureAwait(true);
 
-        selectedBranchStatusLabel.Text = $"Composed {compositionResult.TargetBranch} @ {compositionResult.NewSha[..Math.Min(12, compositionResult.NewSha.Length)]}.";
+        SetStatus($"Composed {compositionResult.TargetBranch} @ {compositionResult.NewSha[..Math.Min(12, compositionResult.NewSha.Length)]}.");
 
         MessageBox.Show(
             this,
@@ -238,63 +279,75 @@ public partial class MainForm : Form, IServiceProvider
 
     private async Task UpdateSelectedBranchStatusAsync()
     {
-        if (_repositoryService is null || SelectedRepository is not { } repository || SelectedBranchSet is not { } branchSet)
+        if (_repositoryService is null || SelectedRepository is not { } repository)
         {
-            selectedBranchStatusLabel.Text = "No branch selected.";
+            SetStatus("No repository selected.");
+            return;
+        }
+
+        if (SelectedBranchSet is not { } branchSet)
+        {
+            UpdateSelectedRepositoryStatus();
             return;
         }
 
         string? branchName = branchSet.SourceBranches.FirstOrDefault();
         if (branchName is null)
         {
-            selectedBranchStatusLabel.Text = "No source branch selected.";
+            SetStatus("No source branch selected.");
             return;
         }
 
         GitCommitInfo commit = await _repositoryService.GetBranchTipAsync(repository.RootPath, branchName).ConfigureAwait(true);
-        selectedBranchStatusLabel.Text = $"{branchName}: {commit.AuthorDate.LocalDateTime:g} | {commit.AbbreviatedSha} | {commit.Subject} | {commit.Sha}";
+        SetStatus($"{branchName}: {commit.AuthorDate.LocalDateTime:g} | {commit.AbbreviatedSha} | {commit.Subject} | {commit.Sha}");
     }
 
     private void RenderRepositories()
     {
-        repositoryListView.BeginUpdate();
-        repositoryListView.Items.Clear();
+        repositoryTreeView.BeginUpdate();
+        repositoryTreeView.Nodes.Clear();
+        _githubReposRootNode = new TreeNode("Github Repos")
+        {
+            Name = "githubReposRootNode"
+        };
 
         foreach (RepositoryEntry repository in _state.Repositories)
         {
-            ListViewItem item = new(repository.DisplayName)
+            TreeNode node = new(repository.DisplayName)
             {
                 Tag = repository
             };
-            item.SubItems.Add(repository.RootPath);
-            item.SubItems.Add(repository.DefaultBranch ?? string.Empty);
-            repositoryListView.Items.Add(item);
+            node.ToolTipText = repository.RootPath;
+            _githubReposRootNode.Nodes.Add(node);
         }
 
-        repositoryListView.EndUpdate();
+        repositoryTreeView.Nodes.Add(_githubReposRootNode);
+        _githubReposRootNode.Expand();
+        repositoryTreeView.EndUpdate();
     }
 
     private void RenderBranchSets()
     {
-        branchSetListView.BeginUpdate();
-        branchSetListView.Items.Clear();
+        branchSetDataGridView.SuspendLayout();
+        branchSetDataGridView.Rows.Clear();
 
         if (SelectedRepository is { } repository)
         {
             foreach (BranchSetDefinition branchSet in GetBranchSets(repository.Key))
             {
-                ListViewItem item = new(branchSet.Name)
-                {
-                    Tag = branchSet
-                };
-                item.SubItems.Add(branchSet.BaseBranch);
-                item.SubItems.Add(string.Join(", ", branchSet.SourceBranches));
-                item.SubItems.Add($"{branchSet.Name}/{branchSet.TargetBranchName}");
-                branchSetListView.Items.Add(item);
+                int rowIndex = branchSetDataGridView.Rows.Add(
+                    branchSet.Name,
+                    branchSet.BaseBranch,
+                    string.Join(", ", branchSet.SourceBranches),
+                    $"{branchSet.Name}/{branchSet.TargetBranchName}");
+
+                branchSetDataGridView.Rows[rowIndex].Tag = branchSet;
             }
         }
 
-        branchSetListView.EndUpdate();
+        branchSetDataGridView.ClearSelection();
+        branchSetDataGridView.CurrentCell = null;
+        branchSetDataGridView.ResumeLayout();
         UpdateCommandState();
     }
 
@@ -313,13 +366,17 @@ public partial class MainForm : Form, IServiceProvider
 
     private void SelectRepository(string repositoryKey)
     {
-        foreach (ListViewItem item in repositoryListView.Items)
+        if (_githubReposRootNode is null)
         {
-            if (item.Tag is RepositoryEntry repository && string.Equals(repository.Key, repositoryKey, StringComparison.OrdinalIgnoreCase))
+            return;
+        }
+
+        foreach (TreeNode node in _githubReposRootNode.Nodes)
+        {
+            if (node.Tag is RepositoryEntry repository && string.Equals(repository.Key, repositoryKey, StringComparison.OrdinalIgnoreCase))
             {
-                item.Selected = true;
-                item.Focused = true;
-                item.EnsureVisible();
+                repositoryTreeView.SelectedNode = node;
+                node.EnsureVisible();
                 break;
             }
         }
@@ -327,13 +384,13 @@ public partial class MainForm : Form, IServiceProvider
 
     private void SelectBranchSet(string branchSetName)
     {
-        foreach (ListViewItem item in branchSetListView.Items)
+        foreach (DataGridViewRow row in branchSetDataGridView.Rows)
         {
-            if (item.Tag is BranchSetDefinition branchSet && string.Equals(branchSet.Name, branchSetName, StringComparison.OrdinalIgnoreCase))
+            if (row.Tag is BranchSetDefinition branchSet && string.Equals(branchSet.Name, branchSetName, StringComparison.OrdinalIgnoreCase))
             {
-                item.Selected = true;
-                item.Focused = true;
-                item.EnsureVisible();
+                row.Selected = true;
+                branchSetDataGridView.CurrentCell = row.Cells[0];
+                branchSetDataGridView.FirstDisplayedScrollingRowIndex = row.Index;
                 break;
             }
         }
@@ -348,6 +405,77 @@ public partial class MainForm : Form, IServiceProvider
         }
 
         return branchSets;
+    }
+
+    private void InitializeGitConsoleTab()
+    {
+        if (_gitConsoleTabInitialized)
+        {
+            return;
+        }
+
+        _gitConsoleView = new GitConsoleView();
+        gitConsoleTabControl.AddTab("Git Console", _gitConsoleView);
+        _gitConsoleTabInitialized = true;
+    }
+
+    private void ApplyPersistedUiSettings()
+    {
+        if (_userSettingsService is null)
+        {
+            return;
+        }
+
+        _userSettingsService.TryApplySplitterDistance(mainSplitContainer, MainSplitterSettingsKey);
+        _userSettingsService.TryApplySplitterDistance(branchSetSplitContainer, BranchSetSplitterSettingsKey);
+        _userSettingsService.TryApplyDataGridViewColumnWidths(branchSetDataGridView, BranchSetGridSettingsKey);
+        bool gitConsoleVisible = _userSettingsService.Get(GitConsoleVisibleSettingsKey, true);
+        SetGitConsoleVisible(gitConsoleVisible, persist: false);
+    }
+
+    private void SaveUiSettings()
+    {
+        if (_userSettingsService is null)
+        {
+            return;
+        }
+
+        _userSettingsService.SaveSplitterDistance(mainSplitContainer, MainSplitterSettingsKey);
+        _userSettingsService.SaveSplitterDistance(branchSetSplitContainer, BranchSetSplitterSettingsKey);
+        _userSettingsService.SaveDataGridViewColumnWidths(branchSetDataGridView, BranchSetGridSettingsKey);
+        _userSettingsService.Set(GitConsoleVisibleSettingsKey, !branchSetSplitContainer.Panel2Collapsed);
+    }
+
+    private void SetGitConsoleVisible(bool visible, bool persist)
+    {
+        gitConsoleToolStripMenuItem.Checked = visible;
+        branchSetSplitContainer.Panel2Collapsed = !visible;
+
+        if (persist && _userSettingsService is not null)
+        {
+            _userSettingsService.Set(GitConsoleVisibleSettingsKey, visible);
+        }
+    }
+
+    private void UpdateSelectedRepositoryStatus()
+    {
+        if (SelectedRepository is not { } repository)
+        {
+            SetStatus("No repository selected.");
+            return;
+        }
+
+        string defaultBranch = string.IsNullOrWhiteSpace(repository.DefaultBranch)
+            ? "unknown default branch"
+            : repository.DefaultBranch;
+
+        SetStatus($"{repository.DisplayName} | {defaultBranch} | {repository.RootPath} | {repository.RemoteUrl}");
+    }
+
+    private void SetStatus(string text)
+    {
+        selectedBranchStatusLabel.Text = text;
+        selectedBranchStatusLabel.ToolTipText = text;
     }
 
     private void UpdateCommandState()
@@ -384,7 +512,7 @@ public partial class MainForm : Form, IServiceProvider
         catch (Exception ex)
         {
             MessageBox.Show(this, FormatException(ex), "BranchComposer", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            selectedBranchStatusLabel.Text = ex.Message;
+            SetStatus(ex.Message);
         }
         finally
         {
@@ -403,10 +531,14 @@ public partial class MainForm : Form, IServiceProvider
             _ => exception.Message
         };
 
-    [MemberNotNull(nameof(_stateStore), nameof(_repositoryService), nameof(_branchCompositionService))]
+    [MemberNotNull(nameof(_stateStore), nameof(_repositoryService), nameof(_branchCompositionService), nameof(_gitConsoleService), nameof(_userSettingsService))]
     private void EnsureServices()
     {
-        if (_stateStore is not null && _repositoryService is not null && _branchCompositionService is not null)
+        if (_stateStore is not null
+            && _repositoryService is not null
+            && _branchCompositionService is not null
+            && _gitConsoleService is not null
+            && _userSettingsService is not null)
         {
             return;
         }
@@ -417,11 +549,13 @@ public partial class MainForm : Form, IServiceProvider
         _stateStore = serviceProvider.GetRequiredService<AppStateStore>();
         _repositoryService = serviceProvider.GetRequiredService<ILocalGitRepositoryService>();
         _branchCompositionService = serviceProvider.GetRequiredService<IGitBranchCompositionService>();
+        _gitConsoleService = serviceProvider.GetRequiredService<GitConsoleService>();
+        _userSettingsService = serviceProvider.GetRequiredService<IUserSettingsService>();
     }
 
     private RepositoryEntry? SelectedRepository
-        => repositoryListView.SelectedItems.Count == 0 ? null : repositoryListView.SelectedItems[0].Tag as RepositoryEntry;
+        => repositoryTreeView.SelectedNode?.Tag as RepositoryEntry;
 
     private BranchSetDefinition? SelectedBranchSet
-        => branchSetListView.SelectedItems.Count == 0 ? null : branchSetListView.SelectedItems[0].Tag as BranchSetDefinition;
+        => branchSetDataGridView.SelectedRows.Count == 0 ? null : branchSetDataGridView.SelectedRows[0].Tag as BranchSetDefinition;
 }
