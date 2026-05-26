@@ -7,6 +7,16 @@ namespace WinBaas.Dialogs;
 /// </summary>
 public sealed class DlgAddObject : Form
 {
+    private static readonly string[] s_categories =
+    [
+        "User",
+        "Developer Tools",
+        "Creator / Design / Photo",
+        "Musician / Audio",
+        "System",
+    ];
+
+    private readonly ComboBox _categoryCombo;
     private readonly ComboBox _kindCombo;
     private readonly TextBox _nameBox;
     private readonly TextBox _pathBox;
@@ -27,50 +37,57 @@ public sealed class DlgAddObject : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MinimizeBox = false;
         MaximizeBox = false;
-        ClientSize = new Size(560, 360);
+        ClientSize = new Size(560, 400);
 
         var layout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
-            RowCount = 6,
+            RowCount = 7,
             Padding = new Padding(12),
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
-        for (int r = 0; r < 5; r++)
+        for (int r = 0; r < 6; r++)
         {
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         }
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        layout.Controls.Add(new Label { Text = "Kind:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 0);
+        layout.Controls.Add(new Label { Text = "Category:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 0);
+        _categoryCombo = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+        _categoryCombo.Items.AddRange([.. s_categories]);
+        _categoryCombo.SelectedIndex = 0;
+        layout.Controls.Add(_categoryCombo, 1, 0);
+        layout.SetColumnSpan(_categoryCombo, 2);
+
+        layout.Controls.Add(new Label { Text = "Kind:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 1);
         _kindCombo = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
         _kindCombo.Items.AddRange([CatalogEntryKind.Folder, CatalogEntryKind.File, CatalogEntryKind.EnvironmentVariable, CatalogEntryKind.SqlServer]);
         _kindCombo.SelectedIndex = 0;
-        layout.Controls.Add(_kindCombo, 1, 0);
+        layout.Controls.Add(_kindCombo, 1, 1);
         layout.SetColumnSpan(_kindCombo, 2);
 
-        layout.Controls.Add(new Label { Text = "Name:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 1);
+        layout.Controls.Add(new Label { Text = "Name:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 2);
         _nameBox = new TextBox { Dock = DockStyle.Fill };
-        layout.Controls.Add(_nameBox, 1, 1);
+        layout.Controls.Add(_nameBox, 1, 2);
         layout.SetColumnSpan(_nameBox, 2);
 
-        layout.Controls.Add(new Label { Text = "Path / value:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 2);
+        layout.Controls.Add(new Label { Text = "Path / value:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 3);
         _pathBox = new TextBox { Dock = DockStyle.Fill };
-        layout.Controls.Add(_pathBox, 1, 2);
+        layout.Controls.Add(_pathBox, 1, 3);
         _browseButton = new Button { Text = "Browse\u2026", Dock = DockStyle.Fill };
         _browseButton.Click += BrowseButton_Click;
-        layout.Controls.Add(_browseButton, 2, 2);
+        layout.Controls.Add(_browseButton, 2, 3);
 
-        layout.Controls.Add(new Label { Text = "Extensions:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 3);
+        layout.Controls.Add(new Label { Text = "Extensions:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 4);
         _extensionsBox = new TextBox { Dock = DockStyle.Fill, PlaceholderText = ".pdf .docx .md" };
-        layout.Controls.Add(_extensionsBox, 1, 3);
+        layout.Controls.Add(_extensionsBox, 1, 4);
         layout.SetColumnSpan(_extensionsBox, 2);
 
         _recursiveCheck = new CheckBox { Text = "Include subfolders", AutoSize = true, Anchor = AnchorStyles.Left, Checked = true };
-        layout.Controls.Add(_recursiveCheck, 1, 4);
+        layout.Controls.Add(_recursiveCheck, 1, 5);
 
         var buttons = new FlowLayoutPanel
         {
@@ -128,10 +145,11 @@ public sealed class DlgAddObject : Form
 
         Result = new CatalogEntry
         {
+            Category = _categoryCombo.SelectedItem as string ?? "User",
             Kind = kind,
             Name = _nameBox.Text.Trim(),
             Description = $"User-defined {kind} entry.",
-            Path = _pathBox.Text.Trim(),
+            Paths = [_pathBox.Text.Trim()],
             Extensions = exts,
             IncludeSubfolders = _recursiveCheck.Checked,
             IsUserDefined = true,
