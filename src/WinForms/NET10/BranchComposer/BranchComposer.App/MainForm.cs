@@ -178,7 +178,7 @@ public partial class MainForm : Form, IServiceProvider
 
         IReadOnlyList<GitBranchInfo> branches = await _repositoryService!.GetBranchesAsync(repository.RootPath).ConfigureAwait(true);
 
-        using BranchSetEditorDialog dialog = new(branches, repository.DefaultBranch);
+        using BranchSetEditorDialog dialog = new(repository, branches, repository.DefaultBranch, _repositoryService, _userSettingsService);
         if (dialog.ShowDialog(this) != DialogResult.OK || dialog.Definition is null)
         {
             return;
