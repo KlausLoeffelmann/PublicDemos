@@ -1,6 +1,6 @@
 ---
 name: winforms-high-dpi-fluent-layout
-description: Guide for WinForms High-DPI fluent layout using TableLayoutPanel, FlowLayoutPanel, and DPI-aware design patterns. Use this when designing responsive form layouts, implementing Per Monitor V2 High-DPI support, or structuring complex nested layouts with proper scaling.
+description: Guide for WinForms High-DPI fluent layout using TableLayoutPanel, FlowLayoutPanel, and DPI-aware design patterns. Use this when designing responsive form layouts, reviewing whether WinForms forms are designed according to standard, implementing Per Monitor V2 High-DPI support, or structuring complex nested layouts with proper scaling. For Designer-code reviews, also use winforms-designer-code.
 ---
 
 # WinForms High-DPI Fluent Layout Guide
@@ -17,6 +17,7 @@ Use this skill when:
 - Creating complex nested layouts with proper scaling
 - Implementing fullscreen or presentation modes
 - Designing modal dialogs with proper layout structure
+- Reviewing whether WinForms Forms/UserControls are "designed according to standard", "not designed properly", "badly designed", "layout looks wrong", or similar; pair this with `winforms-designer-code` so Designer serialization rules are checked too.
 
 ## Designer Compatibility Note
 

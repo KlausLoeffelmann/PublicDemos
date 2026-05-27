@@ -15,6 +15,7 @@ public partial class MainForm : Form, IServiceProvider
     private const string BranchSetGridSettingsKey = "MainForm.BranchSetGrid";
     private const string GitConsoleVisibleSettingsKey = "MainForm.GitConsoleVisible";
 
+    private IServiceProvider _serviceProvider = null!;
     private AppStateStore? _stateStore;
     private ILocalGitRepositoryService? _repositoryService;
     private IGitBranchCompositionService? _branchCompositionService;
@@ -30,6 +31,29 @@ public partial class MainForm : Form, IServiceProvider
         InitializeComponent();
         WireEvents();
         UpdateCommandState();
+    }
+
+    public MainForm(IServiceProvider serviceProvider) : this()
+    {
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+
+        _serviceProvider = new DeferredServiceProvider(serviceProvider);
+        EnsureServices();
+    }
+
+    object IServiceProvider.GetService(Type serviceType)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+
+        if (_serviceProvider is null)
+        {
+            throw new InvalidOperationException(
+                "MainForm was constructed without a DI service provider. Resolve it from WinFormsApplication instead of calling new MainForm().");
+        }
+
+        return _serviceProvider.GetService(serviceType)
+            ?? throw new InvalidOperationException(
+                $"Service of type '{serviceType.Name}' is not registered.");
     }
 
     protected override async void OnLoad(EventArgs e)
@@ -93,6 +117,25 @@ public partial class MainForm : Form, IServiceProvider
         {
             SetStatus($"Column '{branchSetDataGridView.Columns[e.ColumnIndex].HeaderText}' selected. Sorting is not implemented yet.");
         };
+    }
+
+    private sealed class DeferredServiceProvider : IServiceProvider
+    {
+        private readonly Func<IServiceProvider> _serviceProviderFactory;
+
+        public DeferredServiceProvider(IServiceProvider serviceProvider)
+        {
+            _serviceProviderFactory = () => serviceProvider;
+        }
+
+        public object GetService(Type serviceType)
+        {
+            ArgumentNullException.ThrowIfNull(serviceType);
+
+            return _serviceProviderFactory().GetService(serviceType)
+                ?? throw new InvalidOperationException(
+                    $"Service of type '{serviceType.Name}' is not registered.");
+        }
     }
 
     private async Task AddRepositoryAsync()

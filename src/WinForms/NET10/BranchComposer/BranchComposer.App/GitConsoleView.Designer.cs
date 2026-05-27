@@ -2,9 +2,6 @@ namespace BranchComposer.App;
 
 partial class GitConsoleView
 {
-    private System.ComponentModel.IContainer components = null!;
-    private WarpToolkit.WinForms.Tooling.ConsoleControl consoleControl;
-
     protected override void Dispose(bool disposing)
     {
         if (disposing && (components != null))
@@ -19,9 +16,9 @@ partial class GitConsoleView
     {
         consoleControl = new WarpToolkit.WinForms.Tooling.ConsoleControl();
         SuspendLayout();
-        // 
+        //
         // consoleControl
-        // 
+        //
         consoleControl.BackColor = Color.FromArgb(30, 30, 30);
         consoleControl.BorderStyle = BorderStyle.None;
         consoleControl.Dock = DockStyle.Fill;
@@ -33,9 +30,9 @@ partial class GitConsoleView
         consoleControl.Size = new Size(780, 220);
         consoleControl.TabIndex = 0;
         consoleControl.Text = "";
-        // 
+        //
         // GitConsoleView
-        // 
+        //
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(consoleControl);
@@ -43,4 +40,7 @@ partial class GitConsoleView
         Size = new Size(780, 220);
         ResumeLayout(false);
     }
+
+    private System.ComponentModel.IContainer components = null!;
+    private WarpToolkit.WinForms.Tooling.ConsoleControl consoleControl;
 }

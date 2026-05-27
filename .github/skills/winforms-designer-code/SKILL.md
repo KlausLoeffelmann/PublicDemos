@@ -1,6 +1,6 @@
 ---
 name: winforms-designer-code
-description: Strict rules for WinForms Designer-generated code and InitializeComponent patterns. Use this when writing or reviewing Designer files (*.Designer.cs), working with InitializeComponent, or ensuring Designer compatibility.
+description: Strict rules for WinForms Designer-generated code and InitializeComponent patterns. Use this when writing or reviewing Designer files (*.Designer.cs), working with InitializeComponent, ensuring Designer compatibility, or reviewing whether WinForms forms are designed according to standard. For broad "form design standard" comments, also use winforms-high-dpi-fluent-layout.
 ---
 
 # WinForms Designer Code Rules
@@ -15,6 +15,7 @@ Use this skill when:
 - Writing or modifying `.Designer.cs` or `.Designer.vb` files
 - Creating user controls that need Designer support
 - Reviewing Designer-generated code
+- Reviewing whether WinForms Forms/UserControls are "designed according to standard", "not designed properly", or similar; pair this with `winforms-high-dpi-fluent-layout` so both Designer serialization and human/layout/DPI quality are checked.
 - Debugging Designer-related issues
 - Migrating forms between .NET Framework and .NET
 - Migrating VB6 Code to either Visual Basic (.NET) or C# WinForms Projects.

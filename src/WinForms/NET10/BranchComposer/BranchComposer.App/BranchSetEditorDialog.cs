@@ -15,11 +15,17 @@ public sealed partial class BranchSetEditorDialog : Form
     private readonly RepositoryEntry? _repository;
     private readonly ILocalGitRepositoryService? _repositoryService;
     private readonly IUserSettingsService? _userSettingsService;
+    private readonly HashSet<string> _selectedSourceBranches = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<GitBranchInfo> _branches = [];
     private string? _defaultBaseBranch;
+    private bool _isPopulatingSourceBranches;
 
     public BranchSetEditorDialog()
     {
         InitializeComponent();
+        _namingModeComboBox.SelectedIndex = 0;
+        UpdateSelectedSourceBranchesLabel();
+        UpdateTargetNamingState();
     }
 
     public BranchSetEditorDialog(IEnumerable<GitBranchInfo> branches, string? defaultBaseBranch) : this()
@@ -63,11 +69,18 @@ public sealed partial class BranchSetEditorDialog : Form
     {
         _defaultBaseBranch = defaultBaseBranch;
 
-        string[] branchNames = branches
-            .Select(branch => branch.Name)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(branch => branch, StringComparer.OrdinalIgnoreCase)
+        _branches = branches
+            .GroupBy(branch => branch.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .OrderBy(branch => branch.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+        string[] branchNames = _branches
+            .Select(branch => branch.Name)
+            .ToArray();
+
+        HashSet<string> branchNameSet = new(branchNames, StringComparer.OrdinalIgnoreCase);
+        _selectedSourceBranches.RemoveWhere(branch => !branchNameSet.Contains(branch));
 
         _baseBranchComboBox.Items.Clear();
         _baseBranchComboBox.Items.AddRange(branchNames);
@@ -81,21 +94,39 @@ public sealed partial class BranchSetEditorDialog : Form
             _baseBranchComboBox.SelectedIndex = 0;
         }
 
+        PopulateSourceBranchesGrid();
+    }
+
+    private void PopulateSourceBranchesGrid()
+    {
+        string? selectedBaseBranch = _baseBranchComboBox.SelectedItem as string ?? _defaultBaseBranch;
+        if (selectedBaseBranch is not null)
+        {
+            _selectedSourceBranches.Remove(selectedBaseBranch);
+        }
+
+        string filterText = _sourceBranchFilterTextBox.Text.Trim();
+
+        _isPopulatingSourceBranches = true;
         _sourceBranchesDataGridView.Rows.Clear();
-        foreach (GitBranchInfo branch in branches
-            .Where(branch => !string.Equals(branch.Name, defaultBaseBranch, StringComparison.OrdinalIgnoreCase))
-            .GroupBy(branch => branch.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.First())
+        foreach (GitBranchInfo branch in _branches
+            .Where(branch => !string.Equals(branch.Name, selectedBaseBranch, StringComparison.OrdinalIgnoreCase))
+            .Where(branch => string.IsNullOrWhiteSpace(filterText)
+                || branch.Name.Contains(filterText, StringComparison.OrdinalIgnoreCase)
+                || (branch.LatestCommit?.Subject.Contains(filterText, StringComparison.OrdinalIgnoreCase) ?? false))
             .OrderBy(branch => branch.Name, StringComparer.OrdinalIgnoreCase))
         {
             int rowIndex = _sourceBranchesDataGridView.Rows.Add(
-                false,
+                _selectedSourceBranches.Contains(branch.Name),
                 branch.Name,
                 FormatCommitDate(branch.LatestCommit),
                 FormatCommitMessage(branch.LatestCommit));
 
             _sourceBranchesDataGridView.Rows[rowIndex].Tag = branch.Name;
         }
+
+        _isPopulatingSourceBranches = false;
+        UpdateSelectedSourceBranchesLabel();
     }
 
     private void ConfigureRepositoryControls()
@@ -142,10 +173,10 @@ public sealed partial class BranchSetEditorDialog : Form
             return;
         }
 
-        string[] sourceBranches = _sourceBranchesDataGridView.Rows
-            .Cast<DataGridViewRow>()
-            .Where(row => row.Tag is string && row.Cells[0].Value is true)
-            .Select(row => (string)row.Tag)
+        string[] sourceBranches = _branches
+            .Select(branch => branch.Name)
+            .Where(branch => !string.Equals(branch, baseBranch, StringComparison.OrdinalIgnoreCase))
+            .Where(_selectedSourceBranches.Contains)
             .ToArray();
 
         if (sourceBranches.Length == 0)
@@ -197,7 +228,7 @@ public sealed partial class BranchSetEditorDialog : Form
 
     private void RepositoryLinkLabel_LinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
     {
-        if (e.Link.LinkData is not string url)
+        if (e.Link?.LinkData is not string url)
         {
             return;
         }
@@ -222,6 +253,63 @@ public sealed partial class BranchSetEditorDialog : Form
         {
             _sourceBranchesDataGridView.CommitEdit(DataGridViewDataErrorContexts.Commit);
         }
+    }
+
+    private void SourceBranchesDataGridView_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (_isPopulatingSourceBranches || e.RowIndex < 0 || e.ColumnIndex != _selectSourceBranchColumn.Index)
+        {
+            return;
+        }
+
+        DataGridViewRow row = _sourceBranchesDataGridView.Rows[e.RowIndex];
+        if (row.Tag is not string branchName)
+        {
+            return;
+        }
+
+        if (row.Cells[_selectSourceBranchColumn.Index].Value is true)
+        {
+            _selectedSourceBranches.Add(branchName);
+        }
+        else
+        {
+            _selectedSourceBranches.Remove(branchName);
+        }
+
+        UpdateSelectedSourceBranchesLabel();
+    }
+
+    private void BaseBranchComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        PopulateSourceBranchesGrid();
+    }
+
+    private void SourceBranchFilterTextBox_TextChanged(object? sender, EventArgs e)
+    {
+        PopulateSourceBranchesGrid();
+    }
+
+    private void NamingModeComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        UpdateTargetNamingState();
+    }
+
+    private void UpdateSelectedSourceBranchesLabel()
+    {
+        int selectedCount = _selectedSourceBranches.Count;
+        _selectedSourceBranchesLabel.Text = selectedCount == 1
+            ? "1 selected"
+            : $"{selectedCount} selected";
+    }
+
+    private void UpdateTargetNamingState()
+    {
+        bool numberedSuffix = _namingModeComboBox.SelectedIndex == 2;
+        _numberWidthLabel.Visible = numberedSuffix;
+        _numberWidthNumericUpDown.Visible = numberedSuffix;
+        _numberWidthLabel.Enabled = numberedSuffix;
+        _numberWidthNumericUpDown.Enabled = numberedSuffix;
     }
 
     private void ApplyPersistedUiSettings()
