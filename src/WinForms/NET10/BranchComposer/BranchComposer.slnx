@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="BranchComposer.App/BranchComposer.App.csproj" />
+  <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.AppServices/WarpToolkit.WinForms.AppServices.csproj" />
+  <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Extensions/WarpToolkit.WinForms.Extensions.csproj" />
+  <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Github/WarpToolkit.WinForms.Github.csproj" />
+  <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Specialized/WarpToolkit.WinForms.Specialized.csproj" />
+</Solution>

@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.AppServices\WarpToolkit.WinForms.AppServices.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Extensions\WarpToolkit.WinForms.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Github\WarpToolkit.WinForms.Github.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Specialized\WarpToolkit.WinForms.Specialized.csproj" />
+  </ItemGroup>
+
+</Project>
