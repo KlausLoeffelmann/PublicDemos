@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GenericObjectDataSource DisplayName="MainViewModel" Version="1.0"
+    xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+  <TypeInfo>WingetPackageEditor.Core.ViewModels.MainViewModel, WingetPackageEditor.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+</GenericObjectDataSource>

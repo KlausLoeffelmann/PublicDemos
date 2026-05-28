@@ -3,6 +3,8 @@ using Microsoft.Extensions.WinForms;
 using System.Diagnostics;
 using WarpToolkit.Microsoft.Extensions.Logging;
 using WarpToolkit.WinForms.AppServices.ServiceExtensions;
+using WingetPackageEditor.Core.Services;
+using WingetPackageEditor.Core.ViewModels;
 
 namespace Winget_Package_Editor;
 
@@ -23,6 +25,7 @@ internal static class Program
         // We want to use the Exception service, so we can handle
         // unhandled exceptions in a consistent way.
         builder.Services.AddWinFormsExceptionService();
+        builder.Services.AddWinFormsDialogService();
 
         // One we setup this service, compatible component can use the
         // service to either get the AI-Provider key via this default local
@@ -45,6 +48,9 @@ internal static class Program
         // and particularly to provide the Form the ServiceProvider, which it itself can
         // distribute by calling the Form Extension method `AssignServices(serviceProvider)`.
         builder.Services.AddScoped<MainForm>();
+        builder.Services.AddScoped<IConsoleService, ConsoleService>();
+        builder.Services.AddScoped<ICatalogService, HardcodedCatalogService>();
+        builder.Services.AddScoped<MainViewModel>();
 
         // Configure WinForms-specific options
 
