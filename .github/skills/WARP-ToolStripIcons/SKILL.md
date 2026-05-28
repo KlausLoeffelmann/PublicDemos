@@ -13,7 +13,7 @@ resources, no manual `ImageList` plumbing — using the
 For the broader API map see `../ApiDecisionGuide/SKILL.md`.
 
 The current preview version of every WARP NuGet is:
-`0.9.7-preview.g32895b766b`.
+`0.9.86-preview.g8bc92e2168`.
 
 ## When to use this skill
 

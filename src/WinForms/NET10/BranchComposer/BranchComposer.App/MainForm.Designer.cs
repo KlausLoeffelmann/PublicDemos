@@ -72,13 +72,13 @@ partial class MainForm
         //
         addGithubRepoToolStripMenuItem.Name = "addGithubRepoToolStripMenuItem";
         addGithubRepoToolStripMenuItem.Size = new Size(206, 22);
-        addGithubRepoToolStripMenuItem.Text = "Add Github Repo...";
+        addGithubRepoToolStripMenuItem.Text = "Add GitHub repository...";
         //
         // removeGithubRepoToolStripMenuItem
         //
         removeGithubRepoToolStripMenuItem.Name = "removeGithubRepoToolStripMenuItem";
         removeGithubRepoToolStripMenuItem.Size = new Size(206, 22);
-        removeGithubRepoToolStripMenuItem.Text = "Remove Github Repo ...";
+        removeGithubRepoToolStripMenuItem.Text = "Remove GitHub repository...";
         //
         // fileToolStripSeparator
         //
@@ -185,7 +185,7 @@ partial class MainForm
         //
         // branchSetNameColumn
         //
-        branchSetNameColumn.HeaderText = "Branch-Set";
+        branchSetNameColumn.HeaderText = "Branch-Set name";
         branchSetNameColumn.Name = "branchSetNameColumn";
         branchSetNameColumn.ReadOnly = true;
         branchSetNameColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
@@ -193,7 +193,7 @@ partial class MainForm
         //
         // branchSetBaseColumn
         //
-        branchSetBaseColumn.HeaderText = "Base Branch";
+        branchSetBaseColumn.HeaderText = "Base branch";
         branchSetBaseColumn.Name = "branchSetBaseColumn";
         branchSetBaseColumn.ReadOnly = true;
         branchSetBaseColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
@@ -201,7 +201,7 @@ partial class MainForm
         //
         // branchSetSourcesColumn
         //
-        branchSetSourcesColumn.HeaderText = "Source Branches";
+        branchSetSourcesColumn.HeaderText = "Branches to replay";
         branchSetSourcesColumn.Name = "branchSetSourcesColumn";
         branchSetSourcesColumn.ReadOnly = true;
         branchSetSourcesColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
@@ -209,7 +209,7 @@ partial class MainForm
         //
         // branchSetTargetColumn
         //
-        branchSetTargetColumn.HeaderText = "Target";
+        branchSetTargetColumn.HeaderText = "Target branch";
         branchSetTargetColumn.Name = "branchSetTargetColumn";
         branchSetTargetColumn.ReadOnly = true;
         branchSetTargetColumn.SortMode = DataGridViewColumnSortMode.NotSortable;

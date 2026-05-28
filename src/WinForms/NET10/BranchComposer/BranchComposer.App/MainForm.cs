@@ -191,7 +191,7 @@ public partial class MainForm : Form, IServiceProvider
         DialogResult result = MessageBox.Show(
             this,
             $"Remove '{repository.DisplayName}' and its saved Branch-Sets from BranchComposer?",
-            "Remove Github Repo",
+            "Remove GitHub repository",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question,
             MessageBoxDefaultButton.Button2);
@@ -217,7 +217,7 @@ public partial class MainForm : Form, IServiceProvider
         EnsureServices();
 
         RepositoryEntry repository = SelectedRepository
-            ?? throw new InvalidOperationException("Select a Github repo before creating a Branch-Set.");
+            ?? throw new InvalidOperationException("Select a GitHub repository before creating a Branch-Set.");
 
         IReadOnlyList<GitBranchInfo> branches = await _repositoryService!.GetBranchesAsync(repository.RootPath).ConfigureAwait(true);
 
@@ -277,7 +277,7 @@ public partial class MainForm : Form, IServiceProvider
         EnsureServices();
 
         RepositoryEntry repository = SelectedRepository
-            ?? throw new InvalidOperationException("Select a Github repo before composing.");
+            ?? throw new InvalidOperationException("Select a GitHub repository before composing.");
 
         BranchSetDefinition branchSet = SelectedBranchSet
             ?? throw new InvalidOperationException("Select a Branch-Set before composing.");
@@ -349,7 +349,7 @@ public partial class MainForm : Form, IServiceProvider
     {
         repositoryTreeView.BeginUpdate();
         repositoryTreeView.Nodes.Clear();
-        _githubReposRootNode = new TreeNode("Github Repos")
+        _githubReposRootNode = new TreeNode("GitHub repositories")
         {
             Name = "githubReposRootNode"
         };

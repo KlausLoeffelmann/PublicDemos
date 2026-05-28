@@ -1,6 +1,6 @@
 using System.Globalization;
 using WarpToolkit.WinForms.Github.Git;
-using WarpToolkit.WinForms.Tooling;
+using WarpToolkit.WinForms.Specialized;
 
 namespace BranchComposer.App.Services;
 

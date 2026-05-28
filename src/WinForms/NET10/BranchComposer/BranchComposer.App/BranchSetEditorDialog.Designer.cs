@@ -308,13 +308,13 @@ partial class BranchSetEditorDialog
         //
         // _selectSourceBranchColumn
         //
-        _selectSourceBranchColumn.HeaderText = "Select";
+        _selectSourceBranchColumn.HeaderText = "Use";
         _selectSourceBranchColumn.Name = "_selectSourceBranchColumn";
         _selectSourceBranchColumn.Width = 64;
         //
         // _sourceBranchNameColumn
         //
-        _sourceBranchNameColumn.HeaderText = "Branch";
+        _sourceBranchNameColumn.HeaderText = "Source branch";
         _sourceBranchNameColumn.Name = "_sourceBranchNameColumn";
         _sourceBranchNameColumn.ReadOnly = true;
         _sourceBranchNameColumn.Width = 260;
@@ -328,8 +328,7 @@ partial class BranchSetEditorDialog
         //
         // _sourceBranchCommitMessageColumn
         //
-        _sourceBranchCommitMessageColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-        _sourceBranchCommitMessageColumn.HeaderText = "Latest commit";
+        _sourceBranchCommitMessageColumn.HeaderText = "Commit subject";
         _sourceBranchCommitMessageColumn.Name = "_sourceBranchCommitMessageColumn";
         _sourceBranchCommitMessageColumn.ReadOnly = true;
         //
@@ -405,6 +404,7 @@ partial class BranchSetEditorDialog
         _namingModeComboBox.Items.AddRange(new object[] { "Fixed target branch", "Date folder", "Increasing numeric suffix" });
         _namingModeComboBox.Location = new Point(144, 32);
         _namingModeComboBox.Name = "_namingModeComboBox";
+        _namingModeComboBox.SelectedIndex = 0;
         _namingModeComboBox.Size = new Size(787, 23);
         _namingModeComboBox.TabIndex = 3;
         _namingModeComboBox.SelectedIndexChanged += NamingModeComboBox_SelectedIndexChanged;

@@ -11,7 +11,7 @@ Modern .NET WinForms development for Designer-compatible applications with prope
 
 Use this skill when:
 
-- Creating new oder maintaining existing WinForms projects or WinForms control libraries
+- Creating new or maintaining existing WinForms projects or WinForms control libraries
 - Developing Forms or UserControls to be compatible with the WinForms Designer
 - Modernizing legacy WinForms applications or even legacy VB6 applications
 - Setting up solution structures and configuration with enough evidence for using the WinForms projects as the UI stack.

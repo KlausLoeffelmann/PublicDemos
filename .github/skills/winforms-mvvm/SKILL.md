@@ -47,7 +47,7 @@ MVVM separates application concerns into three layers:
 - Commands for user actions
 - Property change notifications
 - Testable without UI
-- No dependcy on any UI Stack. Pure .NET Standard or .NET 8+ class library.
+- No dependency on any UI Stack. Pure .NET Standard or .NET 8+ class library.
 
 **Key Benefits:**
 

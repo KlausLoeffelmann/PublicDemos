@@ -12,8 +12,7 @@
     <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.AppServices\WarpToolkit.WinForms.AppServices.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Extensions\WarpToolkit.WinForms.Extensions.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Github\WarpToolkit.WinForms.Github.csproj" />
-    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Tooling\WarpToolkit.WinForms.Tooling.csproj" />
-    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms\WarpToolkit.WinForms.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\warp\src\WarpToolkit.WinForms.Specialized\WarpToolkit.WinForms.Specialized.csproj" />
   </ItemGroup>
 
 </Project>

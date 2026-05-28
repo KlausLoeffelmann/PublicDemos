@@ -1,4 +1,4 @@
-using WarpToolkit.WinForms.Tooling;
+using WarpToolkit.WinForms.Specialized;
 
 namespace BranchComposer.App;
 

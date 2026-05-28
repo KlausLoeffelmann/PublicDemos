@@ -16,7 +16,7 @@ For deep context on each package see
 `src/docs/reference/` in this repo.
 
 The current preview version of every WARP NuGet is:
-`0.9.7-preview.g32895b766b`.
+`0.9.86-preview.g8bc92e2168`.
 
 ## How to use this skill
 

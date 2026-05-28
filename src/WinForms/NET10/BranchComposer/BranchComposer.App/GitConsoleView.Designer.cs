@@ -1,3 +1,4 @@
+using WarpToolkit.WinForms.Specialized;
 namespace BranchComposer.App;
 
 partial class GitConsoleView
@@ -14,7 +15,7 @@ partial class GitConsoleView
 
     private void InitializeComponent()
     {
-        consoleControl = new WarpToolkit.WinForms.Tooling.ConsoleControl();
+        consoleControl = new ConsoleControl();
         SuspendLayout();
         //
         // consoleControl
@@ -42,5 +43,5 @@ partial class GitConsoleView
     }
 
     private System.ComponentModel.IContainer components = null!;
-    private WarpToolkit.WinForms.Tooling.ConsoleControl consoleControl;
+    private ConsoleControl consoleControl;
 }
