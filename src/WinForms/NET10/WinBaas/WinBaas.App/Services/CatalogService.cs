@@ -102,6 +102,26 @@ public sealed class CatalogService : ICatalogService
 
     private static IEnumerable<CatalogEntry> BuildSeed()
     {
+        yield return new CatalogEntry
+        {
+            Category = string.Empty,
+            Kind = CatalogEntryKind.Registry,
+            Name = "Registry",
+            Description = "Curated Windows registry values that are frequently changed by hand.",
+            ShortTag = "Registry",
+            IsUserDefined = false,
+        };
+
+        yield return new CatalogEntry
+        {
+            Category = string.Empty,
+            Kind = CatalogEntryKind.VisualStudio,
+            Name = "Visual Studio",
+            Description = "Installed Visual Studio SKUs together with their hives and extensions.",
+            ShortTag = "Visual Studio",
+            IsUserDefined = false,
+        };
+
         foreach (CatalogEntry entry in BuildSystemSeed())
         {
             yield return entry;
@@ -291,25 +311,6 @@ public sealed class CatalogService : ICatalogService
 
     private static IEnumerable<CatalogEntry> BuildDeveloperSeed()
     {
-        yield return Folder(CategoryDeveloper,
-            "Visual Studio 2022",
-            "Per-version VS settings + Documents\\Visual Studio 2022 templates, snippets, exports. User secrets and NuGet config.",
-            [
-                @"%LOCALAPPDATA%\Microsoft\VisualStudio\17.0_<wildcard>",
-                @"%USERPROFILE%\Documents\Visual Studio 2022",
-                @"%APPDATA%\Microsoft\UserSecrets",
-                @"%APPDATA%\NuGet",
-            ],
-            [
-                ".sln", ".slnx", ".csproj", ".vbproj", ".fsproj", ".cs", ".vb", ".fs",
-                ".xaml", ".axaml", ".resx", ".settings", ".datasource", ".editorconfig",
-                ".ruleset", ".json", ".config", ".props", ".targets",
-                ".vssettings", ".snippet", ".vsix", ".user",
-                ".db", ".sqlite", ".sqlite3",
-            ],
-            recursive: true,
-            shortTag: "Visual Studio");
-
         yield return Folder(CategoryDeveloper,
             "Visual Studio – ASP.NET / web",
             "IIS Express config (Documents\\IISExpress\\config) and web project artifacts. The user cert store has to be re-exported via certmgr.msc.",

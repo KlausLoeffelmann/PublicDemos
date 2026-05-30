@@ -30,6 +30,8 @@ internal static class Program
             .AddWinFormsExceptionService();
 
         builder.Services.AddSingleton<IFileTypeMap, FileTypeMap>();
+        builder.Services.AddSingleton<IRegistryCatalog, RegistryCatalog>();
+        builder.Services.AddSingleton<IVisualStudioDiscovery, VisualStudioDiscovery>();
         builder.Services.AddSingleton<ICatalogService, CatalogService>();
         builder.Services.AddSingleton<IDiscoveryService, DiscoveryService>();
         builder.Services.AddSingleton<IBackupService, BackupService>();
@@ -40,4 +42,3 @@ internal static class Program
         app.Run();
     }
 }
-

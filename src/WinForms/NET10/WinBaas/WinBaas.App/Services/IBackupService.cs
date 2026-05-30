@@ -8,12 +8,11 @@ namespace WinBaas.Services;
 public interface IBackupService
 {
     /// <summary>
-    ///  Performs the backup of <paramref name="items"/> per <paramref name="options"/>.
+    ///  Performs the backup of <paramref name="selection"/> per <paramref name="options"/>.
     /// </summary>
     Task<BackupResult> BackupAsync(
-        IReadOnlyList<DiscoveredItem> items,
+        BackupSelection selection,
         BackupOptions options,
         IProgress<string>? progress = null,
         CancellationToken cancellationToken = default);
 }
-
