@@ -36,17 +36,17 @@ public sealed partial class FrmMain
         _tsbAdd.ConfigureItem(
             symbol: FluentSymbols.AllSymbols.AddBold,
             eventHandler: (AddObjectCommand, removeBeforeAdd: true),
-            tooltipText: "Add object\u2026");
+            tooltipText: "Add object…");
 
         _tsbDelete.ConfigureItem(
             symbol: FluentSymbols.AllSymbols.Delete,
             eventHandler: (DeleteObjectCommand, removeBeforeAdd: true),
-            tooltipText: "Delete object\u2026");
+            tooltipText: "Delete object…");
 
         _tsbOptions.ConfigureItem(
             symbol: FluentSymbols.AllSymbols.Settings,
             eventHandler: (OptionsCommand, removeBeforeAdd: true),
-            tooltipText: "Options\u2026");
+            tooltipText: "Options…");
 
         _menuFileDiscover.Click += DiscoverCommand;
         _menuFileBackup.Click += BackupCommand;
@@ -54,13 +54,25 @@ public sealed partial class FrmMain
         _menuCatalogDelete.Click += DeleteObjectCommand;
         _menuCatalogRestore.Click += RestoreDefaultsCommand;
         _menuToolsOptions.Click += OptionsCommand;
+        _menuViewExpandAll.Click += (_, _) => _treeSources.ExpandAll();
+        _menuViewCollapseAll.Click += (_, _) => _treeSources.CollapseAll();
+        _menuViewExpandSelected.Click += (_, _) =>
+        {
+            if (_treeSources.SelectedNode is { } node)
+            {
+                node.ExpandAll();
+            }
+        };
 
         UpdateCommandStates();
     }
 
     private void UpdateCommandStates()
     {
-        bool hasSelection = _nodeItems.Values.Any(items => items.Any(i => i.IsChecked));
+        bool hasSelection = _nodeItems.Values.Any(items => items.Any(item => item.IsChecked))
+            || _registryItems.Any(item => item.IsChecked && item.IsPresent)
+            || _visualStudioSkus.Any(sku => sku.IsChecked);
+
         _tsbBackup.Enabled = !_discovering && hasSelection;
         _menuFileBackup.Enabled = _tsbBackup.Enabled;
         _tsbDiscover.Enabled = !_discovering;
@@ -82,7 +94,7 @@ public sealed partial class FrmMain
         _discovering = true;
         _statusProgress.Visible = true;
         _statusProgress.Style = ProgressBarStyle.Marquee;
-        _statusInfo.Text = "Discovering\u2026";
+        _statusInfo.Text = "Discovering…";
         UpdateCommandStates();
 
         _discoveryCts?.Dispose();
@@ -92,7 +104,8 @@ public sealed partial class FrmMain
         try
         {
             await Task.Yield();
-            foreach (TreeNode leaf in EnumerateLeafNodes(_treeSources.Nodes).ToArray())
+
+            foreach (TreeNode leaf in EnumerateCatalogLeafNodes(_treeSources.Nodes).ToArray())
             {
                 if (ct.IsCancellationRequested)
                 {
@@ -104,7 +117,7 @@ public sealed partial class FrmMain
                     continue;
                 }
 
-                _statusInfo.Text = $"Discovering {entry.Name}\u2026";
+                _statusInfo.Text = $"Discovering {entry.Name}…";
                 IReadOnlyList<DiscoveredItem> items = await _discovery.DiscoverAsync(entry, ct);
                 _nodeItems[leaf] = [.. items];
 
@@ -112,9 +125,32 @@ public sealed partial class FrmMain
                 leaf.ForeColor = items.Count == 0 ? SystemColors.GrayText : SystemColors.ControlText;
             }
 
-            _statusInfo.Text = $"Discovered {_nodeItems.Values.Sum(v => v.Count)} item(s).";
-            _logger.LogInformation("Discovery complete: {Count} item(s).",
-                _nodeItems.Values.Sum(v => v.Count));
+            if (_registryRootNode is not null)
+            {
+                _statusInfo.Text = "Discovering Registry…";
+                _registryItems = await _registryDiscovery.DiscoverAsync(ct);
+                int presentCount = _registryItems.Count(item => item.IsPresent);
+                _registryRootNode.Text = _registryItems.Count == 0
+                    ? "Registry"
+                    : $"Registry ({presentCount}/{_registryItems.Count})";
+                _registryRootNode.ForeColor = presentCount == 0 ? SystemColors.GrayText : SystemColors.ControlText;
+            }
+
+            if (_visualStudioRootNode is not null)
+            {
+                _statusInfo.Text = "Discovering Visual Studio…";
+                _visualStudioSkus = await _visualStudioDiscovery.DiscoverAsync(ct);
+                PopulateVisualStudioTree();
+            }
+
+            _statusInfo.Text = $"Discovered {_nodeItems.Values.Sum(value => value.Count)} file item(s), {_registryItems.Count} registry value(s), {_visualStudioSkus.Count} Visual Studio SKU(s).";
+            _logger.LogInformation(
+                "Discovery complete: {Files} file item(s), {Registry} registry value(s), {VisualStudio} Visual Studio SKU(s).",
+                _nodeItems.Values.Sum(value => value.Count),
+                _registryItems.Count,
+                _visualStudioSkus.Count);
+
+            RefreshDetailFromSelectedNode();
         }
         catch (Exception ex)
         {
@@ -132,29 +168,34 @@ public sealed partial class FrmMain
 
     private async void BackupCommand(object? sender, EventArgs e)
     {
-        var selected = _nodeItems.Values
-            .SelectMany(list => list)
-            .Where(item => item.IsChecked)
-            .ToList();
+        var selection = new BackupSelection
+        {
+            FileItems = _nodeItems.Values
+                .SelectMany(list => list)
+                .Where(item => item.IsChecked)
+                .ToList(),
+            RegistryItems = _registryItems,
+            VisualStudioSkus = _visualStudioSkus,
+        };
 
-        if (selected.Count == 0)
+        if (selection.IsEmpty)
         {
             return;
         }
 
-        var options = ChooseBackupDestination();
+        BackupOptions? options = ChooseBackupDestination();
         if (options is null)
         {
             return;
         }
 
-        _statusInfo.Text = $"Backing up {selected.Count} item(s)\u2026";
+        _statusInfo.Text = $"Backing up {selection.SelectedCount} selection(s)…";
         _statusProgress.Visible = true;
         _statusProgress.Style = ProgressBarStyle.Marquee;
         try
         {
             var progress = new Progress<string>(msg => _statusInfo.Text = msg);
-            BackupResult result = await _backup.BackupAsync(selected, options, progress);
+            BackupResult result = await _backup.BackupAsync(selection, options, progress);
             _statusInfo.Text = $"Backup complete: {result.FinalDestination}";
             _logger.LogInformation(
                 "Backup written to {Destination}. Report: {ReportPath}",
@@ -178,7 +219,7 @@ public sealed partial class FrmMain
 
     private BackupOptions? ChooseBackupDestination()
     {
-        var stored = _settings.Get<BackupMode>("WinBaas.BackupMode", BackupMode.CopyToFolder);
+        BackupMode stored = _settings.Get("WinBaas.BackupMode", BackupMode.CopyToFolder);
         if (stored == BackupMode.ZipArchive)
         {
             using var dlg = new FolderBrowserDialog

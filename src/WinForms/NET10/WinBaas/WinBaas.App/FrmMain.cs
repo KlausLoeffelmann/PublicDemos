@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using WarpToolkit.Desktop.AppServices;
+using WinBaas.Controls;
 using WinBaas.Models;
 using WinBaas.Services;
 
@@ -7,8 +8,8 @@ namespace WinBaas;
 
 /// <summary>
 ///  The main WinBaas window: MenuStrip + ToolStrip on top, SplitContainer
-///  (TreeView | DataGridView+FluentTabControl) in the middle, StatusStrip at
-///  the bottom.
+///  (TreeView | pluggable detail view + FluentTabControl) in the middle, and a
+///  StatusStrip at the bottom.
 /// </summary>
 public sealed partial class FrmMain : Form
 {
@@ -16,20 +17,32 @@ public sealed partial class FrmMain : Form
     private const string SettingsKeyWindowState = "FrmMain.WindowState";
     private const string SettingsKeySplitOuter = "FrmMain.SplitOuter";
     private const string SettingsKeySplitInner = "FrmMain.SplitInner";
-    private const string SettingsKeyTreeExpandedEntries = "WinBaas.Tree.ExpandedEntries";
-    private const string SettingsKeyTreeExpandedCategories = "WinBaas.Tree.ExpandedCategories";
+    private const string SettingsKeyTreeExpandedCategories = "WinBaas.Tree.ExpandedEntries";
+    private const string SettingsKeyTreeExpandedEntries = "WinBaas.Tree.ExpandedNodes";
     private const string SettingsKeyTreeSelectedEntry = "WinBaas.Tree.SelectedEntry";
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ICatalogService _catalog;
     private readonly IDiscoveryService _discovery;
+    private readonly IRegistryDiscovery _registryDiscovery;
+    private readonly IVisualStudioDiscovery _visualStudioDiscovery;
     private readonly IBackupService _backup;
     private readonly ConsoleLoggerSink _consoleSink;
     private readonly ILogger<FrmMain> _logger;
     private readonly IWinFormsAppExceptionService _exceptionService;
     private readonly WarpToolkit.ComponentModel.IUserSettingsService _settings;
+    private readonly FilesGridControl _filesGridControl;
+    private readonly RegistryGridControl _registryGridControl;
+    private readonly VsOverviewControl _vsOverviewControl;
+    private readonly VsHivesControl _vsHivesControl;
+    private readonly VsExtensionsControl _vsExtensionsControl;
 
     private readonly Dictionary<TreeNode, List<DiscoveredItem>> _nodeItems = new();
+    private IReadOnlyList<RegistryDiscoveredItem> _registryItems = [];
+    private IReadOnlyList<VsSku> _visualStudioSkus = [];
+    private Control? _activeDetailControl;
+    private TreeNode? _registryRootNode;
+    private TreeNode? _visualStudioRootNode;
     private bool _syncing;
 
     /// <summary>
@@ -40,6 +53,8 @@ public sealed partial class FrmMain : Form
         IServiceProvider serviceProvider,
         ICatalogService catalog,
         IDiscoveryService discovery,
+        IRegistryDiscovery registryDiscovery,
+        IVisualStudioDiscovery visualStudioDiscovery,
         IBackupService backup,
         ConsoleLoggerSink consoleSink,
         IWinFormsAppExceptionService exceptionService,
@@ -49,6 +64,8 @@ public sealed partial class FrmMain : Form
         _serviceProvider = serviceProvider;
         _catalog = catalog;
         _discovery = discovery;
+        _registryDiscovery = registryDiscovery;
+        _visualStudioDiscovery = visualStudioDiscovery;
         _backup = backup;
         _consoleSink = consoleSink;
         _exceptionService = exceptionService;
@@ -57,13 +74,18 @@ public sealed partial class FrmMain : Form
 
         InitializeComponent();
 
+        _filesGridControl = new FilesGridControl();
+        _registryGridControl = new RegistryGridControl();
+        _vsOverviewControl = new VsOverviewControl();
+        _vsHivesControl = new VsHivesControl();
+        _vsExtensionsControl = new VsExtensionsControl();
+
+        InitializeDetailControls();
+
         Load += FrmMain_Load;
         FormClosing += FrmMain_FormClosing;
         _treeSources.AfterSelect += TreeSources_AfterSelect;
         _treeSources.AfterCheck += TreeSources_AfterCheck;
-        _grid.CellValueChanged += Grid_CellValueChanged;
-        _grid.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
-        _grid.SelectionChanged += Grid_SelectionChanged;
         _menuFileExit.Click += (_, _) => Close();
     }
 
@@ -75,12 +97,43 @@ public sealed partial class FrmMain : Form
             new ServiceContainer(),
             new DesignTimeCatalog(),
             new DesignTimeDiscovery(),
+            new DesignTimeRegistryDiscovery(),
+            new DesignTimeVisualStudioDiscovery(),
             new DesignTimeBackup(),
             new ConsoleLoggerSink(),
             new DesignTimeExceptionService(),
             new DesignTimeSettings(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<FrmMain>.Instance)
     {
+    }
+
+    private void InitializeDetailControls()
+    {
+        Control[] controls = [_filesGridControl, _registryGridControl, _vsOverviewControl, _vsHivesControl, _vsExtensionsControl];
+        foreach (Control control in controls)
+        {
+            control.Dock = DockStyle.Fill;
+            control.Visible = false;
+            _detailHost.Controls.Add(control);
+        }
+
+        _filesGridControl.CheckedItemsChanged += FilesGridControl_CheckedItemsChanged;
+        _filesGridControl.SelectionSizeChanged += (_, text) => _statusSize.Text = text;
+        _registryGridControl.CheckedItemsChanged += RegistryGridControl_CheckedItemsChanged;
+        _registryGridControl.StatusTextChanged += (_, text) =>
+        {
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                _statusInfo.Text = text;
+            }
+        };
+        _vsHivesControl.StatusTextChanged += (_, text) =>
+        {
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                _statusInfo.Text = text;
+            }
+        };
     }
 
     private void FrmMain_Load(object? sender, EventArgs e)
@@ -92,40 +145,20 @@ public sealed partial class FrmMain : Form
         RestoreWindowState();
         PopulateSourceTree();
         RestoreTreeState();
+        ShowDetail(_filesGridControl);
         _logger.LogInformation("WinBaas ready.");
     }
 
     /// <summary>
-    ///  Re-colors the controls that don't auto-theme under WARP's
-    ///  <see cref="SystemColorMode"/>. Currently: the DataGridView column
-    ///  header band, which keeps a bright fallback style otherwise.
+    ///  Re-colors the controls that do not auto-theme.
     /// </summary>
     private void ApplyColorMode()
     {
         bool dark = Application.IsDarkModeEnabled;
-
-        _grid.EnableHeadersVisualStyles = false;
-        _grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-        _grid.ColumnHeadersDefaultCellStyle.BackColor = dark
-            ? Color.FromArgb(0x2D, 0x2D, 0x30)
-            : SystemColors.Control;
-        _grid.ColumnHeadersDefaultCellStyle.ForeColor = dark
-            ? Color.Gainsboro
-            : SystemColors.ControlText;
-        _grid.ColumnHeadersDefaultCellStyle.SelectionBackColor =
-            _grid.ColumnHeadersDefaultCellStyle.BackColor;
-        _grid.ColumnHeadersDefaultCellStyle.SelectionForeColor =
-            _grid.ColumnHeadersDefaultCellStyle.ForeColor;
-        _grid.ColumnHeadersDefaultCellStyle.Font = new Font(_grid.Font, FontStyle.Regular);
-
-        _grid.BackgroundColor = dark ? Color.FromArgb(0x1E, 0x1E, 0x1E) : SystemColors.Window;
-        _grid.GridColor = dark ? Color.FromArgb(0x3F, 0x3F, 0x46) : SystemColors.ControlDark;
-        _grid.DefaultCellStyle.BackColor = dark ? Color.FromArgb(0x25, 0x25, 0x26) : SystemColors.Window;
-        _grid.DefaultCellStyle.ForeColor = dark ? Color.Gainsboro : SystemColors.WindowText;
-        _grid.DefaultCellStyle.SelectionBackColor = dark
-            ? Color.FromArgb(0x37, 0x37, 0x3D)
-            : SystemColors.Highlight;
-        _grid.DefaultCellStyle.SelectionForeColor = dark ? Color.White : SystemColors.HighlightText;
+        _filesGridControl.ApplyColorMode(dark);
+        _registryGridControl.ApplyColorMode(dark);
+        _vsOverviewControl.ApplyColorMode(dark);
+        _vsExtensionsControl.ApplyColorMode(dark);
     }
 
     private void FrmMain_FormClosing(object? sender, FormClosingEventArgs e)
@@ -153,9 +186,51 @@ public sealed partial class FrmMain : Form
         {
             _treeSources.Nodes.Clear();
             _nodeItems.Clear();
+            _registryRootNode = null;
+            _visualStudioRootNode = null;
 
-            var grouped = _catalog.GetAll().GroupBy(e => e.Category ?? string.Empty);
-            foreach (var group in grouped.OrderBy(g => CategoryOrder(g.Key)))
+            CatalogEntry? registryEntry = null;
+            CatalogEntry? visualStudioEntry = null;
+            var standardEntries = new List<CatalogEntry>();
+
+            foreach (CatalogEntry entry in _catalog.GetAll())
+            {
+                switch (entry.Kind)
+                {
+                    case CatalogEntryKind.Registry:
+                        registryEntry = entry;
+                        break;
+                    case CatalogEntryKind.VisualStudio:
+                        visualStudioEntry = entry;
+                        break;
+                    default:
+                        standardEntries.Add(entry);
+                        break;
+                }
+            }
+
+            if (registryEntry is not null)
+            {
+                _registryRootNode = new TreeNode(registryEntry.Name)
+                {
+                    Tag = new RegistryGroupTag(registryEntry),
+                    ToolTipText = registryEntry.Description,
+                };
+                _treeSources.Nodes.Add(_registryRootNode);
+            }
+
+            if (visualStudioEntry is not null)
+            {
+                _visualStudioRootNode = new TreeNode(visualStudioEntry.Name)
+                {
+                    Tag = new VsRootTag(visualStudioEntry),
+                    ToolTipText = visualStudioEntry.Description,
+                };
+                _treeSources.Nodes.Add(_visualStudioRootNode);
+            }
+
+            var grouped = standardEntries.GroupBy(entry => entry.Category ?? string.Empty);
+            foreach (var group in grouped.OrderBy(group => CategoryOrder(group.Key)))
             {
                 var categoryNode = new TreeNode(group.Key)
                 {
@@ -163,7 +238,7 @@ public sealed partial class FrmMain : Form
                     Tag = new CategoryTag(group.Key),
                 };
 
-                foreach (CatalogEntry entry in group.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase))
+                foreach (CatalogEntry entry in group.OrderBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase))
                 {
                     var leaf = new TreeNode(entry.Name)
                     {
@@ -182,10 +257,61 @@ public sealed partial class FrmMain : Form
         }
     }
 
+    private void PopulateVisualStudioTree()
+    {
+        if (_visualStudioRootNode is null)
+        {
+            return;
+        }
+
+        _visualStudioRootNode.Nodes.Clear();
+        foreach (VsSku sku in _visualStudioSkus)
+        {
+            var skuNode = new TreeNode(sku.NodeLabel)
+            {
+                Tag = sku,
+                Checked = sku.IsChecked,
+                ToolTipText = sku.SettingsPath,
+            };
+
+            skuNode.Nodes.Add(new TreeNode("Hives")
+            {
+                Tag = new VsHivesTag(sku),
+                Checked = sku.IsChecked,
+            });
+            skuNode.Nodes.Add(new TreeNode("Extensions")
+            {
+                Tag = new VsExtensionsTag(sku),
+                Checked = sku.IsChecked,
+            });
+
+            _visualStudioRootNode.Nodes.Add(skuNode);
+        }
+
+        _visualStudioRootNode.Text = _visualStudioSkus.Count == 0
+            ? "Visual Studio"
+            : $"Visual Studio ({_visualStudioSkus.Count})";
+        _visualStudioRootNode.ForeColor = _visualStudioSkus.Count == 0
+            ? SystemColors.GrayText
+            : SystemColors.ControlText;
+    }
+
     /// <summary>
     ///  Marker that a tree node represents a category root (not a leaf entry).
     /// </summary>
     private sealed record CategoryTag(string Name);
+
+    /// <summary>A marker for the top-level Registry branch.</summary>
+    private sealed record RegistryGroupTag(CatalogEntry Entry);
+
+    /// <summary>A marker for the top-level Visual Studio branch.</summary>
+    private sealed record VsRootTag(CatalogEntry Entry);
+
+    /// <summary>A marker for the hives child node of a Visual Studio SKU.</summary>
+    private sealed record VsHivesTag(VsSku Sku);
+
+    /// <summary>A marker for the extensions child node of a Visual Studio SKU.</summary>
+    private sealed record VsExtensionsTag(VsSku Sku);
 
     private static int CategoryOrder(string category) => category switch
     {
@@ -240,42 +366,40 @@ public sealed partial class FrmMain : Form
 
     private void RestoreTreeState()
     {
-        string expandedCats = _settings.Get(SettingsKeyTreeExpandedCategories, string.Empty);
-        var expandedCatSet = expandedCats
-            .Split('|', StringSplitOptions.RemoveEmptyEntries)
+        string expandedRoots = _settings.Get(SettingsKeyTreeExpandedCategories, string.Empty);
+        var expandedRootSet = expandedRoots
+            .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        string expandedEntries = _settings.Get(SettingsKeyTreeExpandedEntries, string.Empty);
-        var expandedEntrySet = expandedEntries
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => Guid.TryParse(s, out var g) ? g : Guid.Empty)
-            .Where(g => g != Guid.Empty)
-            .ToHashSet();
+        string expandedNodes = _settings.Get(SettingsKeyTreeExpandedEntries, string.Empty);
+        var expandedNodeSet = expandedNodes
+            .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        Guid selectedEntry = Guid.TryParse(_settings.Get(SettingsKeyTreeSelectedEntry, string.Empty), out var sel)
-            ? sel
-            : Guid.Empty;
+        string selectedKey = _settings.Get(SettingsKeyTreeSelectedEntry, string.Empty);
 
         foreach (TreeNode node in _treeSources.Nodes)
         {
-            if (node.Tag is CategoryTag cat && expandedCatSet.Contains(cat.Name))
+            string? key = GetNodePersistenceKey(node);
+            if (!string.IsNullOrEmpty(key) && expandedRootSet.Contains(key))
             {
                 node.Expand();
             }
 
-            foreach (TreeNode child in node.Nodes)
+            foreach (TreeNode descendant in EnumerateNodes(node.Nodes))
             {
-                if (child.Tag is CatalogEntry e && expandedEntrySet.Contains(e.Id))
+                string? descendantKey = GetNodePersistenceKey(descendant);
+                if (!string.IsNullOrEmpty(descendantKey) && expandedNodeSet.Contains(descendantKey))
                 {
-                    child.Expand();
+                    descendant.Expand();
                 }
             }
         }
 
-        if (selectedEntry != Guid.Empty)
+        if (!string.IsNullOrWhiteSpace(selectedKey))
         {
-            TreeNode? match = EnumerateLeafNodes(_treeSources.Nodes)
-                .FirstOrDefault(n => n.Tag is CatalogEntry e && e.Id == selectedEntry);
+            TreeNode? match = EnumerateNodes(_treeSources.Nodes)
+                .FirstOrDefault(node => string.Equals(GetNodePersistenceKey(node), selectedKey, StringComparison.OrdinalIgnoreCase));
             if (match is not null)
             {
                 _treeSources.SelectedNode = match;
@@ -288,29 +412,29 @@ public sealed partial class FrmMain : Form
     {
         try
         {
-            var expandedCategories = new List<string>();
-            var expandedEntries = new List<string>();
+            var expandedRoots = new List<string>();
+            var expandedNodes = new List<string>();
             foreach (TreeNode node in _treeSources.Nodes)
             {
-                if (node.Tag is CategoryTag cat && node.IsExpanded)
+                string? key = GetNodePersistenceKey(node);
+                if (!string.IsNullOrEmpty(key) && node.IsExpanded)
                 {
-                    expandedCategories.Add(cat.Name);
+                    expandedRoots.Add(key);
                 }
 
-                foreach (TreeNode child in node.Nodes)
+                foreach (TreeNode descendant in EnumerateNodes(node.Nodes))
                 {
-                    if (child.Tag is CatalogEntry e && child.IsExpanded)
+                    string? descendantKey = GetNodePersistenceKey(descendant);
+                    if (!string.IsNullOrEmpty(descendantKey) && descendant.IsExpanded)
                     {
-                        expandedEntries.Add(e.Id.ToString());
+                        expandedNodes.Add(descendantKey);
                     }
                 }
             }
 
-            _settings.Set(SettingsKeyTreeExpandedCategories, string.Join('|', expandedCategories));
-            _settings.Set(SettingsKeyTreeExpandedEntries, string.Join(',', expandedEntries));
-            _settings.Set(
-                SettingsKeyTreeSelectedEntry,
-                _treeSources.SelectedNode?.Tag is CatalogEntry sel ? sel.Id.ToString() : string.Empty);
+            _settings.Set(SettingsKeyTreeExpandedCategories, string.Join('|', expandedRoots));
+            _settings.Set(SettingsKeyTreeExpandedEntries, string.Join('|', expandedNodes));
+            _settings.Set(SettingsKeyTreeSelectedEntry, GetNodePersistenceKey(_treeSources.SelectedNode));
             _settings.Flush();
         }
         catch (Exception ex)
@@ -318,6 +442,45 @@ public sealed partial class FrmMain : Form
             _logger.LogWarning(ex, "Could not persist tree state.");
         }
     }
+
+    private void ShowDetail(Control control)
+    {
+        if (ReferenceEquals(_activeDetailControl, control))
+        {
+            return;
+        }
+
+        foreach (Control child in _detailHost.Controls)
+        {
+            child.Visible = ReferenceEquals(child, control);
+        }
+
+        _activeDetailControl = control;
+    }
+
+    private static IEnumerable<TreeNode> EnumerateNodes(TreeNodeCollection nodes)
+    {
+        foreach (TreeNode node in nodes)
+        {
+            yield return node;
+            foreach (TreeNode descendant in EnumerateNodes(node.Nodes))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
+    private static string? GetNodePersistenceKey(TreeNode? node) => node?.Tag switch
+    {
+        CategoryTag tag => $"cat:{tag.Name}",
+        CatalogEntry entry => $"entry:{entry.Id}",
+        RegistryGroupTag _ => "root:registry",
+        VsRootTag _ => "root:visualstudio",
+        VsSku sku => $"vs:{sku.Key}",
+        VsHivesTag hivesTag => $"vs:{hivesTag.Sku.Key}:hives",
+        VsExtensionsTag extensionsTag => $"vs:{extensionsTag.Sku.Key}:extensions",
+        _ => null,
+    };
 
     // --- Designer-only stand-ins --------------------------------------------------
 
@@ -341,9 +504,21 @@ public sealed partial class FrmMain : Form
             => Task.FromResult<IReadOnlyList<DiscoveredItem>>([]);
     }
 
+    private sealed class DesignTimeRegistryDiscovery : IRegistryDiscovery
+    {
+        public Task<IReadOnlyList<RegistryDiscoveredItem>> DiscoverAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<RegistryDiscoveredItem>>([]);
+    }
+
+    private sealed class DesignTimeVisualStudioDiscovery : IVisualStudioDiscovery
+    {
+        public Task<IReadOnlyList<VsSku>> DiscoverAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<VsSku>>([]);
+    }
+
     private sealed class DesignTimeBackup : IBackupService
     {
-        public Task<BackupResult> BackupAsync(IReadOnlyList<DiscoveredItem> items, BackupOptions options, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+        public Task<BackupResult> BackupAsync(BackupSelection selection, BackupOptions options, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
             => Task.FromResult(new BackupResult(options.Destination, options.Destination, Guid.Empty, 0));
     }
 
