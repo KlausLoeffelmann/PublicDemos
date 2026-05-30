@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using WinBaas.Models;
 
 namespace WinBaas.Services;
@@ -9,22 +10,30 @@ namespace WinBaas.Services;
 /// <inheritdoc cref="IBackupService"/>
 public sealed class BackupService(ILogger<BackupService> logger) : IBackupService
 {
+    private static readonly string[] s_visualStudioCacheDirectories =
+    [
+        "ComponentModelCache",
+        "Backup Files",
+        "ImageLibrary",
+        "MEFCache",
+    ];
+
     private readonly ILogger<BackupService> _logger = logger;
 
     /// <inheritdoc />
     public Task<BackupResult> BackupAsync(
-        IReadOnlyList<DiscoveredItem> items,
+        BackupSelection selection,
         BackupOptions options,
         IProgress<string>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(selection);
         ArgumentNullException.ThrowIfNull(options);
 
         return options.Mode switch
         {
-            BackupMode.ZipArchive => Task.Run(() => ZipToArchive(items, options, progress, cancellationToken), cancellationToken),
-            _ => Task.Run(() => CopyToFolder(items, options, progress, cancellationToken), cancellationToken),
+            BackupMode.ZipArchive => Task.Run(() => ZipToArchive(selection, options, progress, cancellationToken), cancellationToken),
+            _ => Task.Run(() => CopyToFolder(selection, options, progress, cancellationToken), cancellationToken),
         };
     }
 
@@ -47,7 +56,7 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
     }
 
     private BackupResult CopyToFolder(
-        IReadOnlyList<DiscoveredItem> items,
+        BackupSelection selection,
         BackupOptions options,
         IProgress<string>? progress,
         CancellationToken ct)
@@ -56,13 +65,124 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
         string finalDir = Path.Combine(options.Destination, BuildStampName(stamp));
         Directory.CreateDirectory(finalDir);
 
-        // Create the report file *first* so its CreationTime is captured at
-        // the moment the backup truly began. We fill its content last.
+        BackupMaterial material = PopulateFolderLayout(selection, finalDir, BackupMode.CopyToFolder, progress, ct);
+        string content = BuildReport(material.ReportId, material.ReportCreatedAt, BackupMode.CopyToFolder, finalDir, material.Entries, material.SpecialSections);
+        File.WriteAllText(material.ReportPath, content, Encoding.UTF8);
+        File.SetCreationTime(material.ReportPath, material.ReportCreatedAt);
+
+        progress?.Report($"Report written: {material.ReportPath}");
+        return new BackupResult(finalDir, material.ReportPath, material.ReportId, material.Entries.Count(entry => entry.Copied));
+    }
+
+    private BackupResult ZipToArchive(
+        BackupSelection selection,
+        BackupOptions options,
+        IProgress<string>? progress,
+        CancellationToken ct)
+    {
+        DateTimeOffset stamp = DateTimeOffset.Now;
+        string root = Path.GetDirectoryName(options.Destination) ?? options.Destination;
+        if (string.IsNullOrEmpty(root))
+        {
+            root = options.Destination;
+        }
+
+        Directory.CreateDirectory(root);
+        string stagingFolder = Path.Combine(root, BuildStampName(stamp));
+        if (Directory.Exists(stagingFolder))
+        {
+            Directory.Delete(stagingFolder, recursive: true);
+        }
+
+        BackupMaterial material = PopulateFolderLayout(selection, stagingFolder, BackupMode.ZipArchive, progress, ct);
+        string content = BuildReport(material.ReportId, material.ReportCreatedAt, BackupMode.ZipArchive, stagingFolder, material.Entries, material.SpecialSections);
+        File.WriteAllText(material.ReportPath, content, Encoding.UTF8);
+        File.SetCreationTime(material.ReportPath, material.ReportCreatedAt);
+
+        string destination = Path.Combine(root, BuildStampName(stamp) + ".zip");
+        if (File.Exists(destination))
+        {
+            File.Delete(destination);
+        }
+
+        ZipFile.CreateFromDirectory(stagingFolder, destination, CompressionLevel.Optimal, includeBaseDirectory: false);
+
+        string externalReportPath = Path.Combine(root, $"WinBaas-{material.ReportId}.md");
+        File.Copy(material.ReportPath, externalReportPath, overwrite: true);
+        File.SetCreationTime(externalReportPath, material.ReportCreatedAt);
+
+        try
+        {
+            Directory.Delete(stagingFolder, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not remove temporary folder {Folder} after creating ZIP backup.", stagingFolder);
+        }
+
+        progress?.Report($"Report written: {externalReportPath}");
+        return new BackupResult(destination, externalReportPath, material.ReportId, material.Entries.Count(entry => entry.Copied));
+    }
+
+    private BackupMaterial PopulateFolderLayout(
+        BackupSelection selection,
+        string finalDir,
+        BackupMode mode,
+        IProgress<string>? progress,
+        CancellationToken ct)
+    {
+        Directory.CreateDirectory(finalDir);
+
         Guid reportId = Guid.NewGuid();
         string reportPath = Path.Combine(finalDir, $"WinBaas-{reportId}.md");
         File.Create(reportPath).Dispose();
         DateTime reportCreatedAt = File.GetCreationTime(reportPath);
 
+        List<BackupEntry> entries = CopyRegularFiles(selection.FileItems, finalDir, progress, ct);
+        var specialSections = new List<string>();
+
+        if (selection.RegistryItems.Any(item => item.IsChecked && item.IsPresent))
+        {
+            string registryFolder = WriteRegistryBackup(finalDir, selection.RegistryItems, progress);
+            specialSections.Add(
+                string.Join(Environment.NewLine,
+                    "## Registry Backup",
+                    string.Empty,
+                    $"- Folder: `{registryFolder}`",
+                    $"- Selected values: {selection.RegistryItems.Count(item => item.IsChecked && item.IsPresent)}",
+                    $"- Catalog values emitted as comments: {selection.RegistryItems.Count(item => !item.IsPresent)}",
+                    string.Empty));
+        }
+
+        IReadOnlyList<VsSku> selectedSkus = selection.VisualStudioSkus.Where(sku => sku.IsChecked).ToList();
+        if (selectedSkus.Count > 0)
+        {
+            string visualStudioFolder = BackupVisualStudioSkus(finalDir, selectedSkus, progress, ct);
+            var sb = new StringBuilder();
+            sb.AppendLine("## Visual Studio");
+            sb.AppendLine();
+            sb.Append("- Folder: `").Append(visualStudioFolder).AppendLine("`");
+            sb.Append("- Selected SKUs: ").AppendLine(selectedSkus.Count.ToString(CultureInfo.InvariantCulture));
+            sb.AppendLine();
+            foreach (VsSku sku in selectedSkus)
+            {
+                sb.Append("- ").Append(sku.NodeLabel)
+                    .Append(" — ").Append(sku.Hives.Count.ToString(CultureInfo.InvariantCulture)).Append(" hive(s), ")
+                    .Append(sku.Extensions.Count.ToString(CultureInfo.InvariantCulture)).AppendLine(" extension(s)");
+            }
+            sb.AppendLine();
+            specialSections.Add(sb.ToString());
+        }
+
+        return new BackupMaterial(reportId, reportPath, reportCreatedAt, entries, specialSections);
+    }
+
+    private List<BackupEntry> CopyRegularFiles(
+        IReadOnlyList<DiscoveredItem> items,
+        string finalDir,
+        IProgress<string>? progress,
+        CancellationToken ct)
+    {
         var entries = new List<BackupEntry>(items.Count);
         for (int i = 0; i < items.Count; i++)
         {
@@ -95,88 +215,220 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
             }
         }
 
-        string content = BuildReport(reportId, reportCreatedAt, BackupMode.CopyToFolder, finalDir, entries);
-        File.WriteAllText(reportPath, content, Encoding.UTF8);
-        File.SetCreationTime(reportPath, reportCreatedAt);
-
-        progress?.Report($"Report written: {reportPath}");
-        return new BackupResult(finalDir, reportPath, reportId, entries.Count(e => e.Copied));
+        return entries;
     }
 
-    private BackupResult ZipToArchive(
-        IReadOnlyList<DiscoveredItem> items,
-        BackupOptions options,
+    private string WriteRegistryBackup(
+        string finalDir,
+        IReadOnlyList<RegistryDiscoveredItem> items,
+        IProgress<string>? progress)
+    {
+        string registryFolder = Path.Combine(finalDir, "Registry Backup");
+        Directory.CreateDirectory(registryFolder);
+
+        string stamp = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        string regPath = Path.Combine(registryFolder, $"WinBaas-Registry-{stamp}.reg");
+        string psPath = Path.Combine(registryFolder, "restore.ps1");
+
+        File.WriteAllText(regPath, BuildRegFile(items), Encoding.Unicode);
+        File.WriteAllText(psPath, BuildPowerShellRestoreScript(items), Encoding.UTF8);
+        progress?.Report($"Wrote registry backup to {registryFolder}");
+        return registryFolder;
+    }
+
+    private string BackupVisualStudioSkus(
+        string finalDir,
+        IReadOnlyList<VsSku> skus,
         IProgress<string>? progress,
         CancellationToken ct)
     {
-        DateTimeOffset stamp = DateTimeOffset.Now;
-        string root = Path.GetDirectoryName(options.Destination) ?? options.Destination;
-        if (string.IsNullOrEmpty(root))
-        {
-            root = options.Destination;
-        }
+        string visualStudioRoot = Path.Combine(finalDir, "Visual Studio");
+        Directory.CreateDirectory(visualStudioRoot);
 
-        Directory.CreateDirectory(root);
-        string archiveName = BuildStampName(stamp) + ".zip";
-        string destination = Path.Combine(root, archiveName);
-        if (File.Exists(destination))
+        foreach (VsSku sku in skus)
         {
-            File.Delete(destination);
-        }
-
-        Guid reportId = Guid.NewGuid();
-        string reportPath = Path.Combine(root, $"WinBaas-{reportId}.md");
-        File.Create(reportPath).Dispose();
-        DateTime reportCreatedAt = File.GetCreationTime(reportPath);
-
-        var entries = new List<BackupEntry>(items.Count);
-        using (var archive = ZipFile.Open(destination, ZipArchiveMode.Create))
-        {
-            foreach (DiscoveredItem item in items)
+            if (ct.IsCancellationRequested)
             {
-                if (ct.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                try
-                {
-                    if (item.IsFolder || !File.Exists(item.FullPath))
-                    {
-                        entries.Add(new BackupEntry(item, item.FullPath, Copied: false, Skipped: true, Reason: "not a regular file"));
-                        continue;
-                    }
-
-                    string entryName = Path.Combine(SafeName(item.Source.Name), item.Name).Replace('\\', '/');
-                    archive.CreateEntryFromFile(item.FullPath, entryName, CompressionLevel.Optimal);
-                    entries.Add(new BackupEntry(item, entryName, Copied: true, Skipped: false, Reason: null));
-                    progress?.Report($"Zipped {item.FullPath}");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to zip {Path}.", item.FullPath);
-                    entries.Add(new BackupEntry(item, item.FullPath, Copied: false, Skipped: true, Reason: ex.Message));
-                    progress?.Report($"Skipped {item.FullPath}: {ex.Message}");
-                }
+                break;
             }
 
-            string content = BuildReport(reportId, reportCreatedAt, BackupMode.ZipArchive, destination, entries);
+            string skuRoot = Path.Combine(visualStudioRoot, SafeName(sku.NodeLabel));
+            string hivesRoot = Path.Combine(skuRoot, "Hives");
+            string extensionsRoot = Path.Combine(skuRoot, "Extensions");
+            Directory.CreateDirectory(hivesRoot);
+            Directory.CreateDirectory(extensionsRoot);
 
-            // Embed the report inside the archive too.
-            ZipArchiveEntry embedded = archive.CreateEntry($"WinBaas-{reportId}.md", CompressionLevel.Optimal);
-            using (var s = embedded.Open())
-            using (var w = new StreamWriter(s, Encoding.UTF8))
+            foreach (VsHive hive in sku.Hives)
             {
-                w.Write(content);
+                if (ct.IsCancellationRequested || !Directory.Exists(hive.FullPath))
+                {
+                    continue;
+                }
+
+                string target = Path.Combine(hivesRoot, SafeName(hive.Name));
+                CopyDirectory(hive.FullPath, target, excludeVisualStudioCaches: true);
+                progress?.Report($"Copied {hive.FullPath}");
             }
 
-            // And alongside the .zip for easy viewing.
-            File.WriteAllText(reportPath, content, Encoding.UTF8);
-            File.SetCreationTime(reportPath, reportCreatedAt);
+            foreach (VsExtension extension in sku.Extensions)
+            {
+                if (ct.IsCancellationRequested || !Directory.Exists(extension.InstallPath))
+                {
+                    continue;
+                }
+
+                string folderName = string.IsNullOrWhiteSpace(extension.FolderName)
+                    ? SafeName(extension.Name)
+                    : SafeName(extension.FolderName);
+                string target = Path.Combine(extensionsRoot, folderName);
+                CopyDirectory(extension.InstallPath, target, excludeVisualStudioCaches: false);
+            }
+
+            File.WriteAllText(Path.Combine(skuRoot, "summary.md"), BuildVisualStudioSummary(sku), Encoding.UTF8);
         }
 
-        progress?.Report($"Report written: {reportPath}");
-        return new BackupResult(destination, reportPath, reportId, entries.Count(e => e.Copied));
+        return visualStudioRoot;
+    }
+
+    private void CopyDirectory(string sourceDirectory, string targetDirectory, bool excludeVisualStudioCaches)
+    {
+        Directory.CreateDirectory(targetDirectory);
+
+        foreach (string directory in Directory.GetDirectories(sourceDirectory))
+        {
+            string name = Path.GetFileName(directory);
+            if (excludeVisualStudioCaches
+                && s_visualStudioCacheDirectories.Contains(name, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            CopyDirectory(directory, Path.Combine(targetDirectory, name), excludeVisualStudioCaches);
+        }
+
+        foreach (string file in Directory.GetFiles(sourceDirectory))
+        {
+            string name = Path.GetFileName(file);
+            if (excludeVisualStudioCaches
+                && name.Equals("ShellPackages.pkgdef", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            File.Copy(file, Path.Combine(targetDirectory, name), overwrite: true);
+        }
+    }
+
+    private static string BuildRegFile(IReadOnlyList<RegistryDiscoveredItem> items)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("Windows Registry Editor Version 5.00");
+        builder.AppendLine();
+
+        foreach (IGrouping<string, RegistryDiscoveredItem> group in items
+                     .Where(item => item.IsChecked && item.IsPresent)
+                     .GroupBy(item => item.Descriptor.RegFileKeyPath, StringComparer.OrdinalIgnoreCase))
+        {
+            builder.Append('[').Append(group.Key).AppendLine("]");
+            foreach (RegistryDiscoveredItem item in group)
+            {
+                builder.Append(item.Descriptor.RegFileValueToken)
+                    .Append('=')
+                    .AppendLine(FormatRegValue(item.Descriptor.ValueKind, item.Value));
+            }
+            builder.AppendLine();
+        }
+
+        foreach (RegistryDiscoveredItem item in items.Where(item => !item.IsPresent))
+        {
+            builder.Append("; missing: ").Append(item.Descriptor.DisplayPath).AppendLine();
+        }
+
+        return builder.ToString();
+    }
+
+    private static string BuildPowerShellRestoreScript(IReadOnlyList<RegistryDiscoveredItem> items)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("Add-Type -AssemblyName Microsoft.Win32.Registry");
+        builder.AppendLine();
+        builder.AppendLine("function Set-WinBaasRegistryValue {");
+        builder.AppendLine("    param(");
+        builder.AppendLine("        [string]$Path,");
+        builder.AppendLine("        [string]$Name,");
+        builder.AppendLine("        [Microsoft.Win32.RegistryValueKind]$Kind,");
+        builder.AppendLine("        [object]$Value");
+        builder.AppendLine("    )");
+        builder.AppendLine("    New-Item -Path $Path -Force | Out-Null");
+        builder.AppendLine("    if ([string]::IsNullOrEmpty($Name)) {");
+        builder.AppendLine("        if ($Kind -eq [Microsoft.Win32.RegistryValueKind]::String) {");
+        builder.AppendLine("            New-Item -Path $Path -Force -Value ([string]$Value) | Out-Null");
+        builder.AppendLine("        }");
+        builder.AppendLine("        else {");
+        builder.AppendLine("            New-ItemProperty -Path $Path -Name '' -PropertyType $Kind -Value $Value -Force | Out-Null");
+        builder.AppendLine("        }");
+        builder.AppendLine("    }");
+        builder.AppendLine("    else {");
+        builder.AppendLine("        Set-ItemProperty -Path $Path -Name $Name -Type $Kind -Value $Value -Force");
+        builder.AppendLine("    }");
+        builder.AppendLine("}");
+        builder.AppendLine();
+
+        foreach (RegistryDiscoveredItem item in items)
+        {
+            if (item.IsChecked && item.IsPresent)
+            {
+                builder.Append("Set-WinBaasRegistryValue -Path '")
+                    .Append(item.Descriptor.ProviderPath.Replace("'", "''", StringComparison.Ordinal))
+                    .Append("' -Name '")
+                    .Append(item.Descriptor.ValueName.Replace("'", "''", StringComparison.Ordinal))
+                    .Append("' -Kind ([Microsoft.Win32.RegistryValueKind]::")
+                    .Append(item.Descriptor.ValueKind)
+                    .Append(") -Value ")
+                    .AppendLine(FormatPowerShellLiteral(item.Value));
+            }
+            else if (!item.IsPresent)
+            {
+                builder.Append("# missing: ").Append(item.Descriptor.DisplayPath).AppendLine();
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private static string BuildVisualStudioSummary(VsSku sku)
+    {
+        var builder = new StringBuilder();
+        builder.Append("# ").AppendLine(sku.NodeLabel);
+        builder.AppendLine();
+        builder.Append("- Display name: ").AppendLine(sku.DisplayName);
+        builder.Append("- Version: ").AppendLine(string.IsNullOrWhiteSpace(sku.Version) ? "(unknown)" : sku.Version);
+        builder.Append("- Install date: ").AppendLine(sku.InstallDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "(unknown)");
+        builder.Append("- Settings path: `").Append(sku.SettingsPath).AppendLine("`");
+        builder.AppendLine();
+
+        builder.AppendLine("## Hives");
+        builder.AppendLine();
+        foreach (VsHive hive in sku.Hives)
+        {
+            builder.Append("- `").Append(hive.Name).Append("` — `").Append(hive.FullPath).AppendLine("`");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Extensions");
+        builder.AppendLine();
+        foreach (VsExtension extension in sku.Extensions)
+        {
+            builder.Append("- `").Append(extension.Name).Append("`");
+            if (!string.IsNullOrWhiteSpace(extension.Version))
+            {
+                builder.Append(" — ").Append(extension.Version);
+            }
+
+            builder.Append(" — `").Append(extension.InstallPath).AppendLine("`");
+        }
+
+        return builder.ToString();
     }
 
     private static string BuildReport(
@@ -184,18 +436,19 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
         DateTime reportCreatedAt,
         BackupMode mode,
         string finalDestination,
-        IReadOnlyList<BackupEntry> entries)
+        IReadOnlyList<BackupEntry> entries,
+        IReadOnlyList<string> specialSections)
     {
-        var copied = entries.Where(e => e.Copied).ToList();
+        var copied = entries.Where(entry => entry.Copied).ToList();
         int totalFiles = copied.Count;
         var byCategory = copied
-            .GroupBy(e => string.IsNullOrEmpty(e.Item.Source.Category) ? "(Uncategorized)" : e.Item.Source.Category, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(entry => string.IsNullOrEmpty(entry.Item.Source.Category) ? "(Uncategorized)" : entry.Item.Source.Category, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
             .ToList();
         int disciplines = byCategory.Count;
         int folderCount = copied
-            .Select(e => Path.GetDirectoryName(e.Item.FullPath) ?? string.Empty)
-            .Where(d => !string.IsNullOrEmpty(d))
+            .Select(entry => Path.GetDirectoryName(entry.Item.FullPath) ?? string.Empty)
+            .Where(directory => !string.IsNullOrEmpty(directory))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
 
@@ -210,10 +463,15 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
         sb.Append("- **Destination:** `").Append(finalDestination).AppendLine("`");
         sb.Append("- **Machine:** ").AppendLine(Environment.MachineName);
         sb.AppendLine();
-        sb.Append("Found ").Append(totalFiles).Append(" files to back-up from ")
+        sb.Append("Found ").Append(totalFiles).Append(" copied file(s) from ")
           .Append(disciplines).Append(" disciplines and ")
           .Append(folderCount).AppendLine(" folders.");
         sb.AppendLine();
+
+        foreach (string section in specialSections)
+        {
+            sb.Append(section);
+        }
 
         foreach (var category in byCategory)
         {
@@ -242,8 +500,6 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
                 AppendStatBullet(sb, "Biggest", $"with {FormatSize(biggest.Item.SizeBytes ?? 0)}", biggest);
             }
             sb.AppendLine();
-
-            AppendCategoryDetails(sb, category);
         }
 
         return sb.ToString();
@@ -255,25 +511,25 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
         var list = category.ToList();
         int fileCount = list.Count;
         int folderCount = list
-            .Select(e => Path.GetDirectoryName(e.Item.FullPath) ?? string.Empty)
+            .Select(entry => Path.GetDirectoryName(entry.Item.FullPath) ?? string.Empty)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
 
         BackupEntry? newest = list
-            .Where(e => e.Item.LastChanged.HasValue)
-            .OrderByDescending(e => e.Item.LastChanged!.Value)
+            .Where(entry => entry.Item.LastChanged.HasValue)
+            .OrderByDescending(entry => entry.Item.LastChanged!.Value)
             .FirstOrDefault();
         BackupEntry? oldest = list
-            .Where(e => e.Item.LastChanged.HasValue)
-            .OrderBy(e => e.Item.LastChanged!.Value)
+            .Where(entry => entry.Item.LastChanged.HasValue)
+            .OrderBy(entry => entry.Item.LastChanged!.Value)
             .FirstOrDefault();
         BackupEntry? smallest = list
-            .Where(e => e.Item.SizeBytes.HasValue)
-            .OrderBy(e => e.Item.SizeBytes!.Value)
+            .Where(entry => entry.Item.SizeBytes.HasValue)
+            .OrderBy(entry => entry.Item.SizeBytes!.Value)
             .FirstOrDefault();
         BackupEntry? biggest = list
-            .Where(e => e.Item.SizeBytes.HasValue)
-            .OrderByDescending(e => e.Item.SizeBytes!.Value)
+            .Where(entry => entry.Item.SizeBytes.HasValue)
+            .OrderByDescending(entry => entry.Item.SizeBytes!.Value)
             .FirstOrDefault();
 
         return (fileCount, folderCount, newest, oldest, smallest, biggest);
@@ -287,89 +543,6 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
           .Append(entry.Item.Name).Append("`")
           .Append(" in `").Append(dir).Append('`')
           .AppendLine();
-    }
-
-    /// <summary>
-    ///  Emits category-specific extras after the standard stats:
-    ///  Photoshop / Adobe action set listing, VS Code extensions,
-    ///  Visual Studio extensions.
-    /// </summary>
-    private static void AppendCategoryDetails(StringBuilder sb, IGrouping<string, BackupEntry> category)
-    {
-        var actions = category
-            .Where(e => string.Equals(Path.GetExtension(e.Item.FullPath), ".atn", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        if (actions.Count > 0)
-        {
-            sb.AppendLine("### Adobe — installed Actions");
-            sb.AppendLine();
-            foreach (BackupEntry a in actions.OrderBy(a => a.Item.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                sb.Append(" - `").Append(a.Item.Name).Append("` — `").Append(a.Item.FullPath).Append('`').AppendLine();
-            }
-            sb.AppendLine();
-        }
-
-        if (category.Any(e => Matches(e.Item.Source.ShortTag, "VS Code", "VS Code Copilot", "Cursor")))
-        {
-            AppendDirectoryListing(
-                sb,
-                "VS Code / Cursor — installed extensions",
-                Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\.vscode\extensions"));
-            AppendDirectoryListing(
-                sb,
-                "Cursor — installed extensions",
-                Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\.cursor\extensions"));
-        }
-
-        if (category.Any(e => Matches(e.Item.Source.ShortTag, "Visual Studio", "VS Copilot")))
-        {
-            string root = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Microsoft\VisualStudio");
-            if (Directory.Exists(root))
-            {
-                foreach (string instance in Directory.EnumerateDirectories(root, "17.*"))
-                {
-                    string extDir = Path.Combine(instance, "Extensions");
-                    AppendDirectoryListing(sb, $"Visual Studio — installed extensions ({Path.GetFileName(instance)})", extDir);
-                }
-            }
-        }
-    }
-
-    private static bool Matches(string tag, params string[] candidates)
-        => candidates.Any(c => c.Equals(tag, StringComparison.OrdinalIgnoreCase));
-
-    private static void AppendDirectoryListing(StringBuilder sb, string heading, string directory)
-    {
-        if (!Directory.Exists(directory))
-        {
-            return;
-        }
-
-        string[] dirs;
-        try
-        {
-            dirs = Directory.GetDirectories(directory);
-        }
-        catch
-        {
-            return;
-        }
-
-        if (dirs.Length == 0)
-        {
-            return;
-        }
-
-        sb.Append("### ").AppendLine(heading);
-        sb.AppendLine();
-        sb.Append("_Source folder:_ `").Append(directory).AppendLine("`");
-        sb.AppendLine();
-        foreach (string d in dirs.OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
-        {
-            sb.Append(" - `").Append(Path.GetFileName(d)).Append('`').AppendLine();
-        }
-        sb.AppendLine();
     }
 
     /// <summary>
@@ -433,10 +606,42 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
         return name;
     }
 
+    private static string FormatPowerShellLiteral(object? value) => value switch
+    {
+        null => "$null",
+        string text => $"'{text.Replace("'", "''", StringComparison.Ordinal)}'",
+        string[] values => "@(" + string.Join(", ", values.Select(FormatPowerShellLiteral)) + ")",
+        byte[] bytes => "@(" + string.Join(", ", bytes.Select(b => b.ToString(CultureInfo.InvariantCulture))) + ")",
+        _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? "$null",
+    };
+
+    private static string FormatRegValue(RegistryValueKind kind, object? value)
+    {
+        return kind switch
+        {
+            RegistryValueKind.DWord => $"dword:{Convert.ToUInt32(value ?? 0, CultureInfo.InvariantCulture):x8}",
+            RegistryValueKind.QWord => "hex(b):" + JoinHex(BitConverter.GetBytes(Convert.ToUInt64(value ?? 0, CultureInfo.InvariantCulture))),
+            RegistryValueKind.MultiString => "hex(7):" + JoinHex(Encoding.Unicode.GetBytes(string.Join("\0", (string[]?)value ?? []) + "\0\0")),
+            RegistryValueKind.ExpandString => "hex(2):" + JoinHex(Encoding.Unicode.GetBytes(Convert.ToString(value, CultureInfo.InvariantCulture) + "\0")),
+            RegistryValueKind.Binary => "hex:" + JoinHex((byte[]?)value ?? []),
+            _ => $"\"{(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty).Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"",
+        };
+    }
+
+    private static string JoinHex(IEnumerable<byte> bytes)
+        => string.Join(",", bytes.Select(b => b.ToString("x2", CultureInfo.InvariantCulture)));
+
     private sealed record BackupEntry(
         DiscoveredItem Item,
         string TargetPath,
         bool Copied,
         bool Skipped,
         string? Reason);
+
+    private sealed record BackupMaterial(
+        Guid ReportId,
+        string ReportPath,
+        DateTime ReportCreatedAt,
+        IReadOnlyList<BackupEntry> Entries,
+        IReadOnlyList<string> SpecialSections);
 }

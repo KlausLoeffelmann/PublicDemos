@@ -8,7 +8,7 @@ partial class FrmMain
     /// <summary>
     ///  Required designer variable.
     /// </summary>
-    private System.ComponentModel.IContainer? components = null;
+    private System.ComponentModel.IContainer components = null;
 
     /// <summary>
     ///  Clean up any resources being used.
@@ -41,6 +41,10 @@ partial class FrmMain
         _menuCatalogAdd = new ToolStripMenuItem();
         _menuCatalogDelete = new ToolStripMenuItem();
         _menuCatalogRestore = new ToolStripMenuItem();
+        _menuView = new ToolStripMenuItem();
+        _menuViewExpandAll = new ToolStripMenuItem();
+        _menuViewCollapseAll = new ToolStripMenuItem();
+        _menuViewExpandSelected = new ToolStripMenuItem();
         _menuTools = new ToolStripMenuItem();
         _menuToolsOptions = new ToolStripMenuItem();
         _toolStrip = new ToolStrip();
@@ -56,14 +60,7 @@ partial class FrmMain
         _splitOuter = new SplitContainer();
         _treeSources = new TreeView();
         _splitInner = new SplitContainer();
-        _grid = new DataGridView();
-        _colCheck = new DataGridViewCheckBoxColumn();
-        _colName = new DataGridViewTextBoxColumn();
-        _colType = new DataGridViewTextBoxColumn();
-        _colPath = new DataGridViewTextBoxColumn();
-        _colChanged = new DataGridViewTextBoxColumn();
-        _colCreated = new DataGridViewTextBoxColumn();
-        _colSize = new DataGridViewTextBoxColumn();
+        _detailHost = new Panel();
         _toolTabs = new FluentTabControl();
         _consolePane = new UserControl();
         _console = new ConsoleControl();
@@ -79,14 +76,13 @@ partial class FrmMain
         _splitInner.Panel1.SuspendLayout();
         _splitInner.Panel2.SuspendLayout();
         _splitInner.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_grid).BeginInit();
         _consolePane.SuspendLayout();
         SuspendLayout();
 
         // MenuStrip
         _menuStrip.Dock = DockStyle.Top;
         _menuStrip.Font = new Font("Segoe UI", 11F);
-        _menuStrip.Items.AddRange(new ToolStripItem[] { _menuFile, _menuCatalog, _menuTools });
+        _menuStrip.Items.AddRange(new ToolStripItem[] { _menuFile, _menuCatalog, _menuView, _menuTools });
         _menuStrip.Name = "_menuStrip";
 
         _menuFile.Text = "&File";
@@ -112,6 +108,18 @@ partial class FrmMain
         _menuCatalogDelete.Text = "&Delete object\u2026";
         _menuCatalogRestore.Name = "_menuCatalogRestore";
         _menuCatalogRestore.Text = "&Restore definition\u2026";
+
+        _menuView.Text = "&View";
+        _menuView.DropDownItems.AddRange(new ToolStripItem[]
+        {
+            _menuViewExpandAll, _menuViewCollapseAll, _menuViewExpandSelected
+        });
+        _menuViewExpandAll.Name = "_menuViewExpandAll";
+        _menuViewExpandAll.Text = "E&xpand all nodes";
+        _menuViewCollapseAll.Name = "_menuViewCollapseAll";
+        _menuViewCollapseAll.Text = "&Collapse all nodes";
+        _menuViewExpandSelected.Name = "_menuViewExpandSelected";
+        _menuViewExpandSelected.Text = "Expand &selected";
 
         _menuTools.Text = "&Tools";
         _menuTools.DropDownItems.AddRange(new ToolStripItem[] { _menuToolsOptions });
@@ -181,54 +189,12 @@ partial class FrmMain
         _splitInner.Name = "_splitInner";
         _splitInner.Orientation = Orientation.Horizontal;
         _splitInner.SplitterDistance = 380;
-        _splitInner.Panel1.Controls.Add(_grid);
+        _splitInner.Panel1.Controls.Add(_detailHost);
         _splitInner.Panel2.Controls.Add(_toolTabs);
 
-        // DataGridView
-        _grid.Dock = DockStyle.Fill;
-        _grid.Name = "_grid";
-        _grid.Font = new Font("Segoe UI", 11F);
-        _grid.AllowUserToAddRows = false;
-        _grid.AllowUserToDeleteRows = false;
-        _grid.AllowUserToResizeRows = false;
-        _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        _grid.BackgroundColor = SystemColors.Window;
-        _grid.MultiSelect = true;
-        _grid.RowHeadersVisible = false;
-        _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        _grid.Columns.AddRange(new DataGridViewColumn[] { _colCheck, _colName, _colType, _colPath, _colChanged, _colCreated, _colSize });
-
-        _colCheck.HeaderText = string.Empty;
-        _colCheck.Name = "_colCheck";
-        _colCheck.Width = 32;
-        _colCheck.FillWeight = 4;
-        _colCheck.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-        _colCheck.Resizable = DataGridViewTriState.False;
-        _colName.HeaderText = "Filename";
-        _colName.Name = "_colName";
-        _colName.ReadOnly = true;
-        _colName.FillWeight = 24;
-        _colType.HeaderText = "File type";
-        _colType.Name = "_colType";
-        _colType.ReadOnly = true;
-        _colType.FillWeight = 18;
-        _colPath.HeaderText = "Path";
-        _colPath.Name = "_colPath";
-        _colPath.ReadOnly = true;
-        _colPath.FillWeight = 30;
-        _colChanged.HeaderText = "Changed";
-        _colChanged.Name = "_colChanged";
-        _colChanged.ReadOnly = true;
-        _colChanged.FillWeight = 12;
-        _colCreated.HeaderText = "Created";
-        _colCreated.Name = "_colCreated";
-        _colCreated.ReadOnly = true;
-        _colCreated.FillWeight = 8;
-        _colSize.HeaderText = "Size";
-        _colSize.Name = "_colSize";
-        _colSize.ReadOnly = true;
-        _colSize.FillWeight = 8;
-        _colSize.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+        // Detail host
+        _detailHost.Dock = DockStyle.Fill;
+        _detailHost.Name = "_detailHost";
 
         // FluentTabControl (Console + future tool windows)
         _toolTabs.Dock = DockStyle.Fill;
@@ -276,7 +242,6 @@ partial class FrmMain
         _splitInner.Panel2.ResumeLayout(performLayout: false);
         ((System.ComponentModel.ISupportInitialize)_splitInner).EndInit();
         _splitInner.ResumeLayout(performLayout: false);
-        ((System.ComponentModel.ISupportInitialize)_grid).EndInit();
         _consolePane.ResumeLayout(performLayout: false);
         ResumeLayout(performLayout: false);
         PerformLayout();
@@ -294,6 +259,10 @@ partial class FrmMain
     private ToolStripMenuItem _menuCatalogAdd;
     private ToolStripMenuItem _menuCatalogDelete;
     private ToolStripMenuItem _menuCatalogRestore;
+    private ToolStripMenuItem _menuView;
+    private ToolStripMenuItem _menuViewExpandAll;
+    private ToolStripMenuItem _menuViewCollapseAll;
+    private ToolStripMenuItem _menuViewExpandSelected;
     private ToolStripMenuItem _menuTools;
     private ToolStripMenuItem _menuToolsOptions;
     private ToolStrip _toolStrip;
@@ -309,14 +278,7 @@ partial class FrmMain
     private SplitContainer _splitOuter;
     private TreeView _treeSources;
     private SplitContainer _splitInner;
-    private DataGridView _grid;
-    private DataGridViewCheckBoxColumn _colCheck;
-    private DataGridViewTextBoxColumn _colName;
-    private DataGridViewTextBoxColumn _colType;
-    private DataGridViewTextBoxColumn _colPath;
-    private DataGridViewTextBoxColumn _colChanged;
-    private DataGridViewTextBoxColumn _colCreated;
-    private DataGridViewTextBoxColumn _colSize;
+    private Panel _detailHost;
     private FluentTabControl _toolTabs;
     private UserControl _consolePane;
     private ConsoleControl _console;

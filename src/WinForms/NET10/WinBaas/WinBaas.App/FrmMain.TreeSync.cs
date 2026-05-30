@@ -1,19 +1,16 @@
-using System.Globalization;
 using WinBaas.Models;
 
 namespace WinBaas;
 
 /// <summary>
-///  Tree/grid synchronization: clicks on a tree node refresh the grid; tree
-///  check/uncheck propagates to grid rows; grid checkbox edits propagate
-///  back to the tree (tri-state when partially checked). Parent (category)
-///  nodes toggle every leaf entry below them.
+///  Tree/detail synchronization: the selected tree node swaps the right-hand
+///  detail control; tree check states and detail-grid checkbox edits stay in sync.
 /// </summary>
 public sealed partial class FrmMain
 {
     private void TreeSources_AfterSelect(object? sender, TreeViewEventArgs e)
     {
-        RefreshGridFromSelectedNode();
+        RefreshDetailFromSelectedNode();
         UpdateCommandStates();
     }
 
@@ -28,40 +25,114 @@ public sealed partial class FrmMain
         try
         {
             bool target = e.Node.Checked;
-
-            if (e.Node.Tag is CategoryTag)
+            switch (e.Node.Tag)
             {
-                foreach (TreeNode leaf in EnumerateLeafNodes(e.Node.Nodes))
-                {
-                    leaf.Checked = target;
-                    if (_nodeItems.TryGetValue(leaf, out var leafItems))
+                case CategoryTag _:
+                    foreach (TreeNode leaf in EnumerateCatalogLeafNodes(e.Node.Nodes))
                     {
-                        foreach (var item in leafItems)
+                        leaf.Checked = target;
+                        if (_nodeItems.TryGetValue(leaf, out List<DiscoveredItem>? items))
+                        {
+                            foreach (DiscoveredItem item in items)
+                            {
+                                item.IsChecked = target;
+                            }
+                        }
+                    }
+
+                    if (ReferenceEquals(e.Node, _treeSources.SelectedNode))
+                    {
+                        _filesGridControl.SetAllChecked(target);
+                    }
+                    break;
+
+                case CatalogEntry _:
+                    if (_nodeItems.TryGetValue(e.Node, out List<DiscoveredItem>? items))
+                    {
+                        foreach (DiscoveredItem item in items)
                         {
                             item.IsChecked = target;
                         }
                     }
-                }
-            }
-            else if (e.Node.Tag is CatalogEntry)
-            {
-                if (_nodeItems.TryGetValue(e.Node, out var items))
-                {
-                    foreach (var item in items)
+
+                    if (ReferenceEquals(e.Node, _treeSources.SelectedNode))
+                    {
+                        _filesGridControl.SetAllChecked(target);
+                    }
+
+                    if (e.Node.Parent is { Tag: CategoryTag } parent)
+                    {
+                        parent.Checked = parent.Nodes.Cast<TreeNode>().All(node => node.Checked);
+                    }
+                    break;
+
+                case RegistryGroupTag _:
+                    foreach (RegistryDiscoveredItem item in _registryItems.Where(item => item.CanSelect))
                     {
                         item.IsChecked = target;
                     }
-                }
 
-                if (e.Node.Parent is { } parent && parent.Tag is CategoryTag)
-                {
-                    parent.Checked = parent.Nodes.Cast<TreeNode>().All(n => n.Checked);
-                }
-            }
+                    if (ReferenceEquals(e.Node, _treeSources.SelectedNode))
+                    {
+                        _registryGridControl.SetAllChecked(target);
+                    }
+                    break;
 
-            if (ReferenceEquals(e.Node, _treeSources.SelectedNode))
-            {
-                ApplyCheckedStateToGrid(target);
+                case VsRootTag _:
+                    foreach (TreeNode child in e.Node.Nodes.Cast<TreeNode>())
+                    {
+                        SetVisualStudioNodeChecked(child, target);
+                    }
+                    break;
+
+                case VsSku sku:
+                    sku.IsChecked = target;
+                    foreach (TreeNode child in e.Node.Nodes.Cast<TreeNode>())
+                    {
+                        child.Checked = target;
+                    }
+
+                    if (e.Node.Parent is { Tag: VsRootTag } vsRoot)
+                    {
+                        vsRoot.Checked = vsRoot.Nodes.Cast<TreeNode>().All(node => node.Checked);
+                    }
+                    break;
+
+                case VsHivesTag _:
+                    if (e.Node.Parent is { Tag: VsSku skuNode })
+                    {
+                        skuNode.IsChecked = target;
+                        e.Node.Parent.Checked = target;
+                        foreach (TreeNode child in e.Node.Parent.Nodes.Cast<TreeNode>())
+                        {
+                            child.Checked = target;
+                        }
+
+                        if (e.Node.Parent.Parent is { Tag: VsRootTag } root)
+                        {
+                            root.Checked = root.Nodes.Cast<TreeNode>().All(node => node.Checked);
+                        }
+                    }
+
+                    break;
+
+                case VsExtensionsTag _:
+                    if (e.Node.Parent is { Tag: VsSku parentSku })
+                    {
+                        parentSku.IsChecked = target;
+                        e.Node.Parent.Checked = target;
+                        foreach (TreeNode child in e.Node.Parent.Nodes.Cast<TreeNode>())
+                        {
+                            child.Checked = target;
+                        }
+
+                        if (e.Node.Parent.Parent is { Tag: VsRootTag } root)
+                        {
+                            root.Checked = root.Nodes.Cast<TreeNode>().All(node => node.Checked);
+                        }
+                    }
+
+                    break;
             }
         }
         finally
@@ -72,112 +143,158 @@ public sealed partial class FrmMain
         UpdateCommandStates();
     }
 
-    private void Grid_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+    private void FilesGridControl_CheckedItemsChanged(object? sender, EventArgs e)
     {
-        if (_grid.IsCurrentCellDirty && _grid.CurrentCell is DataGridViewCheckBoxCell)
-        {
-            _grid.CommitEdit(DataGridViewDataErrorContexts.Commit);
-        }
-    }
-
-    private void Grid_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
-    {
-        if (_syncing || e.RowIndex < 0 || e.ColumnIndex != _colCheck.Index)
+        if (_syncing)
         {
             return;
         }
 
-        if (_grid.Rows[e.RowIndex].Tag is DiscoveredItem item)
+        _syncing = true;
+        try
         {
-            item.IsChecked = (bool)(_grid.Rows[e.RowIndex].Cells[_colCheck.Index].Value ?? false);
-        }
-
-        if (_treeSources.SelectedNode is { Tag: CatalogEntry } leaf
-            && _nodeItems.TryGetValue(leaf, out var items))
-        {
-            bool allChecked = items.Count > 0 && items.All(i => i.IsChecked);
-            _syncing = true;
-            try
+            if (_treeSources.SelectedNode is { Tag: CatalogEntry } leaf)
             {
-                leaf.Checked = allChecked;
-                if (leaf.Parent is { } parent && parent.Tag is CategoryTag)
+                RefreshCatalogLeafCheckState(leaf);
+            }
+            else if (_treeSources.SelectedNode is { Tag: CategoryTag } categoryNode)
+            {
+                foreach (TreeNode leaf in EnumerateCatalogLeafNodes(categoryNode.Nodes))
                 {
-                    parent.Checked = parent.Nodes.Cast<TreeNode>().All(n => n.Checked);
+                    RefreshCatalogLeafCheckState(leaf);
                 }
+
+                categoryNode.Checked = categoryNode.Nodes.Cast<TreeNode>().All(node => node.Checked);
             }
-            finally
-            {
-                _syncing = false;
-            }
+        }
+        finally
+        {
+            _syncing = false;
         }
 
         UpdateCommandStates();
     }
 
-    private void Grid_SelectionChanged(object? sender, EventArgs e)
+    private void RegistryGridControl_CheckedItemsChanged(object? sender, EventArgs e)
     {
-        if (_grid.SelectedRows.Count == 0)
+        if (_syncing)
         {
-            _statusSize.Text = string.Empty;
             return;
         }
 
-        long total = _grid.SelectedRows
-            .Cast<DataGridViewRow>()
-            .Select(r => r.Tag as DiscoveredItem)
-            .Where(i => i?.SizeBytes is not null)
-            .Sum(i => i!.SizeBytes!.Value);
+        _syncing = true;
+        try
+        {
+            if (_registryRootNode is not null)
+            {
+                _registryRootNode.Checked = _registryItems.Where(item => item.CanSelect).All(item => item.IsChecked);
+            }
+        }
+        finally
+        {
+            _syncing = false;
+        }
 
-        _statusSize.Text = FormatSize(total);
+        UpdateCommandStates();
     }
 
-    private void RefreshGridFromSelectedNode()
+    private void RefreshDetailFromSelectedNode()
     {
-        _grid.Rows.Clear();
+        _statusSize.Text = string.Empty;
         if (_treeSources.SelectedNode is not { } node)
         {
+            _filesGridControl.SetItems([]);
+            ShowDetail(_filesGridControl);
             return;
         }
 
-        IEnumerable<DiscoveredItem> items;
-        if (node.Tag is CategoryTag)
+        switch (node.Tag)
         {
-            items = EnumerateLeafNodes(node.Nodes)
-                .Where(l => _nodeItems.ContainsKey(l))
-                .SelectMany(l => _nodeItems[l]);
-        }
-        else if (_nodeItems.TryGetValue(node, out var leafItems))
-        {
-            items = leafItems;
-        }
-        else
-        {
-            return;
-        }
+            case CategoryTag _:
+                _filesGridControl.SetItems(
+                    EnumerateCatalogLeafNodes(node.Nodes)
+                        .Where(leaf => _nodeItems.ContainsKey(leaf))
+                        .SelectMany(leaf => _nodeItems[leaf])
+                        .ToList());
+                ShowDetail(_filesGridControl);
+                _statusInfo.Text = node.Text;
+                break;
 
-        foreach (DiscoveredItem item in items)
-        {
-            int rowIndex = _grid.Rows.Add(
-                item.IsChecked,
-                item.Name,
-                item.FileTypeLabel,
-                item.FullPath,
-                item.LastChanged?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) ?? string.Empty,
-                item.Created?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty,
-                item.SizeBytes is null ? "\u2026" : FormatSizeShort(item.SizeBytes.Value));
-            _grid.Rows[rowIndex].Tag = item;
+            case CatalogEntry entry:
+                _filesGridControl.SetItems(_nodeItems.TryGetValue(node, out List<DiscoveredItem>? items) ? items : []);
+                ShowDetail(_filesGridControl);
+                _statusInfo.Text = entry.Description;
+                break;
+
+            case RegistryGroupTag registryTag:
+                _registryGridControl.SetItems(_registryItems);
+                ShowDetail(_registryGridControl);
+                _statusInfo.Text = registryTag.Entry.Description;
+                break;
+
+            case VsRootTag rootTag:
+                _vsOverviewControl.SetItems(_visualStudioSkus);
+                ShowDetail(_vsOverviewControl);
+                _statusInfo.Text = rootTag.Entry.Description;
+                break;
+
+            case VsSku sku:
+                _vsOverviewControl.SetItems([sku]);
+                ShowDetail(_vsOverviewControl);
+                _statusInfo.Text = string.IsNullOrWhiteSpace(sku.SettingsPath) ? sku.NodeLabel : sku.SettingsPath;
+                break;
+
+            case VsHivesTag hivesTag:
+                _vsHivesControl.SetItems(hivesTag.Sku.Hives);
+                ShowDetail(_vsHivesControl);
+                _statusInfo.Text = $"{hivesTag.Sku.Hives.Count} hive(s).";
+                break;
+
+            case VsExtensionsTag extensionsTag:
+                _vsExtensionsControl.SetItems(extensionsTag.Sku.Extensions);
+                ShowDetail(_vsExtensionsControl);
+                _statusInfo.Text = $"{extensionsTag.Sku.Extensions.Count} extension(s).";
+                break;
+
+            default:
+                _filesGridControl.SetItems([]);
+                ShowDetail(_filesGridControl);
+                break;
         }
     }
 
-    private void ApplyCheckedStateToGrid(bool target)
+    private void RefreshCatalogLeafCheckState(TreeNode leaf)
     {
-        foreach (DataGridViewRow row in _grid.Rows)
+        if (leaf.Tag is not CatalogEntry)
         {
-            row.Cells[_colCheck.Index].Value = target;
+            return;
+        }
+
+        bool allChecked = _nodeItems.TryGetValue(leaf, out List<DiscoveredItem>? items)
+            && items.Count > 0
+            && items.All(item => item.IsChecked);
+        leaf.Checked = allChecked;
+        if (leaf.Parent is { Tag: CategoryTag } parent)
+        {
+            parent.Checked = parent.Nodes.Cast<TreeNode>().All(node => node.Checked);
         }
     }
 
-    private static IEnumerable<TreeNode> EnumerateLeafNodes(TreeNodeCollection nodes)
+    private void SetVisualStudioNodeChecked(TreeNode node, bool value)
+    {
+        node.Checked = value;
+        if (node.Tag is VsSku sku)
+        {
+            sku.IsChecked = value;
+        }
+
+        foreach (TreeNode child in node.Nodes.Cast<TreeNode>())
+        {
+            child.Checked = value;
+        }
+    }
+
+    private static IEnumerable<TreeNode> EnumerateCatalogLeafNodes(TreeNodeCollection nodes)
     {
         foreach (TreeNode node in nodes)
         {
@@ -187,39 +304,11 @@ public sealed partial class FrmMain
             }
             else
             {
-                foreach (TreeNode descendant in EnumerateLeafNodes(node.Nodes))
+                foreach (TreeNode descendant in EnumerateCatalogLeafNodes(node.Nodes))
                 {
                     yield return descendant;
                 }
             }
         }
     }
-
-    /// <summary>
-    ///  Format <paramref name="bytes"/> as an IEC-style size with the matching
-    ///  byte count in parentheses, e.g. <c>"1.23 MiB (1,290,000 bytes)"</c>.
-    /// </summary>
-    private static string FormatSize(long bytes)
-    {
-        string iec = FormatSizeShort(bytes);
-        string raw = bytes.ToString("###,###,###,###,###,##0", CultureInfo.InvariantCulture);
-        return $"{iec} ({raw} bytes)";
-    }
-
-    private static string FormatSizeShort(long bytes)
-    {
-        string[] units = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB"];
-        double value = bytes;
-        int unit = 0;
-        while (value >= 1024d && unit < units.Length - 1)
-        {
-            value /= 1024d;
-            unit++;
-        }
-
-        return unit == 0
-            ? $"{bytes:N0} {units[0]}"
-            : string.Format(CultureInfo.InvariantCulture, "{0:0.##} {1}", value, units[unit]);
-    }
 }
-

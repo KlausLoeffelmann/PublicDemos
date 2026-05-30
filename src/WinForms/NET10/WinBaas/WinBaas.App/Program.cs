@@ -31,6 +31,7 @@ internal static class Program
 
         builder.Services.AddSingleton<IFileTypeMap, FileTypeMap>();
         builder.Services.AddSingleton<IRegistryCatalog, RegistryCatalog>();
+        builder.Services.AddSingleton<IRegistryDiscovery, RegistryDiscoveryService>();
         builder.Services.AddSingleton<IVisualStudioDiscovery, VisualStudioDiscovery>();
         builder.Services.AddSingleton<ICatalogService, CatalogService>();
         builder.Services.AddSingleton<IDiscoveryService, DiscoveryService>();
