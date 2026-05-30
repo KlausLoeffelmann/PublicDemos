@@ -1,71 +1,121 @@
 using System.Runtime.InteropServices;
 using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Direct2D;
+using Windows.Win32.Graphics.Direct2D.Common;
+using Windows.Win32.Graphics.Direct3D;
+using Windows.Win32.Graphics.Direct3D11;
+using Windows.Win32.Graphics.DirectComposition;
+using Windows.Win32.Graphics.DirectWrite;
+using Windows.Win32.Graphics.Dxgi;
+using Windows.Win32.Graphics.Dxgi.Common;
 
-namespace WinFormsPong.DComp;
+namespace WinFormsPong;
 
 // =========================================================================
-// DCOMP/D2D RENDER HOST
+// DCOMP / D2D RENDER HOST
+//
+// Pipeline: D3D11 device -> DXGI device -> D2D device/context ->
+// flip-model composition swap chain -> DirectComposition visual tree.
+// All COM access goes through the CsWin32-generated interfaces, which are
+// classic [ComImport] RCWs, so QueryInterface is just a cast.
 // =========================================================================
-internal class D2DRenderHost : IDisposable
+internal sealed unsafe class D2DRenderHost : IDisposable
 {
-    private IntPtr _d3dDevice = IntPtr.Zero;
-    private IntPtr _dxgiDevice = IntPtr.Zero;
-    private IntPtr _dxgiFactory2 = IntPtr.Zero;
-    private IntPtr _swapChain = IntPtr.Zero;
-    private IntPtr _d2dFactory = IntPtr.Zero;
-    private IntPtr _d2dDevice = IntPtr.Zero;
-    private IntPtr _d2dContext = IntPtr.Zero;
-    private IntPtr _d2dBitmap = IntPtr.Zero;
-    private IntPtr _dcompDevice = IntPtr.Zero;
-    private IntPtr _dcompTarget = IntPtr.Zero;
-    private IntPtr _rootVisual = IntPtr.Zero;
-    private IntPtr _contentVisual = IntPtr.Zero;
-    private IntPtr _dwriteFactory = IntPtr.Zero;
-    private IntPtr _textFormat = IntPtr.Zero;
-    private IntPtr _textLayout = IntPtr.Zero;
+    private const DXGI_FORMAT BackBufferFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM;
 
-    public bool TreeChanged { get; set; }
+    private ID3D11Device? _d3dDevice;
+    private IDXGIDevice? _dxgiDevice;
+    private IDXGIFactory2? _dxgiFactory2;
+    private IDXGISwapChain1? _swapChain;
+    private ID2D1Factory1? _d2dFactory;
+    private ID2D1Device? _d2dDevice;
+    private ID2D1DeviceContext? _d2dContext;
+    private ID2D1Bitmap1? _d2dBitmap;
+    private IDCompositionDevice? _dcompDevice;
+    private IDCompositionTarget? _dcompTarget;
+    private IDCompositionVisual? _rootVisual;
+    private IDCompositionVisual? _contentVisual;
+    private IDWriteFactory? _dwriteFactory;
+    private IDWriteTextFormat? _textFormat;
+
+    private Size _clientSize;
 
     public void Initialize(IntPtr hwnd, Size clientSize)
     {
-        // 1. D3D11CreateDevice — HW first, then WARP fallback
-        var driverTypes = new[] { D2DGuids.D3D_DRIVER_TYPE_HARDWARE, 1 }; // 1 = REF (WARP fallback in D3D11CreateDevice context)
-        var featureLevels = new[] { D2DGuids.D3D_FEATURE_LEVEL_11_0 };
+        _clientSize = clientSize;
 
-        var hr = PInvoke.D3D11CreateDevice(
-            IntPtr.Zero, driverTypes[0], IntPtr.Zero, 0, D2DGuids.D3D_FEATURE_LEVEL_11_0, (uint)featureLevels.Length,
-            11, out IntPtr immediateContext, IntPtr.Zero, out _d3dDevice);
-        if (hr < 0) throw new InvalidOperationException($"D3D11CreateDevice failed: 0x{hr:X}");
+        // 1. D3D11 device (hardware first, WARP fallback). BGRA support is
+        //    required for Direct2D interop.
+        _d3dDevice = CreateD3DDevice();
+        _dxgiDevice = (IDXGIDevice)_d3dDevice;
 
-        // 2. QI IDXGIDevice
-        PInvoke.ID3D11Device_QueryInterface(_d3dDevice, D2DGuids.IID_IDXGIDevice, out _dxgiDevice);
+        // 2. DXGI 1.2 factory for the composition swap chain.
+        PInvoke.CreateDXGIFactory2(0, typeof(IDXGIFactory2).GUID, out object factoryObj).ThrowOnFailure();
+        _dxgiFactory2 = (IDXGIFactory2)factoryObj;
 
-        // 3. CreateDXGIFactory2 → IDXGIFactory2
-        PInvoke.CreateDXGIFactory2(0, D2DGuids.IID_IDXGIFactory2, out _dxgiFactory2);
-
-        // 4. D2D1CreateFactory (MULTI_THREADED)
+        // 3. Direct2D factory + device + device context.
         PInvoke.D2D1CreateFactory(
             D2D1_FACTORY_TYPE.D2D1_FACTORY_TYPE_MULTI_THREADED,
-            ref D2DGuids.IID_ID2D1Factory, IntPtr.Zero, out _d2dFactory);
+            typeof(ID2D1Factory1).GUID, null, out object d2dFactoryObj).ThrowOnFailure();
+        _d2dFactory = (ID2D1Factory1)d2dFactoryObj;
+        _d2dFactory.CreateDevice(_dxgiDevice, out _d2dDevice);
+        _d2dDevice.CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS.D2D1_DEVICE_CONTEXT_OPTIONS_NONE, out _d2dContext);
 
-        // 5. ID2D1Factory1::CreateDevice(dxgiDevice) → ID2D1Device
-        PInvoke.ID2D1Factory_CreateDevice(_d2dFactory, _dxgiDevice, out _d2dDevice);
+        // 4. DirectComposition device + DirectWrite factory.
+        PInvoke.DCompositionCreateDevice(_dxgiDevice, typeof(IDCompositionDevice).GUID, out object dcompObj).ThrowOnFailure();
+        _dcompDevice = (IDCompositionDevice)dcompObj;
 
-        // 6. DCompositionCreateDevice(dxgiDevice, …) → IDCompositionDevice
-        PInvoke.DCompositionCreateDevice(IntPtr.Zero, D2DGuids.IID_IDCompositionDevice, out _dcompDevice);
+        PInvoke.DWriteCreateFactory(DWRITE_FACTORY_TYPE.DWRITE_FACTORY_TYPE_SHARED, typeof(IDWriteFactory).GUID, out object dwObj).ThrowOnFailure();
+        _dwriteFactory = (IDWriteFactory)dwObj;
+        CreateTextFormat();
 
-        // 7. DWriteCreateFactory(ISOLATED)
-        PInvoke.DWriteCreateFactory(0, D2DGuids.IID_IDWriteFactory, out _dwriteFactory);
+        // 5. Swap chain for composition + the D2D render target bitmap.
+        CreateSwapChain(clientSize);
+        CreateBitmapTarget();
 
-        // === Per-host wiring ===
-        _d2dDevice.QueryInterface(D2DGuids.IID_ID2D1DeviceContext, out _d2dContext);
+        // 6. DirectComposition visual tree: target(hwnd) -> root -> content(swapchain).
+        _dcompDevice.CreateTargetForHwnd((HWND)hwnd, true, out _dcompTarget);
+        _dcompDevice.CreateVisual(out _rootVisual);
+        _dcompDevice.CreateVisual(out _contentVisual);
+        _contentVisual.SetContent(_swapChain);
+        _rootVisual.AddVisual(_contentVisual, true, null);
+        _dcompTarget.SetRoot(_rootVisual);
+        _dcompDevice.Commit();
+    }
 
-        // 2. IDXGIFactory2::CreateSwapChainForComposition
-        var swapDesc = new DXGI_SWAP_CHAIN_DESC1
+    private static ID3D11Device CreateD3DDevice()
+    {
+        ReadOnlySpan<D3D_FEATURE_LEVEL> levels =
+        [
+            D3D_FEATURE_LEVEL.D3D_FEATURE_LEVEL_11_1,
+            D3D_FEATURE_LEVEL.D3D_FEATURE_LEVEL_11_0,
+        ];
+        const D3D11_CREATE_DEVICE_FLAG flags = D3D11_CREATE_DEVICE_FLAG.D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+        const uint sdkVersion = 7; // D3D11_SDK_VERSION
+
+        HRESULT hr = PInvoke.D3D11CreateDevice(
+            null, D3D_DRIVER_TYPE.D3D_DRIVER_TYPE_HARDWARE, default, flags,
+            levels, sdkVersion, out ID3D11Device device, out ID3D11DeviceContext _);
+
+        if (hr.Failed)
         {
-            Width = clientSize.Width,
-            Height = clientSize.Height,
-            Format = DXGI_FORMAT.B8G8R8A8_UNORM,
+            hr = PInvoke.D3D11CreateDevice(
+                null, D3D_DRIVER_TYPE.D3D_DRIVER_TYPE_WARP, default, flags,
+                levels, sdkVersion, out device, out ID3D11DeviceContext _);
+        }
+
+        hr.ThrowOnFailure();
+        return device;
+    }
+
+    private void CreateSwapChain(Size clientSize)
+    {
+        var desc = new DXGI_SWAP_CHAIN_DESC1
+        {
+            Width = (uint)Math.Max(1, clientSize.Width),
+            Height = (uint)Math.Max(1, clientSize.Height),
+            Format = BackBufferFormat,
             Stereo = false,
             SampleDesc = new DXGI_SAMPLE_DESC { Count = 1, Quality = 0 },
             BufferUsage = DXGI_USAGE.DXGI_USAGE_RENDER_TARGET_OUTPUT,
@@ -73,123 +123,165 @@ internal class D2DRenderHost : IDisposable
             Scaling = DXGI_SCALING.DXGI_SCALING_STRETCH,
             SwapEffect = DXGI_SWAP_EFFECT.DXGI_SWAP_EFFECT_FLIP_DISCARD,
             AlphaMode = DXGI_ALPHA_MODE.DXGI_ALPHA_MODE_IGNORE,
-            Flags = (uint)DXGI_SWAP_CHAIN_FLAG.DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
         };
-        PInvoke.IDXGIFactory2_CreateSwapChainForComposition(_dxgiFactory2, _dcompDevice, ref swapDesc, out _swapChain);
 
-        // 3. IDCompositionDevice::CreateTargetForHwnd
-        PInvoke.IDCompositionDevice_CreateTargetForHwnd(_dcompDevice, hwnd, true, out _dcompTarget);
+        _dxgiFactory2!.CreateSwapChainForComposition(_d3dDevice!, &desc, null, out _swapChain);
+    }
 
-        // 4. CreateVisual (root + content visual)
-        PInvoke.IDCompositionDevice_CreateVisual(_dcompDevice, out _rootVisual);
-        PInvoke.IDCompositionDevice_CreateVisual(_dcompDevice, out _contentVisual);
+    private void CreateBitmapTarget()
+    {
+        Guid surfaceIid = typeof(IDXGISurface).GUID;
+        _swapChain!.GetBuffer(0, &surfaceIid, out object surfaceObj);
+        var surface = (IDXGISurface)surfaceObj;
 
-        // 5. visual.SetContent(swapChain), root.AddVisual(visual), target.SetRoot(root)
-        PInvoke.IDCompositionVisual_SetContent(_contentVisual, _swapChain);
-        PInvoke.IDCompositionVisual_AddVisual(_rootVisual, _contentVisual, true, IntPtr.Zero);
-        PInvoke.IDCompositionTarget_SetRoot(_dcompTarget, _rootVisual);
-        TreeChanged = true;
+        var props = new D2D1_BITMAP_PROPERTIES1_unmanaged
+        {
+            pixelFormat = new D2D1_PIXEL_FORMAT
+            {
+                format = BackBufferFormat,
+                alphaMode = D2D1_ALPHA_MODE.D2D1_ALPHA_MODE_IGNORE,
+            },
+            dpiX = 96f,
+            dpiY = 96f,
+            bitmapOptions = D2D1_BITMAP_OPTIONS.D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS.D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+            colorContext = null,
+        };
 
-        // 6. IDCompositionDevice::Commit()
-        PInvoke.IDCompositionDevice_Commit(_dcompDevice);
+        _d2dContext!.CreateBitmapFromDxgiSurface(surface, &props, out _d2dBitmap);
+        _d2dContext.SetTarget(_d2dBitmap);
+        Marshal.ReleaseComObject(surface);
+    }
 
-        // 7. swapChain.GetBuffer(0) → IDXGISurface → deviceContext.CreateBitmapFromDxgiSurface → ID2D1Bitmap1
-        PInvoke.IDXGISwapChain_GetBuffer(_swapChain, 0, D2DGuids.IID_ID2D1Bitmap1, out IntPtr surface);
-        PInvoke.ID2D1DeviceContext_CreateBitmapFromDxgiSurface(_d2dContext, surface, IntPtr.Zero, out _d2dBitmap);
-        Marshal.Release(surface);
+    private void CreateTextFormat()
+    {
+        fixed (char* family = "Consolas")
+        fixed (char* locale = "en-us")
+        {
+            _dwriteFactory!.CreateTextFormat(
+                new PCWSTR(family), null,
+                DWRITE_FONT_WEIGHT.DWRITE_FONT_WEIGHT_BOLD,
+                DWRITE_FONT_STYLE.DWRITE_FONT_STYLE_NORMAL,
+                DWRITE_FONT_STRETCH.DWRITE_FONT_STRETCH_NORMAL,
+                48f, new PCWSTR(locale), out _textFormat);
+        }
 
-        // 8. deviceContext.SetTarget(bitmap)
-        PInvoke.ID2D1DeviceContext_SetTarget(_d2dContext, _d2dBitmap);
-
-        // DirectWrite initialization
-        var width = (float)clientSize.Width;
-        var height = (float)clientSize.Height;
-        PInvoke.IDWriteFactory_CreateTextFormat(_dwriteFactory, "Arial", IntPtr.Zero, 700, 0, "en-US", out _textFormat);
-        PInvoke.IDWriteTextFormat_SetTextAlignment(_textFormat, 1); // DWRITE_TEXT_ALIGNMENT_LEADING
-        PInvoke.IDWriteTextFormat_SetParagraphAlignment(_textFormat, 1); // DWRITE_PARAGRAPH_ALIGNMENT_NEAR
-        PInvoke.IDWriteTextFormat_SetWordWrapping(_textFormat, 0); // DWRITE_WORD_WRAPPING_NO_WRAP
-        PInvoke.IDWriteFactory_CreateTextLayout(_dwriteFactory, "00 : 00", 10, _textFormat, width, height, out _textLayout);
-        PInvoke.IDWriteTextLayout_SetDrawTextParams(_textLayout, null, 0);
-        PInvoke.IDWriteTextLayout_SetFontSize(_textLayout, 64f, new uint[] { 0, 2 }, new uint[] { 2 });
+        _textFormat.SetTextAlignment(DWRITE_TEXT_ALIGNMENT.DWRITE_TEXT_ALIGNMENT_CENTER);
+        _textFormat.SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT.DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
     }
 
     public void Resize(Size clientSize)
     {
-        if (clientSize.IsEmpty) return;
+        if (_swapChain is null || clientSize.IsEmpty)
+            return;
 
-        // Release old bitmap & swapchain buffers
-        if (_d2dBitmap != IntPtr.Zero) { Marshal.Release(_d2dBitmap); _d2dBitmap = IntPtr.Zero; }
-        PInvoke.IDXGISwapChain_ResizeBuffers(_swapChain, 2, clientSize.Width, clientSize.Height, DXGI_FORMAT.B8G8R8A8_UNORM, 0);
+        _clientSize = clientSize;
 
-        // Get new buffer
-        PInvoke.IDXGISwapChain_GetBuffer(_swapChain, 0, D2DGuids.IID_ID2D1Bitmap1, out IntPtr surface);
-        PInvoke.ID2D1DeviceContext_CreateBitmapFromDxgiSurface(_d2dContext, surface, IntPtr.Zero, out _d2dBitmap);
-        Marshal.Release(surface);
-        PInvoke.ID2D1DeviceContext_SetTarget(_d2dContext, _d2dBitmap);
+        _d2dContext!.SetTarget(null);
+        if (_d2dBitmap is not null)
+        {
+            Marshal.ReleaseComObject(_d2dBitmap);
+            _d2dBitmap = null;
+        }
+
+        _swapChain.ResizeBuffers(2, (uint)clientSize.Width, (uint)clientSize.Height, BackBufferFormat, 0);
+        CreateBitmapTarget();
     }
 
     public void Render(PongGame game)
     {
-        // Per-frame: SetTarget (already done, but ensure context)
-        PInvoke.ID2D1DeviceContext_SetTarget(_d2dContext, _d2dBitmap);
-        PInvoke.ID2D1DeviceContext_BeginDraw(_d2dContext);
+        if (_d2dContext is null || _swapChain is null)
+            return;
 
-        // Clear
-        var clearColor = new D2D1_COLOR_F { r = 0.05f, g = 0.05f, b = 0.1f, a = 1.0f };
-        PInvoke.ID2D1DeviceContext_Clear(_d2dContext, ref clearColor);
+        _d2dContext.BeginDraw();
 
-        // Draw Paddles & Ball
+        var background = new D2D1_COLOR_F { r = 0.05f, g = 0.05f, b = 0.10f, a = 1f };
+        _d2dContext.Clear(&background);
+
         var white = new D2D1_COLOR_F { r = 1f, g = 1f, b = 1f, a = 1f };
-        var pen = PInvoke.ID2D1DeviceContext_CreateSolidColorBrush(_d2dContext, ref white, out var brush);
+        _d2dContext.CreateSolidColorBrush(&white, null, out ID2D1SolidColorBrush brush);
 
-        var leftRect = new D2D1_RECT_F { left = 0, top = game.LeftPaddleY, right = PongConfig.PADDLE_WIDTH, bottom = game.LeftPaddleY + PongConfig.PADDLE_HEIGHT };
-        PInvoke.ID2D1DeviceContext_FillRectangle(_d2dContext, ref leftRect, brush);
-
-        var rightRect = new D2D1_RECT_F { left = PongConfig.WINDOW_WIDTH - PongConfig.PADDLE_WIDTH, top = game.RightPaddleY, right = PongConfig.WINDOW_WIDTH, bottom = game.RightPaddleY + PongConfig.PADDLE_HEIGHT };
-        PInvoke.ID2D1DeviceContext_FillRectangle(_d2dContext, ref rightRect, brush);
-
-        var ballRect = new D2D1_RECT_F { left = game.BallX, top = game.BallY, right = game.BallX + PongConfig.BALL_SIZE, bottom = game.BallY + PongConfig.BALL_SIZE };
-        PInvoke.ID2D1DeviceContext_FillEllipse(_d2dContext, new D2D1_ELLIPSE { point = new D2D1_POINT_2F { x = ballRect.left + ballRect.right / 2, y = ballRect.top + ballRect.bottom / 2 }, radiusX = ballRect.right - ballRect.left, radiusY = ballRect.bottom - ballRect.top }, brush);
-
-        // Draw Score with DirectWrite
-        var scoreStr = $"{game.LeftScore,2} : {game.RightScore,2}";
-        PInvoke.IDWriteTextLayout_SetText(_textLayout, scoreStr, (uint)scoreStr.Length);
-        PInvoke.IDWriteTextLayout_SetFontSize(_textLayout, 48f, new uint[] { 0, scoreStr.Length }, new uint[] { 2 });
-
-        var textBrush = PInvoke.ID2D1DeviceContext_CreateSolidColorBrush(_d2dContext, ref white, out var textBrushPtr);
-        var origin = new D2D1_POINT_2F { x = PongConfig.WINDOW_WIDTH / 2 - 50, y = PongConfig.WINDOW_HEIGHT / 2 - 25 };
-        PInvoke.ID2D1DeviceContext_DrawText(_d2dContext, scoreStr, (uint)scoreStr.Length, _textLayout, ref origin, textBrush);
-        Marshal.Release(textBrushPtr);
-
-        PInvoke.ID2D1DeviceContext_EndDraw(_d2dContext, out _, out _);
-
-        // Present
-        PInvoke.IDXGISwapChain1_Present1(_swapChain, 1, 0, IntPtr.Zero, IntPtr.Zero);
-
-        // DComp Commit only when tree changed
-        if (TreeChanged)
+        var leftPaddle = new D2D_RECT_F
         {
-            PInvoke.IDCompositionDevice_Commit(_dcompDevice);
-            TreeChanged = false;
+            left = 0,
+            top = game.LeftPaddleY,
+            right = PongConfig.PADDLE_WIDTH,
+            bottom = game.LeftPaddleY + PongConfig.PADDLE_HEIGHT,
+        };
+        _d2dContext.FillRectangle(&leftPaddle, brush);
+
+        var rightPaddle = new D2D_RECT_F
+        {
+            left = _clientSize.Width - PongConfig.PADDLE_WIDTH,
+            top = game.RightPaddleY,
+            right = _clientSize.Width,
+            bottom = game.RightPaddleY + PongConfig.PADDLE_HEIGHT,
+        };
+        _d2dContext.FillRectangle(&rightPaddle, brush);
+
+        float radius = PongConfig.BALL_SIZE / 2f;
+        var ball = new D2D1_ELLIPSE
+        {
+            point = new D2D_POINT_2F { x = game.BallX + radius, y = game.BallY + radius },
+            radiusX = radius,
+            radiusY = radius,
+        };
+        _d2dContext.FillEllipse(&ball, brush);
+
+        if (_textFormat is not null)
+        {
+            string score = $"{game.LeftScore}  :  {game.RightScore}";
+            var layout = new D2D_RECT_F { left = 0, top = 20, right = _clientSize.Width, bottom = 100 };
+            fixed (char* text = score)
+            {
+                _d2dContext.DrawText(
+                    new PCWSTR(text), (uint)score.Length, _textFormat, &layout, brush,
+                    D2D1_DRAW_TEXT_OPTIONS.D2D1_DRAW_TEXT_OPTIONS_NONE,
+                    DWRITE_MEASURING_MODE.DWRITE_MEASURING_MODE_NATURAL);
+            }
         }
+
+        Marshal.ReleaseComObject(brush);
+
+        _d2dContext.EndDraw(null, null);
+        _swapChain.Present(1, 0);
     }
 
     public void Dispose()
     {
-        if (_d2dBitmap != IntPtr.Zero) Marshal.Release(_d2dBitmap);
-        if (_d2dContext != IntPtr.Zero) Marshal.Release(_d2dContext);
-        if (_d2dDevice != IntPtr.Zero) Marshal.Release(_d2dDevice);
-        if (_d2dFactory != IntPtr.Zero) Marshal.Release(_d2dFactory);
-        if (_dcompDevice != IntPtr.Zero) Marshal.Release(_dcompDevice);
-        if (_dcompTarget != IntPtr.Zero) Marshal.Release(_dcompTarget);
-        if (_rootVisual != IntPtr.Zero) Marshal.Release(_rootVisual);
-        if (_contentVisual != IntPtr.Zero) Marshal.Release(_contentVisual);
-        if (_swapChain != IntPtr.Zero) Marshal.Release(_swapChain);
-        if (_dxgiFactory2 != IntPtr.Zero) Marshal.Release(_dxgiFactory2);
-        if (_dxgiDevice != IntPtr.Zero) Marshal.Release(_dxgiDevice);
-        if (_d3dDevice != IntPtr.Zero) Marshal.Release(_d3dDevice);
-        if (_textLayout != IntPtr.Zero) Marshal.Release(_textLayout);
-        if (_textFormat != IntPtr.Zero) Marshal.Release(_textFormat);
-        if (_dwriteFactory != IntPtr.Zero) Marshal.Release(_dwriteFactory);
+        void Release(object? com)
+        {
+            if (com is not null && Marshal.IsComObject(com))
+                Marshal.ReleaseComObject(com);
+        }
+
+        Release(_textFormat);
+        Release(_dwriteFactory);
+        Release(_d2dBitmap);
+        Release(_contentVisual);
+        Release(_rootVisual);
+        Release(_dcompTarget);
+        Release(_dcompDevice);
+        Release(_swapChain);
+        Release(_d2dContext);
+        Release(_d2dDevice);
+        Release(_d2dFactory);
+        Release(_dxgiFactory2);
+        Release(_dxgiDevice);
+        Release(_d3dDevice);
+
+        _textFormat = null;
+        _dwriteFactory = null;
+        _d2dBitmap = null;
+        _contentVisual = null;
+        _rootVisual = null;
+        _dcompTarget = null;
+        _dcompDevice = null;
+        _swapChain = null;
+        _d2dContext = null;
+        _d2dDevice = null;
+        _d2dFactory = null;
+        _dxgiFactory2 = null;
+        _dxgiDevice = null;
+        _d3dDevice = null;
     }
 }
