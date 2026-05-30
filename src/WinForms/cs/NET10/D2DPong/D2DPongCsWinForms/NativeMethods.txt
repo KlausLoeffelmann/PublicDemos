@@ -1,0 +1,14 @@
+ID2D1Factory
+ID2D1HwndRenderTarget
+ID2D1SolidColorBrush
+D2D1_COLOR_F
+D2D1_RECT_F
+D2D1CreateFactory
+
+D3D11CreateDevice
+DWriteCreateFactory
+IDCompositionDevice_CreateVisual
+IDXGIFactory2_CreateSwapChainForComposition
+IDXGISwapChain_GetBuffer
+ID2D1DeviceContext_SetTarget
+DCompositionCreateDevice
