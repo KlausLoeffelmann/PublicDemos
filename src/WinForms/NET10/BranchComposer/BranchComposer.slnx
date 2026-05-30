@@ -1,7 +1,13 @@
 <Solution>
+  <Folder Name="/Warp/">
+    <Project Path="../../../../../WARP/src/WarpToolkit.Desktop.Async/WarpToolkit.Desktop.Async.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.Windows.Interop/WarpToolkit.Windows.Interop.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.AppServices/WarpToolkit.WinForms.AppServices.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Drawing/WarpToolkit.WinForms.Drawing.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Extensions/WarpToolkit.WinForms.Extensions.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Github/WarpToolkit.WinForms.Github.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Specialized/WarpToolkit.WinForms.Specialized.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms/WarpToolkit.WinForms.csproj" />
+  </Folder>
   <Project Path="BranchComposer.App/BranchComposer.App.csproj" />
-  <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.AppServices/WarpToolkit.WinForms.AppServices.csproj" />
-  <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Extensions/WarpToolkit.WinForms.Extensions.csproj" />
-  <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Github/WarpToolkit.WinForms.Github.csproj" />
-  <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Specialized/WarpToolkit.WinForms.Specialized.csproj" />
 </Solution>
