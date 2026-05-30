@@ -16,4 +16,10 @@ public enum CatalogEntryKind
 
     /// <summary>A SQL Server instance (LocalDB or SQL Express) and its databases.</summary>
     SqlServer,
+
+    /// <summary>A curated set of Windows registry values.</summary>
+    Registry,
+
+    /// <summary>The locally installed Visual Studio SKUs.</summary>
+    VisualStudio,
 }
