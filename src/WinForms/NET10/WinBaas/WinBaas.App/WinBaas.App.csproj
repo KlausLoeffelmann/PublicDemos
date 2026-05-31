@@ -15,10 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.Specialized\WarpToolkit.WinForms.Specialized.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms\WarpToolkit.WinForms.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.Extensions\WarpToolkit.WinForms.Extensions.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.AppServices\WarpToolkit.WinForms.AppServices.csproj" />
-    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.Tooling\WarpToolkit.WinForms.Tooling.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.Typography\WarpToolkit.WinForms.Typography.csproj" />
   </ItemGroup>
 

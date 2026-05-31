@@ -1,5 +1,5 @@
 using WarpToolkit.WinForms.Containers;
-using WarpToolkit.WinForms.Tooling;
+using WarpToolkit.WinForms.Specialized;
 
 namespace WinBaas;
 

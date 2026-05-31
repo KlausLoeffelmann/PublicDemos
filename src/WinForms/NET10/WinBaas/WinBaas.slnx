@@ -1,10 +1,10 @@
 <Solution>
-  <Project Path="WinBaas.App/WinBaas.App.csproj" />
   <Folder Name="/WarpToolkit/">
-    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms/WarpToolkit.WinForms.csproj" />
-    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Extensions/WarpToolkit.WinForms.Extensions.csproj" />
     <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.AppServices/WarpToolkit.WinForms.AppServices.csproj" />
-    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Tooling/WarpToolkit.WinForms.Tooling.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Extensions/WarpToolkit.WinForms.Extensions.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Specialized/WarpToolkit.WinForms.Specialized.csproj" />
     <Project Path="../../../../../WARP/src/WarpToolkit.WinForms.Typography/WarpToolkit.WinForms.Typography.csproj" />
+    <Project Path="../../../../../WARP/src/WarpToolkit.WinForms/WarpToolkit.WinForms.csproj" />
   </Folder>
+  <Project Path="WinBaas.App/WinBaas.App.csproj" />
 </Solution>
