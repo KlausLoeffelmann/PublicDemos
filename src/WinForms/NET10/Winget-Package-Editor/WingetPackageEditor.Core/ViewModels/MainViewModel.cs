@@ -10,6 +10,11 @@ public sealed partial class MainViewModel : ObservableObject
 {
     private readonly ICatalogService _catalogService;
     private readonly IConsoleService _consoleService;
+    private readonly IVisualStudioDiscoveryService _visualStudioDiscoveryService;
+    private readonly IPackageStore _packageStore;
+    private readonly IInstalledAppScanner _installedAppScanner;
+    private readonly IPackageEditorDialogService _dialogService;
+    private bool _suppressAutoSave;
 
     [ObservableProperty]
     private PackageViewModel? _selectedPackage;
@@ -23,13 +28,24 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = "Ready";
 
-    public MainViewModel(ICatalogService catalogService, IConsoleService consoleService)
+    public MainViewModel(
+        ICatalogService catalogService,
+        IConsoleService consoleService,
+        IVisualStudioDiscoveryService visualStudioDiscoveryService,
+        IPackageStore packageStore,
+        IInstalledAppScanner installedAppScanner,
+        IPackageEditorDialogService dialogService)
     {
         _catalogService = catalogService ?? throw new ArgumentNullException(nameof(catalogService));
         _consoleService = consoleService ?? throw new ArgumentNullException(nameof(consoleService));
+        _visualStudioDiscoveryService = visualStudioDiscoveryService ?? throw new ArgumentNullException(nameof(visualStudioDiscoveryService));
+        _packageStore = packageStore ?? throw new ArgumentNullException(nameof(packageStore));
+        _installedAppScanner = installedAppScanner ?? throw new ArgumentNullException(nameof(installedAppScanner));
+        _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
         ConsoleMessages = _consoleService.Messages;
-        LoadDemoPackage();
+        VisualStudioBranch = new VisualStudioBranchViewModel(_visualStudioDiscoveryService.DiscoverInstances());
+        LoadPackages();
     }
 
     public ObservableCollection<PackageViewModel> Packages { get; } = [];
@@ -40,13 +56,19 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ObservableCollection<ConsoleMessage> ConsoleMessages { get; }
 
+    public VisualStudioBranchViewModel VisualStudioBranch { get; }
+
+    public void WriteConsole(ConsoleMessageKind kind, string text) => _consoleService.Write(kind, text);
+
+    public event EventHandler<ViewCommandKind>? ViewCommandRequested;
+
     partial void OnSelectedPackageChanged(PackageViewModel? value)
     {
         RefreshCurrentApps();
         AddAppCommand.NotifyCanExecuteChanged();
-        SavePackageCommand.NotifyCanExecuteChanged();
-        SavePackageAsCommand.NotifyCanExecuteChanged();
         ExportCommand.NotifyCanExecuteChanged();
+        RemovePackageCommand.NotifyCanExecuteChanged();
+        UpdateCurrentPackageCommand.NotifyCanExecuteChanged();
         ApplyNowCommand.NotifyCanExecuteChanged();
         GenerateBundleFolderCommand.NotifyCanExecuteChanged();
         UpdateStatus();
@@ -71,6 +93,26 @@ public sealed partial class MainViewModel : ObservableObject
                 SelectedPackage = Packages.FirstOrDefault(package => package.Apps.Contains(app));
                 SelectedApp = app;
                 break;
+            case VisualStudioBranchViewModel branch:
+                SelectedPackage = null;
+                SelectedApp = null;
+                StatusText = $"Visual Studio: {branch.Rows.Count} installation/hive item(s)";
+                break;
+            case VisualStudioVersionViewModel version:
+                SelectedPackage = null;
+                SelectedApp = null;
+                StatusText = $"Visual Studio {version.Year}: {version.Rows.Count} installation/hive item(s)";
+                break;
+            case VisualStudioSkuComboViewModel combo:
+                SelectedPackage = null;
+                SelectedApp = null;
+                StatusText = $"Visual Studio {combo.ComboLabel}: {combo.Rows.Count} installation/hive item(s)";
+                break;
+            case VisualStudioInstanceViewModel instance:
+                SelectedPackage = null;
+                SelectedApp = null;
+                StatusText = $"Visual Studio instance: {instance.Model.DisplayName} ({instance.Model.Version})";
+                break;
             default:
                 SelectedApp = null;
                 break;
@@ -86,29 +128,107 @@ public sealed partial class MainViewModel : ObservableObject
             Author = Environment.UserName
         });
 
-        Packages.Add(package);
+        AddPackage(package);
         SelectedPackage = package;
         SelectedApp = null;
         RebuildNavigation();
+        SavePackage(package);
         _consoleService.Write(ConsoleMessageKind.Command, $"Created package '{package.Name}'.");
+    }
+
+    [RelayCommand]
+    private void NewFromExistingPackage()
+    {
+        if (Packages.Count == 0)
+        {
+            _consoleService.Write(ConsoleMessageKind.Warning, "No existing packages to copy from.");
+            return;
+        }
+
+        NewFromExistingResult? result = _dialogService.AskNewFromExisting(
+            Packages.Select(package => package.Model).ToList());
+
+        if (result is null)
+        {
+            return;
+        }
+
+        WingetPackage clone = WingetPackage.Clone(result.SourcePackage);
+        clone.Id = Guid.NewGuid().ToString("N");
+        clone.Name = result.NewName;
+
+        PackageViewModel package = new(clone);
+        AddPackage(package);
+        SelectedPackage = package;
+        SelectedApp = null;
+        RebuildNavigation();
+        SavePackage(package);
+        _consoleService.Write(ConsoleMessageKind.Command, $"Created package '{package.Name}' from '{result.SourcePackage.Name}'.");
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedPackage))]
+    private void RemovePackage()
+    {
+        PackageViewModel package = SelectedPackage!;
+        if (!_dialogService.ConfirmRemovePackage(package.Name))
+        {
+            return;
+        }
+
+        _packageStore.Delete(package.Model);
+        Packages.Remove(package);
+        SelectedApp = null;
+        SelectedPackage = Packages.FirstOrDefault();
+        RebuildNavigation();
+        _consoleService.Write(ConsoleMessageKind.Command, $"Removed package '{package.Name}' (backup written).");
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedPackage))]
+    private void UpdateCurrentPackage()
+    {
+        PackageViewModel package = SelectedPackage!;
+        IReadOnlyList<string> installedIds = _installedAppScanner.GetInstalledWingetIds();
+        HashSet<string> installed = new(installedIds, StringComparer.OrdinalIgnoreCase);
+        HashSet<string> existing = new(
+            package.Model.Apps.Select(app => app.Id),
+            StringComparer.OrdinalIgnoreCase);
+
+        int added = 0;
+        _suppressAutoSave = true;
+        try
+        {
+            foreach (AppEntry template in _catalogService.GetWellKnownApps())
+            {
+                if (!installed.Contains(template.Id) || existing.Contains(template.Id))
+                {
+                    continue;
+                }
+
+                package.AddApp(WingetPackage.Clone(new WingetPackage { Apps = [template] }).Apps[0]);
+                existing.Add(template.Id);
+                added++;
+            }
+        }
+        finally
+        {
+            _suppressAutoSave = false;
+        }
+
+        if (added > 0)
+        {
+            RefreshCurrentApps();
+            RebuildNavigation();
+            SavePackage(package);
+        }
+
+        _consoleService.Write(ConsoleMessageKind.Command,
+            $"Update current package: added {added} installed app(s) to '{package.Name}'.");
     }
 
     [RelayCommand]
     private void OpenPackage()
     {
-        _consoleService.Write(ConsoleMessageKind.Command, "Open package command executed (V0 placeholder).");
-    }
-
-    [RelayCommand(CanExecute = nameof(HasSelectedPackage))]
-    private void SavePackage()
-    {
-        _consoleService.Write(ConsoleMessageKind.Command, $"Save package command executed for '{SelectedPackage!.Name}' (V0 placeholder).");
-    }
-
-    [RelayCommand(CanExecute = nameof(HasSelectedPackage))]
-    private void SavePackageAs()
-    {
-        _consoleService.Write(ConsoleMessageKind.Command, $"Save package as command executed for '{SelectedPackage!.Name}' (V0 placeholder).");
+        _consoleService.Write(ConsoleMessageKind.Command, "Import package command executed (V0 placeholder).");
     }
 
     [RelayCommand(CanExecute = nameof(HasSelectedPackage))]
@@ -120,9 +240,17 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(HasSelectedPackage))]
     private void AddApp()
     {
-        AppEntryViewModel app = SelectedPackage!.AddApp(_catalogService.CreateDefaultApp());
+        AppEntry? configured = _dialogService.PickAndConfigureApp(_catalogService.GetWellKnownApps());
+        if (configured is null)
+        {
+            return;
+        }
+
+        AppEntryViewModel app = SelectedPackage!.AddApp(configured);
         SelectedApp = app;
+        RefreshCurrentApps();
         RebuildNavigation();
+        SavePackage(SelectedPackage);
         _consoleService.Write(ConsoleMessageKind.Command, $"Added app '{app.DisplayName}' to '{SelectedPackage.Name}'.");
     }
 
@@ -138,7 +266,9 @@ public sealed partial class MainViewModel : ObservableObject
 
         package.RemoveApp(app);
         SelectedApp = null;
+        RefreshCurrentApps();
         RebuildNavigation();
+        SavePackage(package);
         _consoleService.Write(ConsoleMessageKind.Command, $"Removed app '{app.DisplayName}' from '{package.Name}'.");
     }
 
@@ -163,7 +293,25 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Options()
     {
-        _consoleService.Write(ConsoleMessageKind.Command, "Options command executed (V0 placeholder).");
+        RequestViewCommand(ViewCommandKind.ShowOptions, "Options dialog requested.");
+    }
+
+    [RelayCommand]
+    private void ExpandAllNodes()
+    {
+        RequestViewCommand(ViewCommandKind.ExpandAllNodes, "Expand all tree nodes requested.");
+    }
+
+    [RelayCommand]
+    private void CollapseSelectedNode()
+    {
+        RequestViewCommand(ViewCommandKind.CollapseSelectedNode, "Collapse selected tree node requested.");
+    }
+
+    [RelayCommand]
+    private void ExpandSelectedNode()
+    {
+        RequestViewCommand(ViewCommandKind.ExpandSelectedNode, "Expand selected tree node requested.");
     }
 
     [RelayCommand]
@@ -176,13 +324,65 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool HasSelectedApp() => SelectedApp is not null;
 
-    private void LoadDemoPackage()
+    private void LoadPackages()
     {
-        PackageViewModel package = new(_catalogService.CreateDemoPackage());
-        Packages.Add(package);
-        SelectedPackage = package;
+        IReadOnlyList<WingetPackage> stored = _packageStore.LoadAll();
+
+        if (stored.Count == 0)
+        {
+            PackageViewModel demo = new(_catalogService.CreateDemoPackage());
+            AddPackage(demo);
+            SavePackage(demo);
+            SelectedPackage = demo;
+            RebuildNavigation();
+            _consoleService.Write(ConsoleMessageKind.Info, "Loaded V0 demo package.");
+            return;
+        }
+
+        foreach (WingetPackage model in stored.OrderBy(package => package.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            AddPackage(new PackageViewModel(model));
+        }
+
+        SelectedPackage = Packages.FirstOrDefault();
         RebuildNavigation();
-        _consoleService.Write(ConsoleMessageKind.Info, "Loaded V0 demo package.");
+        _consoleService.Write(ConsoleMessageKind.Info, $"Loaded {Packages.Count} package(s) from disk.");
+    }
+
+    private void AddPackage(PackageViewModel package)
+    {
+        Packages.Add(package);
+        AttachAutoSave(package);
+    }
+
+    private void AttachAutoSave(PackageViewModel package)
+    {
+        package.PropertyChanged += (_, _) => SavePackage(package);
+        package.Apps.CollectionChanged += (_, args) =>
+        {
+            if (args.NewItems is not null)
+            {
+                foreach (AppEntryViewModel app in args.NewItems.OfType<AppEntryViewModel>())
+                {
+                    app.PropertyChanged += (_, _) => SavePackage(package);
+                }
+            }
+        };
+
+        foreach (AppEntryViewModel app in package.Apps)
+        {
+            app.PropertyChanged += (_, _) => SavePackage(package);
+        }
+    }
+
+    private void SavePackage(PackageViewModel package)
+    {
+        if (_suppressAutoSave)
+        {
+            return;
+        }
+
+        _packageStore.Save(package.Model);
     }
 
     private void RefreshCurrentApps()
@@ -205,18 +405,74 @@ public sealed partial class MainViewModel : ObservableObject
 
         foreach (PackageViewModel package in Packages)
         {
-            NavigationNodeViewModel packageNode = new(package.TreeText, NavigationNodeKind.Package, package);
+            string packageKey = $"package:{package.Name}";
+            NavigationNodeViewModel packageNode = new(
+                package.TreeText,
+                NavigationNodeKind.Package,
+                package,
+                packageKey);
+
             foreach (AppEntryViewModel app in package.Apps)
             {
-                NavigationNodeViewModel appNode = new(app.TreeText, NavigationNodeKind.App, app);
+                NavigationNodeViewModel appNode = new(
+                    app.TreeText,
+                    NavigationNodeKind.App,
+                    app,
+                    $"{packageKey}/app:{app.Id}");
                 AddExtensionNodes(appNode, app.Model);
                 packageNode.Children.Add(appNode);
             }
 
+            packageNode.Children.Add(CreateVisualStudioNode(packageKey));
             NavigationRoots.Add(packageNode);
         }
 
         SelectedNavigationNode = FindSelectedNavigationNode();
+    }
+
+    private NavigationNodeViewModel CreateVisualStudioNode(string packageKey)
+    {
+        string visualStudioKey = $"{packageKey}/vs";
+        NavigationNodeViewModel root = new(
+            VisualStudioBranch.TreeText,
+            NavigationNodeKind.VisualStudioRoot,
+            VisualStudioBranch,
+            visualStudioKey);
+
+        foreach (VisualStudioVersionViewModel version in VisualStudioBranch.Versions)
+        {
+            string versionKey = $"{visualStudioKey}/year:{version.Year}";
+            NavigationNodeViewModel versionNode = new(
+                version.TreeText,
+                NavigationNodeKind.VisualStudioVersion,
+                version,
+                versionKey);
+
+            foreach (VisualStudioSkuComboViewModel combo in version.SkuCombos)
+            {
+                string comboKey = $"{versionKey}/sku:{combo.ComboLabel}";
+                NavigationNodeViewModel comboNode = new(
+                    combo.TreeText,
+                    NavigationNodeKind.VisualStudioSkuCombo,
+                    combo,
+                    comboKey);
+
+                foreach (VisualStudioInstanceViewModel instance in combo.Instances)
+                {
+                    comboNode.Children.Add(new NavigationNodeViewModel(
+                        instance.TreeText,
+                        NavigationNodeKind.VisualStudioInstance,
+                        instance,
+                        $"{comboKey}/instance:{instance.Id}"));
+                }
+
+                versionNode.Children.Add(comboNode);
+            }
+
+            root.Children.Add(versionNode);
+        }
+
+        return root;
     }
 
     private static void AddExtensionNodes(NavigationNodeViewModel appNode, AppEntry app)
@@ -226,13 +482,21 @@ public sealed partial class MainViewModel : ObservableObject
             case VSCodeEntry code:
                 foreach (string extension in code.Extensions)
                 {
-                    appNode.Children.Add(new NavigationNodeViewModel(extension, NavigationNodeKind.Extension, extension));
+                    appNode.Children.Add(new NavigationNodeViewModel(
+                        extension,
+                        NavigationNodeKind.Extension,
+                        extension,
+                        $"{appNode.Key}/extension:{extension}"));
                 }
                 break;
             case VisualStudioEntry visualStudio:
                 foreach (VsixReference extension in visualStudio.Extensions)
                 {
-                    appNode.Children.Add(new NavigationNodeViewModel(extension.Identifier, NavigationNodeKind.Extension, extension));
+                    appNode.Children.Add(new NavigationNodeViewModel(
+                        extension.Identifier,
+                        NavigationNodeKind.Extension,
+                        extension,
+                        $"{appNode.Key}/extension:{extension.Identifier}"));
                 }
                 break;
         }
@@ -262,6 +526,36 @@ public sealed partial class MainViewModel : ObservableObject
             return NavigationRoots.FirstOrDefault(packageNode => ReferenceEquals(packageNode.Value, SelectedPackage));
         }
 
+        if (SelectedNavigationNode is not null)
+        {
+            return FindNodeByKey(NavigationRoots, SelectedNavigationNode.Key);
+        }
+
         return null;
+    }
+
+    private static NavigationNodeViewModel? FindNodeByKey(IEnumerable<NavigationNodeViewModel> nodes, string key)
+    {
+        foreach (NavigationNodeViewModel node in nodes)
+        {
+            if (StringComparer.Ordinal.Equals(node.Key, key))
+            {
+                return node;
+            }
+
+            NavigationNodeViewModel? child = FindNodeByKey(node.Children, key);
+            if (child is not null)
+            {
+                return child;
+            }
+        }
+
+        return null;
+    }
+
+    private void RequestViewCommand(ViewCommandKind kind, string message)
+    {
+        _consoleService.Write(ConsoleMessageKind.Command, message);
+        ViewCommandRequested?.Invoke(this, kind);
     }
 }
