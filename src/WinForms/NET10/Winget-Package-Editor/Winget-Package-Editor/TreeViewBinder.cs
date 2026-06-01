@@ -8,6 +8,7 @@ internal sealed class TreeViewBinder : IDisposable
 {
     private readonly TreeView _treeView;
     private readonly ObservableCollection<NavigationNodeViewModel> _roots;
+    private Font? _rootNodeFont;
     private bool _updatingTree;
 
     public TreeViewBinder(TreeView treeView, ObservableCollection<NavigationNodeViewModel> roots)
@@ -20,6 +21,43 @@ internal sealed class TreeViewBinder : IDisposable
     }
 
     public event EventHandler<NavigationNodeViewModel?>? SelectedNodeChanged;
+
+    public void SetRootNodeFont(Font? font)
+    {
+        _rootNodeFont = font;
+        foreach (TreeNode node in _treeView.Nodes)
+        {
+            if (node.Tag is NavigationNodeViewModel { Kind: NavigationNodeKind.Package })
+            {
+                node.NodeFont = _rootNodeFont;
+            }
+        }
+    }
+
+    public void ExpandAll() => _treeView.ExpandAll();
+
+    public void CollapseSelected()
+    {
+        _treeView.SelectedNode?.Collapse();
+    }
+
+    public void ExpandSelected()
+    {
+        _treeView.SelectedNode?.ExpandAll();
+    }
+
+    public string[] GetExpandedNodeKeys()
+    {
+        List<string> keys = [];
+        CollectExpandedNodeKeys(_treeView.Nodes, keys);
+        return [.. keys];
+    }
+
+    public void RestoreExpandedNodeKeys(IEnumerable<string> keys)
+    {
+        HashSet<string> keySet = new(keys);
+        RestoreExpandedNodeKeys(_treeView.Nodes, keySet);
+    }
 
     public void SelectNode(NavigationNodeViewModel? selectedNode)
     {
@@ -63,10 +101,9 @@ internal sealed class TreeViewBinder : IDisposable
             _treeView.Nodes.Clear();
             foreach (NavigationNodeViewModel root in _roots)
             {
-                _treeView.Nodes.Add(CreateNode(root));
+                _treeView.Nodes.Add(CreateNode(root, _rootNodeFont));
             }
 
-            _treeView.ExpandAll();
             if (_treeView.Nodes.Count > 0 && _treeView.SelectedNode is null)
             {
                 _treeView.SelectedNode = _treeView.Nodes[0];
@@ -79,16 +116,21 @@ internal sealed class TreeViewBinder : IDisposable
         }
     }
 
-    private static TreeNode CreateNode(NavigationNodeViewModel viewModel)
+    private static TreeNode CreateNode(NavigationNodeViewModel viewModel, Font? rootNodeFont)
     {
         TreeNode node = new(viewModel.Text)
         {
             Tag = viewModel
         };
 
+        if (viewModel.Kind == NavigationNodeKind.Package)
+        {
+            node.NodeFont = rootNodeFont;
+        }
+
         foreach (NavigationNodeViewModel child in viewModel.Children)
         {
-            node.Nodes.Add(CreateNode(child));
+            node.Nodes.Add(CreateNode(child, rootNodeFont));
         }
 
         return node;
@@ -121,5 +163,31 @@ internal sealed class TreeViewBinder : IDisposable
         }
 
         return null;
+    }
+
+    private static void CollectExpandedNodeKeys(TreeNodeCollection nodes, List<string> keys)
+    {
+        foreach (TreeNode node in nodes)
+        {
+            if (node.IsExpanded && node.Tag is NavigationNodeViewModel viewModel)
+            {
+                keys.Add(viewModel.Key);
+            }
+
+            CollectExpandedNodeKeys(node.Nodes, keys);
+        }
+    }
+
+    private static void RestoreExpandedNodeKeys(TreeNodeCollection nodes, HashSet<string> keys)
+    {
+        foreach (TreeNode node in nodes)
+        {
+            if (node.Tag is NavigationNodeViewModel viewModel && keys.Contains(viewModel.Key))
+            {
+                node.Expand();
+            }
+
+            RestoreExpandedNodeKeys(node.Nodes, keys);
+        }
     }
 }

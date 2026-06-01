@@ -4,11 +4,12 @@ namespace WingetPackageEditor.Core.ViewModels;
 
 public sealed class NavigationNodeViewModel
 {
-    public NavigationNodeViewModel(string text, NavigationNodeKind kind, object value)
+    public NavigationNodeViewModel(string text, NavigationNodeKind kind, object value, string key)
     {
         Text = text;
         Kind = kind;
         Value = value;
+        Key = key;
     }
 
     public string Text { get; }
@@ -16,6 +17,8 @@ public sealed class NavigationNodeViewModel
     public NavigationNodeKind Kind { get; }
 
     public object Value { get; }
+
+    public string Key { get; }
 
     public ObservableCollection<NavigationNodeViewModel> Children { get; } = [];
 
@@ -26,5 +29,9 @@ public enum NavigationNodeKind
 {
     Package,
     App,
-    Extension
+    Extension,
+    VisualStudioRoot,
+    VisualStudioVersion,
+    VisualStudioSkuCombo,
+    VisualStudioInstance
 }
