@@ -50,6 +50,11 @@ internal static class Program
         builder.Services.AddScoped<MainForm>();
         builder.Services.AddScoped<IConsoleService, ConsoleService>();
         builder.Services.AddScoped<ICatalogService, HardcodedCatalogService>();
+        builder.Services.AddScoped<IVisualStudioDiscoveryService, LocalVisualStudioDiscoveryService>();
+        builder.Services.AddScoped<IPackageStore>(provider =>
+            new JsonPackageStore(provider.GetRequiredService<IConsoleService>()));
+        builder.Services.AddScoped<IInstalledAppScanner, WingetListScanner>();
+        builder.Services.AddScoped<IPackageEditorDialogService, WinFormsPackageEditorDialogService>();
         builder.Services.AddScoped<MainViewModel>();
 
         // Configure WinForms-specific options

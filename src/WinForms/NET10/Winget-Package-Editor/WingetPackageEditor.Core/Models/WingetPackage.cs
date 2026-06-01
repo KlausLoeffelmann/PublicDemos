@@ -1,9 +1,12 @@
 using System.Text.Json.Serialization;
+using WingetPackageEditor.Core.Services;
 
 namespace WingetPackageEditor.Core.Models;
 
 public sealed class WingetPackage
 {
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
     public string Name { get; set; } = "";
 
     public string? Description { get; set; }
@@ -13,6 +16,11 @@ public sealed class WingetPackage
     public string Version { get; set; } = "1.0.0";
 
     public List<AppEntry> Apps { get; set; } = [];
+
+    /// <summary>
+    ///  Creates a deep copy of <paramref name="package"/>, preserving polymorphic app entries.
+    /// </summary>
+    public static WingetPackage Clone(WingetPackage package) => PackageJsonSerializer.Clone(package);
 }
 
 public enum AppAction { Ensure, Install, Upgrade }

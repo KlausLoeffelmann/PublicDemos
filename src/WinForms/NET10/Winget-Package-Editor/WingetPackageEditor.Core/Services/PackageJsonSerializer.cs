@@ -21,4 +21,15 @@ public static class PackageJsonSerializer
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         return JsonSerializer.Deserialize<WingetPackage>(json, DefaultOptions);
     }
+
+    /// <summary>
+    ///  Creates a deep copy of <paramref name="package"/> by round-tripping it through JSON.
+    ///  Polymorphic app entries are preserved.
+    /// </summary>
+    public static WingetPackage Clone(WingetPackage package)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+        return Deserialize(Serialize(package))
+            ?? throw new InvalidOperationException("Failed to clone package.");
+    }
 }

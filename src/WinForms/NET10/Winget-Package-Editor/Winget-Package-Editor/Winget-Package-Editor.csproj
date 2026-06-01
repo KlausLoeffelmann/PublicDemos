@@ -16,7 +16,7 @@
     <PackageReference Include="WarpToolkit.WinForms" Version="$(WarpToolkitVersion)" />
     <PackageReference Include="WarpToolkit.WinForms.AI" Version="$(WarpToolkitVersion)" />
     <PackageReference Include="WarpToolkit.WinForms.AppServices" Version="$(WarpToolkitVersion)" />
-    <PackageReference Include="WarpToolkit.WinForms.Tooling" Version="$(WarpToolkitVersion)" />
+    <PackageReference Include="WarpToolkit.WinForms.Specialized" Version="$(WarpToolkitVersion)" />
   </ItemGroup>
 
   <ItemGroup>
