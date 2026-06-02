@@ -1,4 +1,4 @@
-# "WinBaas" - WinForms Backup Assisst Application Prompt
+# "WinBaas" - WinForms Backup Assist Application Prompt
 
 Use the following prompt as the implementation specification for a WinForms application to be created in `src/WinForms/NET10/WinBaas`.
 

@@ -13,6 +13,13 @@ public sealed partial class RegistryGridControl : UserControl
     public RegistryGridControl()
     {
         InitializeComponent();
+
+        // Keep registry rows uniform and single-line. Some curated values (long
+        // REG_SZ paths, timestamps, multi-string joins) are wide; with the grid's
+        // default wrapping these can otherwise blow up a single row's height.
+        _grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None;
+        _grid.DefaultCellStyle.WrapMode = DataGridViewTriState.False;
+
         _grid.CellValueChanged += Grid_CellValueChanged;
         _grid.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
         _grid.SelectionChanged += Grid_SelectionChanged;

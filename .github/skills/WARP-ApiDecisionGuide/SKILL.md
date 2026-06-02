@@ -16,7 +16,7 @@ For deep context on each package see
 `src/docs/reference/` in this repo.
 
 The current preview version of every WARP NuGet is:
-`0.9.86-preview.g8bc92e2168`.
+`0.9.7-preview.g32895b766b`.
 
 ## How to use this skill
 
@@ -40,7 +40,7 @@ The current preview version of every WARP NuGet is:
 | A modern tab control / message box / wizard / file picker / bindable combo | `WarpToolkit.WinForms` (`FluentTabControl`, `FluentMessageBox`, `WizardContainer`, `FilePathPicker`, `BindableComboBox`, `TransparentPanel`, …) | `WarpToolkit.WinForms.md` |
 | Decorate a TableLayoutPanel with borders / error signalling / per-cell padding | `AdornerPanel` / `AdornerTableLayoutPanel` / `AdornerCellStyle` from `WarpToolkit.WinForms` (with layout primitives from `WarpToolkit.ComponentModel.GridLayouting`) | `WarpToolkit.WinForms.md` |
 | Walk the control tree, plug an `IValueConverter` into a `Binding`, apply dark-mode to a `DataGridView`, show a modal dialog async | `WarpToolkit.WinForms.Extensions` (`ControlExtensions`, `BindableComponentExtensions`, `DataGridViewExtensions.ApplyDarkMode`, `FormExtensions.ShowDialogAsync<T>`) | `WarpToolkit.WinForms.Extensions.md` |
-| An interactive in-process terminal pane, or collision-free filename generation | `WarpToolkit.WinForms.Tooling` (`ConsoleControl`, `FilenameDisambiguator`) | `WarpToolkit.WinForms.Tooling.md` |
+| An interactive in-process terminal pane, or collision-free filename generation | `WarpToolkit.WinForms.Specialized` (`ConsoleControl`, `FilenameDisambiguator`) | `WarpToolkit.WinForms.Specialized.md` |
 | GDI+-style drawing but **hardware accelerated** (Direct2D/DirectWrite) | Inherit from `D2DPanel` and draw via `D2DGraphics` in `WarpToolkit.WinForms.DirectX`. Each panel owns its own device-manager bundle. | `WarpToolkit.WinForms.DirectX.md` |
 | Render Markdown / formatted text with custom layout | `WarpToolkit.WinForms.Typography` (`ITypographyRenderer`, `Block`/`Inline`/`BulletedParagraph`, MarkDig integration) | `WarpToolkit.WinForms.Typography.md` |
 | Wire up `async` button clicks, await a form closing, freeze content with a spinner | `WarpToolkit.WinForms.Async` (`AsyncButton`, `AwaitableForm`, `AwaitableEvent<T>`, `ContentFreezePanel`) | `WarpToolkit.WinForms.Async.md` |
@@ -52,6 +52,7 @@ The current preview version of every WARP NuGet is:
 | Add a designer-aware logger to the app | `WarpToolkit.Microsoft.Extensions` (`AddTimeStampedDebug`, `AddWinFormsFileLogger`, `UseWinFormsLogging`) | `WarpToolkit.Microsoft.Extensions.md` |
 | A sub-millisecond timer for animations or media | `HighPrecisionTimer` from `WarpToolkit.Windows.Interop.PrecisionTimer` | `WarpToolkit.Windows.Interop.md` |
 | A DI-aware component that receives the host form / container as `IServiceProvider` at designer time | Implement `IServiceProviderAssignable` (`WarpToolkit.ComponentModel`); attach `ServiceProviderAssignableComponentCodeDomSerializer` from `WarpToolkit.WinForms.Design` | `WarpToolkit.WinForms.Design.md`, `WarpToolkit.ComponentModel.md` |
+| Inspect local GitHub repos, list branches/commits, compose integration branches, or get an authenticated Octokit client | `WarpToolkit.WinForms.Github` (`ILocalGitRepositoryService`, `IGitBranchCompositionService`, `IGitHubClientFactoryService`) | `warp-github-git` skill |
 
 ## Hand-off targets
 
@@ -70,7 +71,7 @@ under `src/CopilotSkills/`):
   components). Consult this skill first whenever a feature requires DI.
 
 - **`warp-winforms-controls`** — `WarpToolkit.WinForms`,
-  `WarpToolkit.WinForms.Extensions`, `WarpToolkit.WinForms.Tooling`.
+  `WarpToolkit.WinForms.Extensions`, `WarpToolkit.WinForms.Specialized`.
 
 - **`warp-fluent-tab-control`** — The mandatory "one UserControl per
   tab page" pattern, host-form sizing caps (≤ 75% of screen, ≤ 90% of
@@ -79,6 +80,10 @@ under `src/CopilotSkills/`):
 - **`warp-winforms-ai`** — `WarpToolkit.Desktop.AI`,
   `WarpToolkit.Microsoft.Extensions.AI`, `WarpToolkit.WinForms.AI`,
   `WarpToolkit.WinForms.Chat`.
+
+- **`warp-github-git`** — `WarpToolkit.WinForms.Github`
+  (GitHub auth/client helpers, local Git repository inspection, branch metadata,
+  and safe branch composition through temporary worktrees).
 
 ## Anti-patterns to avoid
 

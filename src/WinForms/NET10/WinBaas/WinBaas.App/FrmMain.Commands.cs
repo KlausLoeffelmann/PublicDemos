@@ -63,6 +63,7 @@ public sealed partial class FrmMain
                 node.ExpandAll();
             }
         };
+        _menuViewOpenAffected.Click += (_, _) => ExpandAffectedNodes();
 
         UpdateCommandStates();
     }
@@ -151,6 +152,11 @@ public sealed partial class FrmMain
                 _visualStudioSkus.Count);
 
             RefreshDetailFromSelectedNode();
+
+            if (_settings.Get(DlgOptions.KeyExpandAffectedAfterScan, true))
+            {
+                ExpandAffectedNodes();
+            }
         }
         catch (Exception ex)
         {
@@ -203,6 +209,7 @@ public sealed partial class FrmMain
                 result.ReportPath);
 
             var viewer = new DlgReportViewer(result.ReportPath) { Owner = this };
+            viewer.FormClosed += (_, _) => viewer.Dispose();
             viewer.Show(this);
         }
         catch (Exception ex)
@@ -219,7 +226,7 @@ public sealed partial class FrmMain
 
     private BackupOptions? ChooseBackupDestination()
     {
-        BackupMode stored = _settings.Get("WinBaas.BackupMode", BackupMode.CopyToFolder);
+        BackupMode stored = _settings.Get(DlgOptions.KeyBackupMode, BackupMode.CopyToFolder);
         if (stored == BackupMode.ZipArchive)
         {
             using var dlg = new FolderBrowserDialog
@@ -291,7 +298,19 @@ public sealed partial class FrmMain
 
     private void OptionsCommand(object? sender, EventArgs e)
     {
+        string roamingBefore = _settings.Get(DlgOptions.KeyRoamingCatalogPath, string.Empty);
+
         using var dialog = new DlgOptions(_settings);
         dialog.ShowDialog(this);
+
+        string roamingAfter = _settings.Get(DlgOptions.KeyRoamingCatalogPath, string.Empty);
+        if (!string.Equals(roamingBefore, roamingAfter, StringComparison.OrdinalIgnoreCase))
+        {
+            // Adopt the catalog from the newly configured location instead of
+            // letting the next Save overwrite it with the previous in-memory list.
+            _catalog.Reload();
+            PopulateSourceTree();
+            RestoreTreeState();
+        }
     }
 }

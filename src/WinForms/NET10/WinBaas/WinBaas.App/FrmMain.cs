@@ -216,7 +216,6 @@ public sealed partial class FrmMain : Form
                     Tag = new RegistryGroupTag(registryEntry),
                     ToolTipText = registryEntry.Description,
                 };
-                _treeSources.Nodes.Add(_registryRootNode);
             }
 
             if (visualStudioEntry is not null)
@@ -229,6 +228,7 @@ public sealed partial class FrmMain : Form
                 _treeSources.Nodes.Add(_visualStudioRootNode);
             }
 
+            TreeNode? systemCategoryNode = null;
             var grouped = standardEntries.GroupBy(entry => entry.Category ?? string.Empty);
             foreach (var group in grouped.OrderBy(group => CategoryOrder(group.Key)))
             {
@@ -248,7 +248,26 @@ public sealed partial class FrmMain : Form
                     categoryNode.Nodes.Add(leaf);
                 }
 
+                if (string.Equals(group.Key, "System", StringComparison.OrdinalIgnoreCase))
+                {
+                    systemCategoryNode = categoryNode;
+                }
+
                 _treeSources.Nodes.Add(categoryNode);
+            }
+
+            // The Registry branch lives under the System category rather than at
+            // the tree root. Fall back to the root if there is no System category.
+            if (_registryRootNode is not null)
+            {
+                if (systemCategoryNode is not null)
+                {
+                    systemCategoryNode.Nodes.Insert(0, _registryRootNode);
+                }
+                else
+                {
+                    _treeSources.Nodes.Add(_registryRootNode);
+                }
             }
         }
         finally
@@ -458,6 +477,71 @@ public sealed partial class FrmMain : Form
         _activeDetailControl = control;
     }
 
+    /// <summary>
+    ///  Expands every tree node that is "affected" by the most recent scan
+    ///  (catalog leaves with discovered items, the Registry branch when curated
+    ///  values are present, or Visual Studio SKUs with hives/extensions) and
+    ///  collapses the rest.
+    /// </summary>
+    private void ExpandAffectedNodes()
+    {
+        _treeSources.BeginUpdate();
+        try
+        {
+            foreach (TreeNode node in _treeSources.Nodes)
+            {
+                ApplyAffectedExpansion(node);
+            }
+
+            if (_treeSources.SelectedNode is { } selected)
+            {
+                selected.EnsureVisible();
+            }
+        }
+        finally
+        {
+            _treeSources.EndUpdate();
+        }
+    }
+
+    /// <summary>
+    ///  Recursively expands containers that hold affected descendants and
+    ///  collapses the rest. Returns whether <paramref name="node"/> (or any of
+    ///  its descendants) is affected.
+    /// </summary>
+    private bool ApplyAffectedExpansion(TreeNode node)
+    {
+        bool childAffected = false;
+        foreach (TreeNode child in node.Nodes)
+        {
+            childAffected |= ApplyAffectedExpansion(child);
+        }
+
+        if (node.Nodes.Count > 0)
+        {
+            if (childAffected)
+            {
+                node.Expand();
+            }
+            else
+            {
+                node.Collapse();
+            }
+        }
+
+        return childAffected || IsNodeAffected(node);
+    }
+
+    private bool IsNodeAffected(TreeNode node) => node.Tag switch
+    {
+        CatalogEntry => _nodeItems.TryGetValue(node, out List<DiscoveredItem>? items) && items.Count > 0,
+        RegistryGroupTag => _registryItems.Any(item => item.IsPresent),
+        VsSku sku => sku.Hives.Count > 0 || sku.Extensions.Count > 0,
+        VsHivesTag hivesTag => hivesTag.Sku.Hives.Count > 0,
+        VsExtensionsTag extensionsTag => extensionsTag.Sku.Extensions.Count > 0,
+        _ => false,
+    };
+
     private static IEnumerable<TreeNode> EnumerateNodes(TreeNodeCollection nodes)
     {
         foreach (TreeNode node in nodes)
@@ -469,7 +553,6 @@ public sealed partial class FrmMain : Form
             }
         }
     }
-
     private static string? GetNodePersistenceKey(TreeNode? node) => node?.Tag switch
     {
         CategoryTag tag => $"cat:{tag.Name}",
@@ -495,6 +578,7 @@ public sealed partial class FrmMain : Form
         public void Add(CatalogEntry entry) { }
         public bool Remove(Guid id) => false;
         public void RestoreDefaults() { }
+        public void Reload() { }
         public void Save() { }
     }
 

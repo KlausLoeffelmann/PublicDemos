@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using WarpToolkit.ComponentModel;
+using WinBaas.Dialogs;
 using WinBaas.Models;
 
 namespace WinBaas.Services;
@@ -10,6 +11,9 @@ public sealed class CatalogService : ICatalogService
 {
     /// <summary>Settings key under which the user-defined catalog is persisted.</summary>
     public const string SettingsKey = "WinBaas.Catalog";
+
+    /// <summary>Default file name used when the roaming catalog path is a folder.</summary>
+    private const string RoamingCatalogFileName = "WinBaas.Catalog.json";
 
     private readonly IUserSettingsService _settings;
     private readonly ILogger<CatalogService> _logger;
@@ -22,8 +26,7 @@ public sealed class CatalogService : ICatalogService
         _logger = logger;
         _builtInEntries = BuildSeed().ToList();
 
-        string serialized = _settings.Get(SettingsKey, string.Empty);
-        _userEntries = TryDeserialize(serialized);
+        _userEntries = LoadUserEntries();
         _logger.LogInformation("Loaded {Builtin} built-in and {User} user-defined catalog entries.",
             _builtInEntries.Count, _userEntries.Count);
     }
@@ -64,7 +67,16 @@ public sealed class CatalogService : ICatalogService
         _userEntries.Clear();
         _settings.Remove(SettingsKey);
         _settings.Flush();
+        DeleteRoamingCatalogFile();
         _logger.LogInformation("Catalog restored to built-in defaults.");
+    }
+
+    /// <inheritdoc />
+    public void Reload()
+    {
+        _userEntries.Clear();
+        _userEntries.AddRange(LoadUserEntries());
+        _logger.LogInformation("Reloaded {User} user-defined catalog entries from the current backing store.", _userEntries.Count);
     }
 
     /// <inheritdoc />
@@ -75,10 +87,97 @@ public sealed class CatalogService : ICatalogService
             string json = JsonSerializer.Serialize(_userEntries);
             _settings.Set(SettingsKey, json);
             _settings.Flush();
+
+            string? roamingFile = ResolveRoamingCatalogFile();
+            if (roamingFile is not null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(roamingFile)!);
+                File.WriteAllText(roamingFile, json);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to persist catalog.");
+        }
+    }
+
+    /// <summary>
+    ///  Loads the user-defined catalog, preferring the roaming catalog file when
+    ///  the <see cref="DlgOptions.KeyRoamingCatalogPath"/> option is configured
+    ///  and the file exists.
+    /// </summary>
+    private List<CatalogEntry> LoadUserEntries()
+    {
+        string? roamingFile = ResolveRoamingCatalogFile();
+        if (roamingFile is not null && File.Exists(roamingFile))
+        {
+            try
+            {
+                // Distinguish a genuinely empty catalog from a parse failure so a
+                // corrupt roaming file falls back to the settings store instead of
+                // silently discarding the user's entries.
+                List<CatalogEntry>? parsed = StrictDeserialize(File.ReadAllText(roamingFile));
+                if (parsed is not null)
+                {
+                    return parsed;
+                }
+
+                _logger.LogWarning("Roaming catalog at {Path} could not be parsed; falling back to user settings.", roamingFile);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not read roaming catalog at {Path}; falling back to user settings.", roamingFile);
+            }
+        }
+
+        return TryDeserialize(_settings.Get(SettingsKey, string.Empty));
+    }
+
+    /// <summary>
+    ///  Resolves the configured roaming catalog file path, or <see langword="null"/>
+    ///  when the option is empty. A configured directory (or a path without a
+    ///  <c>.json</c> extension) is treated as a folder that receives a
+    ///  <see cref="RoamingCatalogFileName"/> file.
+    /// </summary>
+    private string? ResolveRoamingCatalogFile()
+    {
+        string configured = _settings.Get(DlgOptions.KeyRoamingCatalogPath, string.Empty).Trim();
+        if (string.IsNullOrEmpty(configured))
+        {
+            return null;
+        }
+
+        try
+        {
+            bool looksLikeFolder = Directory.Exists(configured)
+                || !string.Equals(Path.GetExtension(configured), ".json", StringComparison.OrdinalIgnoreCase);
+
+            return looksLikeFolder
+                ? Path.Combine(configured, RoamingCatalogFileName)
+                : configured;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Invalid roaming catalog path {Path}; ignoring.", configured);
+            return null;
+        }
+    }
+
+    private void DeleteRoamingCatalogFile()
+    {
+        string? roamingFile = ResolveRoamingCatalogFile();
+        if (roamingFile is null || !File.Exists(roamingFile))
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(roamingFile);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not remove roaming catalog at {Path}.", roamingFile);
         }
     }
 
@@ -100,11 +199,33 @@ public sealed class CatalogService : ICatalogService
         }
     }
 
+    /// <summary>
+    ///  Deserializes a catalog, returning <see langword="null"/> when the JSON
+    ///  is malformed (as opposed to an empty list for empty input). Used so a
+    ///  corrupt roaming file can be told apart from an intentionally empty one.
+    /// </summary>
+    private List<CatalogEntry>? StrictDeserialize(string serialized)
+    {
+        if (string.IsNullOrWhiteSpace(serialized))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<CatalogEntry>>(serialized) ?? [];
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private static IEnumerable<CatalogEntry> BuildSeed()
     {
         yield return new CatalogEntry
         {
-            Category = string.Empty,
+            Category = "System",
             Kind = CatalogEntryKind.Registry,
             Name = "Registry",
             Description = "Curated Windows registry values that are frequently changed by hand.",

@@ -21,11 +21,12 @@ public sealed class BackupOptions
     public BackupMode Mode { get; init; } = BackupMode.CopyToFolder;
 
     /// <summary>
-    ///  The folder (CopyToFolder) or file path (ZipArchive) the user picked.
-    ///  The <see cref="WinBaas.Services.IBackupService"/> derives the actual
-    ///  destination from this by inserting a
-    ///  <c>WinBaas-{machine}-{timestamp}</c> segment so each backup gets its
-    ///  own directory.
+    ///  The destination folder the user picked. For both
+    ///  <see cref="BackupMode.CopyToFolder"/> and <see cref="BackupMode.ZipArchive"/>
+    ///  this is a directory; the <see cref="WinBaas.Services.IBackupService"/>
+    ///  derives the actual output (a <c>WinBaas-{machine}-{timestamp}</c>
+    ///  subfolder, or a same-named <c>.zip</c> file inside it) from this so each
+    ///  backup gets its own name.
     /// </summary>
     public required string Destination { get; init; }
 }

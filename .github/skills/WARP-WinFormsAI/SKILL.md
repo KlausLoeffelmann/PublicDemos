@@ -15,7 +15,7 @@ application a complete AI / chat surface on top of Microsoft.Extensions.AI:
 | `WarpToolkit.WinForms.AI` | Designer-droppable provider components derived from `AIChatServiceBase` (each implements `IChatClient`). |
 | `WarpToolkit.WinForms.Chat` | Polished chat UI: `ChatView`, `ChatRendererControl`, `ChatProcessor`, `ChatViewVm`. |
 
-Current preview version: `0.9.86-preview.g8bc92e2168`.
+Current preview version: `0.9.7-preview.g32895b766b`.
 
 Reference files:
 - `src/docs/reference/WarpToolkit.Desktop.AI.md`
@@ -346,7 +346,7 @@ public partial class ChattyForm : Form
 - **Modern controls around the chat (tabs, wizards, file pickers,
   adorners)**: switch to the `warp-winforms-controls` skill.
 - **Embedding a CLI / terminal in the chat surface**: see `ConsoleControl`
-  in `WarpToolkit.WinForms.Tooling` (covered by the controls skill).
+  in `WarpToolkit.WinForms.Specialized` (covered by the controls skill).
 - **Rendering Markdown / code blocks with custom layout**: see
   `WarpToolkit.WinForms.Typography` reference.
 - **Roslyn round-trip of AI-touched code preserving comments**: see

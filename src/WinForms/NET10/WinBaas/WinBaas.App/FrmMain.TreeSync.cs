@@ -43,6 +43,23 @@ public sealed partial class FrmMain
                         }
                     }
 
+                    // The Registry branch is a non-catalog child (e.g. under
+                    // "System"); fold it into the category check so the selection
+                    // matches what the checkbox implies.
+                    foreach (TreeNode child in e.Node.Nodes.Cast<TreeNode>().Where(node => node.Tag is RegistryGroupTag))
+                    {
+                        child.Checked = target;
+                        foreach (RegistryDiscoveredItem registryItem in _registryItems.Where(item => item.CanSelect))
+                        {
+                            registryItem.IsChecked = target;
+                        }
+
+                        if (ReferenceEquals(child, _treeSources.SelectedNode))
+                        {
+                            _registryGridControl.SetAllChecked(target);
+                        }
+                    }
+
                     if (ReferenceEquals(e.Node, _treeSources.SelectedNode))
                     {
                         _filesGridControl.SetAllChecked(target);
@@ -78,6 +95,11 @@ public sealed partial class FrmMain
                     if (ReferenceEquals(e.Node, _treeSources.SelectedNode))
                     {
                         _registryGridControl.SetAllChecked(target);
+                    }
+
+                    if (e.Node.Parent is { Tag: CategoryTag } registryParent)
+                    {
+                        registryParent.Checked = registryParent.Nodes.Cast<TreeNode>().All(node => node.Checked);
                     }
                     break;
 
@@ -192,6 +214,11 @@ public sealed partial class FrmMain
             if (_registryRootNode is not null)
             {
                 _registryRootNode.Checked = _registryItems.Where(item => item.CanSelect).All(item => item.IsChecked);
+
+                if (_registryRootNode.Parent is { Tag: CategoryTag } registryParent)
+                {
+                    registryParent.Checked = registryParent.Nodes.Cast<TreeNode>().All(node => node.Checked);
+                }
             }
         }
         finally

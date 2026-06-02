@@ -45,6 +45,7 @@ partial class FrmMain
         _menuViewExpandAll = new ToolStripMenuItem();
         _menuViewCollapseAll = new ToolStripMenuItem();
         _menuViewExpandSelected = new ToolStripMenuItem();
+        _menuViewOpenAffected = new ToolStripMenuItem();
         _menuTools = new ToolStripMenuItem();
         _menuToolsOptions = new ToolStripMenuItem();
         _toolStrip = new ToolStrip();
@@ -112,7 +113,7 @@ partial class FrmMain
         _menuView.Text = "&View";
         _menuView.DropDownItems.AddRange(new ToolStripItem[]
         {
-            _menuViewExpandAll, _menuViewCollapseAll, _menuViewExpandSelected
+            _menuViewExpandAll, _menuViewCollapseAll, _menuViewExpandSelected, _menuViewOpenAffected
         });
         _menuViewExpandAll.Name = "_menuViewExpandAll";
         _menuViewExpandAll.Text = "E&xpand all nodes";
@@ -120,6 +121,8 @@ partial class FrmMain
         _menuViewCollapseAll.Text = "&Collapse all nodes";
         _menuViewExpandSelected.Name = "_menuViewExpandSelected";
         _menuViewExpandSelected.Text = "Expand &selected";
+        _menuViewOpenAffected.Name = "_menuViewOpenAffected";
+        _menuViewOpenAffected.Text = "Open &affected nodes";
 
         _menuTools.Text = "&Tools";
         _menuTools.DropDownItems.AddRange(new ToolStripItem[] { _menuToolsOptions });
@@ -263,6 +266,7 @@ partial class FrmMain
     private ToolStripMenuItem _menuViewExpandAll;
     private ToolStripMenuItem _menuViewCollapseAll;
     private ToolStripMenuItem _menuViewExpandSelected;
+    private ToolStripMenuItem _menuViewOpenAffected;
     private ToolStripMenuItem _menuTools;
     private ToolStripMenuItem _menuToolsOptions;
     private ToolStrip _toolStrip;

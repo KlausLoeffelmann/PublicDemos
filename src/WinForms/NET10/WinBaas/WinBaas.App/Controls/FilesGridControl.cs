@@ -14,10 +14,22 @@ public sealed partial class FilesGridControl : UserControl
     public FilesGridControl()
     {
         InitializeComponent();
+        ConfigureRowSizing(_grid);
         _colSize.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         _grid.CellValueChanged += Grid_CellValueChanged;
         _grid.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
         _grid.SelectionChanged += Grid_SelectionChanged;
+    }
+
+    /// <summary>
+    ///  Forces uniform, single-line rows. Without this, a long single-line cell
+    ///  value (e.g. a lengthy registry path) combined with the grid's default
+    ///  wrapping can inflate a row's height and make the list look broken.
+    /// </summary>
+    private static void ConfigureRowSizing(DataGridView grid)
+    {
+        grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None;
+        grid.DefaultCellStyle.WrapMode = DataGridViewTriState.False;
     }
 
     /// <summary>Raised after a checkbox edit changed one or more item selections.</summary>

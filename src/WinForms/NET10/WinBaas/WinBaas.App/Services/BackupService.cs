@@ -81,10 +81,14 @@ public sealed class BackupService(ILogger<BackupService> logger) : IBackupServic
         CancellationToken ct)
     {
         DateTimeOffset stamp = DateTimeOffset.Now;
-        string root = Path.GetDirectoryName(options.Destination) ?? options.Destination;
+
+        // The user always picks a destination folder (FolderBrowserDialog), so
+        // treat Destination as the root directory the .zip is written into,
+        // mirroring the copy-to-folder branch.
+        string root = options.Destination;
         if (string.IsNullOrEmpty(root))
         {
-            root = options.Destination;
+            root = Directory.GetCurrentDirectory();
         }
 
         Directory.CreateDirectory(root);

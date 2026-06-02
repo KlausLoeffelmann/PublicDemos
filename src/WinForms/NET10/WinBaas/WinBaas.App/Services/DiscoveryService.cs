@@ -1,6 +1,8 @@
 using Microsoft.Data.SqlClient;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using WarpToolkit.ComponentModel;
+using WinBaas.Dialogs;
 using WinBaas.Models;
 
 namespace WinBaas.Services;
@@ -8,9 +10,11 @@ namespace WinBaas.Services;
 /// <inheritdoc cref="IDiscoveryService"/>
 public sealed class DiscoveryService(
     IFileTypeMap fileTypeMap,
+    IUserSettingsService settings,
     ILogger<DiscoveryService> logger) : IDiscoveryService
 {
     private readonly IFileTypeMap _fileTypeMap = fileTypeMap;
+    private readonly IUserSettingsService _settings = settings;
     private readonly ILogger<DiscoveryService> _logger = logger;
 
     /// <inheritdoc />
@@ -25,7 +29,8 @@ public sealed class DiscoveryService(
             CatalogEntryKind.Folder => Task.Run(() => DiscoverFolder(entry, cancellationToken), cancellationToken),
             CatalogEntryKind.File => Task.Run(() => DiscoverFile(entry), cancellationToken),
             CatalogEntryKind.EnvironmentVariable => Task.Run(() => DiscoverEnvironmentVariables(entry), cancellationToken),
-            CatalogEntryKind.SqlServer => Task.Run(() => DiscoverSqlServer(entry, cancellationToken), cancellationToken),
+            CatalogEntryKind.SqlServer when _settings.Get(DlgOptions.KeySqlDiscovery, true)
+                => Task.Run(() => DiscoverSqlServer(entry, cancellationToken), cancellationToken),
             _ => Task.FromResult<IReadOnlyList<DiscoveredItem>>([]),
         };
     }
@@ -33,6 +38,7 @@ public sealed class DiscoveryService(
     private IReadOnlyList<DiscoveredItem> DiscoverFolder(CatalogEntry entry, CancellationToken ct)
     {
         var results = new List<DiscoveredItem>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (string rawPath in entry.Paths)
         {
             if (ct.IsCancellationRequested)
@@ -49,7 +55,7 @@ public sealed class DiscoveryService(
 
                 if (File.Exists(resolved))
                 {
-                    AddFile(results, entry, resolved);
+                    AddFile(results, entry, resolved, seen);
                     continue;
                 }
 
@@ -59,19 +65,27 @@ public sealed class DiscoveryService(
                     continue;
                 }
 
-                EnumerateFolderInto(results, entry, resolved, ct);
+                EnumerateFolderInto(results, entry, resolved, seen, ct);
             }
         }
 
         return results;
     }
 
-    private void EnumerateFolderInto(List<DiscoveredItem> results, CatalogEntry entry, string root, CancellationToken ct)
+    private void EnumerateFolderInto(List<DiscoveredItem> results, CatalogEntry entry, string root, HashSet<string> seen, CancellationToken ct)
     {
         SearchOption opt = entry.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        IReadOnlyList<string> patterns = entry.Extensions.Count > 0
-            ? entry.Extensions.Select(e => "*" + e).ToArray()
-            : ["*"];
+
+        // Match by extension globs (e.g. "*.json") and by explicit well-known
+        // file names (e.g. "NuGet.Config", ".gitconfig"). When neither is
+        // configured, fall back to every file.
+        var patterns = new List<string>();
+        patterns.AddRange(entry.Extensions.Select(e => "*" + e));
+        patterns.AddRange(entry.KnownFileNames);
+        if (patterns.Count == 0)
+        {
+            patterns.Add("*");
+        }
 
         foreach (string pattern in patterns)
         {
@@ -89,7 +103,7 @@ public sealed class DiscoveryService(
                         break;
                     }
 
-                    AddFile(results, entry, file);
+                    AddFile(results, entry, file, seen);
                 }
             }
             catch (Exception ex)
@@ -99,11 +113,16 @@ public sealed class DiscoveryService(
         }
     }
 
-    private void AddFile(List<DiscoveredItem> results, CatalogEntry entry, string file)
+    private void AddFile(List<DiscoveredItem> results, CatalogEntry entry, string file, HashSet<string> seen)
     {
         try
         {
             var fi = new FileInfo(file);
+            if (!seen.Add(fi.FullName))
+            {
+                return;
+            }
+
             results.Add(new DiscoveredItem
             {
                 Source = entry,
@@ -210,6 +229,7 @@ public sealed class DiscoveryService(
     private IReadOnlyList<DiscoveredItem> DiscoverFile(CatalogEntry entry)
     {
         var results = new List<DiscoveredItem>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (string raw in entry.Paths)
         {
             foreach (string resolved in ExpandPath(raw))
@@ -219,7 +239,7 @@ public sealed class DiscoveryService(
                     continue;
                 }
 
-                AddFile(results, entry, resolved);
+                AddFile(results, entry, resolved, seen);
             }
         }
 

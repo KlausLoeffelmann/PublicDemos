@@ -26,6 +26,13 @@ public interface ICatalogService
     /// <summary>Replaces the persisted catalog with the built-in seed.</summary>
     void RestoreDefaults();
 
+    /// <summary>
+    ///  Reloads the user-defined entries from the current backing store. Call
+    ///  after the roaming catalog path option changes so the in-memory catalog
+    ///  reflects the newly configured location instead of overwriting it.
+    /// </summary>
+    void Reload();
+
     /// <summary>Persists any pending changes to storage.</summary>
     void Save();
 }

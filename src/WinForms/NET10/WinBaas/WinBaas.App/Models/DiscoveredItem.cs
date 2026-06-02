@@ -33,9 +33,6 @@ public sealed class DiscoveredItem
     /// <summary>True if this item represents a folder rather than a single file.</summary>
     public bool IsFolder { get; init; }
 
-    /// <summary>True if the catalog entry yields only folders (no individual files).</summary>
-    public bool IsFolderOnlyResult { get; init; }
-
     /// <summary>True if the user has marked this item to back up.</summary>
     public bool IsChecked { get; set; }
 }

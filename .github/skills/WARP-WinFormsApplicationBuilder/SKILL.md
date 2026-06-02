@@ -324,7 +324,7 @@ surface never blows up.
 
 To migrate an existing `Application.Run(new Form1())` codebase:
 
-1. **Add the NuGets** (`0.9.86-preview.g8bc92e2168`):
+1. **Add the NuGets** (`0.9.7-preview.g32895b766b`):
    `WarpToolkit.WinForms.AppServices` (transitively pulls
    `Desktop.AppServices`, `ComponentModel`, `Microsoft.Extensions.*`).
 2. **Replace `Main`** with the `WinFormsApplication.CreateBuilder(...)`
