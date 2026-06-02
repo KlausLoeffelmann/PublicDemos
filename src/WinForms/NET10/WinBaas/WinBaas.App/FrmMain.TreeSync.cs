@@ -25,13 +25,16 @@ public sealed partial class FrmMain
         try
         {
             bool target = e.Node.Checked;
+
+            List<DiscoveredItem>? items;
+
             switch (e.Node.Tag)
             {
                 case CategoryTag _:
                     foreach (TreeNode leaf in EnumerateCatalogLeafNodes(e.Node.Nodes))
                     {
                         leaf.Checked = target;
-                        if (_nodeItems.TryGetValue(leaf, out List<DiscoveredItem>? items))
+                        if (_nodeItems.TryGetValue(leaf,out items))
                         {
                             foreach (DiscoveredItem item in items)
                             {
@@ -47,7 +50,7 @@ public sealed partial class FrmMain
                     break;
 
                 case CatalogEntry _:
-                    if (_nodeItems.TryGetValue(e.Node, out List<DiscoveredItem>? items))
+                    if (_nodeItems.TryGetValue(e.Node, out items))
                     {
                         foreach (DiscoveredItem item in items)
                         {
@@ -151,6 +154,7 @@ public sealed partial class FrmMain
         }
 
         _syncing = true;
+
         try
         {
             if (_treeSources.SelectedNode is { Tag: CatalogEntry } leaf)
@@ -159,9 +163,9 @@ public sealed partial class FrmMain
             }
             else if (_treeSources.SelectedNode is { Tag: CategoryTag } categoryNode)
             {
-                foreach (TreeNode leaf in EnumerateCatalogLeafNodes(categoryNode.Nodes))
+                foreach (var node in EnumerateCatalogLeafNodes(categoryNode.Nodes))
                 {
-                    RefreshCatalogLeafCheckState(leaf);
+                    RefreshCatalogLeafCheckState(node);
                 }
 
                 categoryNode.Checked = categoryNode.Nodes.Cast<TreeNode>().All(node => node.Checked);
