@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/_solution items/" />
+  <Project Path="Winget-Package-Editor/Winget-Package-Editor.csproj" />
+  <Project Path="WingetPackageEditor.Core/WingetPackageEditor.Core.csproj" />
+  <Project Path="WingetPackageEditor.Tests/WingetPackageEditor.Tests.csproj" />
+</Solution>
