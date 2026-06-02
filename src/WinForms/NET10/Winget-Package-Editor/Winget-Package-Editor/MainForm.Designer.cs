@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using WarpToolkit.ComponentModel;
 using WarpToolkit.WinForms.Specialized;
 using WingetPackageEditor.Core.ViewModels;
@@ -14,71 +12,6 @@ public partial class MainForm : Form, IServiceProvider
     /// </summary>
     private System.ComponentModel.IContainer components = null!;
 
-    private IUserSettingsService? _userSettingsService;
-    private IServiceProvider? _serviceProvider;
-    private MainViewModel? _viewModel;
-    private ObservableBindingList<AppEntryViewModel>? _appsBindingList;
-    private TreeViewBinder? _treeViewBinder;
-    private GridSelectionBinder? _gridSelectionBinder;
-
-    /// <summary>
-    ///  Initializes a new instance of the <see cref="MainForm"/> class with dependency injection support.
-    /// </summary>
-    /// <param name="serviceProvider">
-    ///  The service provider that contains all registered services for dependency injection.
-    ///  This parameter is used to resolve dependencies and configure the form with the required services.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    ///  Thrown when <paramref name="serviceProvider"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="NullReferenceException">
-    ///  Thrown when the required <see cref="IUserSettingsService"/> is not registered in the service provider.
-    /// </exception>
-    /// <remarks>
-    ///  This constructor overload is specifically designed to be used when the Form is instantiated 
-    ///  through Dependency Injection (DI) using the <c>WinFormsApplication</c> class and the 
-    ///  <c>WinFormsApplicationBuilder</c>. This approach provides the same infrastructure pattern 
-    ///  as ASP.NET Core applications, enabling familiar service registration, configuration, 
-    ///  and dependency injection patterns in WinForms applications.
-    ///  <para>
-    ///   When using this constructor, the Form acts as a ServiceProvider-aware component, 
-    ///   allowing it to resolve and utilize services that have been registered in the 
-    ///   application's service container. This enables loose coupling, testability, 
-    ///   and modern application architecture patterns in WinForms development.
-    ///  </para>
-    ///  <para>
-    ///   The constructor automatically assigns the service provider to the form using the 
-    ///   <c>AssignServiceProvider</c> extension method and resolves the required 
-    ///   <see cref="IUserSettingsService"/> from the container.
-    ///  </para>
-    /// </remarks>
-    public MainForm(IServiceProvider serviceProvider) : this()
-    {
-        ArgumentNullException.ThrowIfNull(serviceProvider, nameof(serviceProvider));
-        _serviceProvider = new DeferredServiceProvider(serviceProvider);
-
-        _userSettingsService = serviceProvider.GetRequiredService<IUserSettingsService>();
-        _viewModel = serviceProvider.GetRequiredService<MainViewModel>();
-
-        if (_userSettingsService is null)
-        {
-            throw new NullReferenceException($"The service '{nameof(IUserSettingsService)}' is not registered.");
-        }
-    }
-
-    object IServiceProvider.GetService(Type serviceType)
-    {
-        ArgumentNullException.ThrowIfNull(serviceType, nameof(serviceType));
-
-        if (_serviceProvider is null)
-        {
-            throw new InvalidOperationException("Service provider is not initialized.");
-        }
-
-        return _serviceProvider.GetService(serviceType)
-            ?? throw new InvalidOperationException($"Service of type '{serviceType.Name}' is not registered.");
-    }
-
 #pragma warning disable WFOWARP9901
     private sealed class DeferredServiceProvider : IServiceProvider
     {
@@ -89,7 +22,7 @@ public partial class MainForm : Form, IServiceProvider
             _serviceProvider = serviceProvider;
         }
 
-        public object? GetService(Type serviceType) => _serviceProvider.GetService(serviceType);
+        public object GetService(Type serviceType) => _serviceProvider.GetService(serviceType);
     }
 #pragma warning restore WFOWARP9901
 
@@ -124,25 +57,32 @@ public partial class MainForm : Form, IServiceProvider
     /// </summary>
     private void InitializeComponent()
     {
-        DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
-        DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
-        DataGridViewCellStyle dataGridViewCellStyle11 = new DataGridViewCellStyle();
-        DataGridViewCellStyle dataGridViewCellStyle12 = new DataGridViewCellStyle();
+        DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+        DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+        DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+        DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
         _mainMenuStrip = new MenuStrip();
         _fileMenuItem = new ToolStripMenuItem();
         _newMenuItem = new ToolStripMenuItem();
+        _newFromExistingMenuItem = new ToolStripMenuItem();
+        toolStripSeparator1 = new ToolStripSeparator();
+        _removePackageMenuItem = new ToolStripMenuItem();
+        toolStripSeparator4 = new ToolStripSeparator();
         _openMenuItem = new ToolStripMenuItem();
+        toolStripSeparator2 = new ToolStripSeparator();
         _exportMenuItem = new ToolStripMenuItem();
         _quitMenuItem = new ToolStripMenuItem();
         _editMenuItem = new ToolStripMenuItem();
         _addAppMenuItem = new ToolStripMenuItem();
         _removeAppMenuItem = new ToolStripMenuItem();
+        toolStripSeparator3 = new ToolStripSeparator();
         _propertiesMenuItem = new ToolStripMenuItem();
         _viewMenuItem = new ToolStripMenuItem();
         _expandNodesMenuItem = new ToolStripMenuItem();
         _collapseNodeMenuItem = new ToolStripMenuItem();
         _expandSelectedMenuItem = new ToolStripMenuItem();
         _actionMenuItem = new ToolStripMenuItem();
+        _updatePackageMenuItem = new ToolStripMenuItem();
         _applyNowMenuItem = new ToolStripMenuItem();
         _generateBundleFolderMenuItem = new ToolStripMenuItem();
         _toolsMenuItem = new ToolStripMenuItem();
@@ -162,13 +102,6 @@ public partial class MainForm : Form, IServiceProvider
         _consoleControl = new ConsoleControl();
         _statusStrip = new StatusStrip();
         _statusLabel = new ToolStripStatusLabel();
-        _newFromExistingMenuItem = new ToolStripMenuItem();
-        _updatePackageMenuItem = new ToolStripMenuItem();
-        toolStripSeparator1 = new ToolStripSeparator();
-        toolStripSeparator2 = new ToolStripSeparator();
-        toolStripSeparator3 = new ToolStripSeparator();
-        _removePackageMenuItem = new ToolStripMenuItem();
-        toolStripSeparator4 = new ToolStripSeparator();
         _mainMenuStrip.SuspendLayout();
         _mainToolStrip.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)_mainSplitContainer).BeginInit();
@@ -192,7 +125,7 @@ public partial class MainForm : Form, IServiceProvider
         _mainMenuStrip.Margin = new Padding(0, 2, 0, 0);
         _mainMenuStrip.Name = "_mainMenuStrip";
         _mainMenuStrip.Padding = new Padding(8, 2, 0, 2);
-        _mainMenuStrip.Size = new Size(1478, 33);
+        _mainMenuStrip.Size = new Size(1348, 33);
         _mainMenuStrip.TabIndex = 0;
         // 
         // _fileMenuItem
@@ -208,11 +141,38 @@ public partial class MainForm : Form, IServiceProvider
         _newMenuItem.Size = new Size(341, 34);
         _newMenuItem.Text = "&New empty package...";
         // 
+        // _newFromExistingMenuItem
+        // 
+        _newFromExistingMenuItem.Name = "_newFromExistingMenuItem";
+        _newFromExistingMenuItem.Size = new Size(341, 34);
+        _newFromExistingMenuItem.Text = "New from existing package...";
+        // 
+        // toolStripSeparator1
+        // 
+        toolStripSeparator1.Name = "toolStripSeparator1";
+        toolStripSeparator1.Size = new Size(338, 6);
+        // 
+        // _removePackageMenuItem
+        // 
+        _removePackageMenuItem.Name = "_removePackageMenuItem";
+        _removePackageMenuItem.Size = new Size(341, 34);
+        _removePackageMenuItem.Text = "Remove package";
+        // 
+        // toolStripSeparator4
+        // 
+        toolStripSeparator4.Name = "toolStripSeparator4";
+        toolStripSeparator4.Size = new Size(338, 6);
+        // 
         // _openMenuItem
         // 
         _openMenuItem.Name = "_openMenuItem";
         _openMenuItem.Size = new Size(341, 34);
         _openMenuItem.Text = "&Import package from file...";
+        // 
+        // toolStripSeparator2
+        // 
+        toolStripSeparator2.Name = "toolStripSeparator2";
+        toolStripSeparator2.Size = new Size(338, 6);
         // 
         // _exportMenuItem
         // 
@@ -236,19 +196,24 @@ public partial class MainForm : Form, IServiceProvider
         // _addAppMenuItem
         // 
         _addAppMenuItem.Name = "_addAppMenuItem";
-        _addAppMenuItem.Size = new Size(270, 34);
+        _addAppMenuItem.Size = new Size(217, 34);
         _addAppMenuItem.Text = "&Add App...";
         // 
         // _removeAppMenuItem
         // 
         _removeAppMenuItem.Name = "_removeAppMenuItem";
-        _removeAppMenuItem.Size = new Size(270, 34);
+        _removeAppMenuItem.Size = new Size(217, 34);
         _removeAppMenuItem.Text = "&Remove App";
+        // 
+        // toolStripSeparator3
+        // 
+        toolStripSeparator3.Name = "toolStripSeparator3";
+        toolStripSeparator3.Size = new Size(214, 6);
         // 
         // _propertiesMenuItem
         // 
         _propertiesMenuItem.Name = "_propertiesMenuItem";
-        _propertiesMenuItem.Size = new Size(270, 34);
+        _propertiesMenuItem.Size = new Size(217, 34);
         _propertiesMenuItem.Text = "&Properties";
         // 
         // _viewMenuItem
@@ -261,19 +226,19 @@ public partial class MainForm : Form, IServiceProvider
         // _expandNodesMenuItem
         // 
         _expandNodesMenuItem.Name = "_expandNodesMenuItem";
-        _expandNodesMenuItem.Size = new Size(270, 34);
+        _expandNodesMenuItem.Size = new Size(241, 34);
         _expandNodesMenuItem.Text = "Expand &nodes";
         // 
         // _collapseNodeMenuItem
         // 
         _collapseNodeMenuItem.Name = "_collapseNodeMenuItem";
-        _collapseNodeMenuItem.Size = new Size(270, 34);
+        _collapseNodeMenuItem.Size = new Size(241, 34);
         _collapseNodeMenuItem.Text = "&Collapse node";
         // 
         // _expandSelectedMenuItem
         // 
         _expandSelectedMenuItem.Name = "_expandSelectedMenuItem";
-        _expandSelectedMenuItem.Size = new Size(270, 34);
+        _expandSelectedMenuItem.Size = new Size(241, 34);
         _expandSelectedMenuItem.Text = "Expand &selected";
         // 
         // _actionMenuItem
@@ -282,6 +247,12 @@ public partial class MainForm : Form, IServiceProvider
         _actionMenuItem.Name = "_actionMenuItem";
         _actionMenuItem.Size = new Size(79, 29);
         _actionMenuItem.Text = "&Action";
+        // 
+        // _updatePackageMenuItem
+        // 
+        _updatePackageMenuItem.Name = "_updatePackageMenuItem";
+        _updatePackageMenuItem.Size = new Size(315, 34);
+        _updatePackageMenuItem.Text = "Update current package...";
         // 
         // _applyNowMenuItem
         // 
@@ -321,7 +292,7 @@ public partial class MainForm : Form, IServiceProvider
         _mainToolStrip.Location = new Point(0, 33);
         _mainToolStrip.Margin = new Padding(0, 2, 0, 2);
         _mainToolStrip.Name = "_mainToolStrip";
-        _mainToolStrip.Size = new Size(1478, 34);
+        _mainToolStrip.Size = new Size(1348, 34);
         _mainToolStrip.TabIndex = 1;
         // 
         // _newToolStripButton
@@ -363,7 +334,7 @@ public partial class MainForm : Form, IServiceProvider
         // 
         _mainSplitContainer.Dock = DockStyle.Fill;
         _mainSplitContainer.Location = new Point(0, 67);
-        _mainSplitContainer.Margin = new Padding(4, 4, 4, 4);
+        _mainSplitContainer.Margin = new Padding(4);
         _mainSplitContainer.Name = "_mainSplitContainer";
         // 
         // _mainSplitContainer.Panel1
@@ -373,8 +344,8 @@ public partial class MainForm : Form, IServiceProvider
         // _mainSplitContainer.Panel2
         // 
         _mainSplitContainer.Panel2.Controls.Add(_rightSplitContainer);
-        _mainSplitContainer.Size = new Size(1478, 850);
-        _mainSplitContainer.SplitterDistance = 412;
+        _mainSplitContainer.Size = new Size(1348, 735);
+        _mainSplitContainer.SplitterDistance = 375;
         _mainSplitContainer.SplitterWidth = 5;
         _mainSplitContainer.TabIndex = 2;
         // 
@@ -383,16 +354,16 @@ public partial class MainForm : Form, IServiceProvider
         _packageTreeView.Dock = DockStyle.Fill;
         _packageTreeView.HideSelection = false;
         _packageTreeView.Location = new Point(0, 0);
-        _packageTreeView.Margin = new Padding(4, 4, 4, 4);
+        _packageTreeView.Margin = new Padding(4);
         _packageTreeView.Name = "_packageTreeView";
-        _packageTreeView.Size = new Size(412, 850);
+        _packageTreeView.Size = new Size(375, 735);
         _packageTreeView.TabIndex = 0;
         // 
         // _rightSplitContainer
         // 
         _rightSplitContainer.Dock = DockStyle.Fill;
         _rightSplitContainer.Location = new Point(0, 0);
-        _rightSplitContainer.Margin = new Padding(4, 4, 4, 4);
+        _rightSplitContainer.Margin = new Padding(4);
         _rightSplitContainer.Name = "_rightSplitContainer";
         _rightSplitContainer.Orientation = Orientation.Horizontal;
         // 
@@ -403,8 +374,8 @@ public partial class MainForm : Form, IServiceProvider
         // _rightSplitContainer.Panel2
         // 
         _rightSplitContainer.Panel2.Controls.Add(_consoleControl);
-        _rightSplitContainer.Size = new Size(1061, 850);
-        _rightSplitContainer.SplitterDistance = 514;
+        _rightSplitContainer.Size = new Size(968, 735);
+        _rightSplitContainer.SplitterDistance = 444;
         _rightSplitContainer.SplitterWidth = 5;
         _rightSplitContainer.TabIndex = 0;
         // 
@@ -413,66 +384,66 @@ public partial class MainForm : Form, IServiceProvider
         _gridHostPanel.Controls.Add(_appsWarpDataGridView);
         _gridHostPanel.Dock = DockStyle.Fill;
         _gridHostPanel.Location = new Point(0, 0);
-        _gridHostPanel.Margin = new Padding(4, 4, 4, 4);
+        _gridHostPanel.Margin = new Padding(4);
         _gridHostPanel.Name = "_gridHostPanel";
-        _gridHostPanel.Size = new Size(1061, 514);
+        _gridHostPanel.Size = new Size(968, 444);
         _gridHostPanel.TabIndex = 0;
         // 
         // _appsWarpDataGridView
         // 
         _appsWarpDataGridView.AllowUserToAddRows = false;
         _appsWarpDataGridView.AllowUserToDeleteRows = false;
-        dataGridViewCellStyle9.BackColor = Color.FromArgb(245, 245, 245);
-        dataGridViewCellStyle9.ForeColor = SystemColors.WindowText;
-        dataGridViewCellStyle9.SelectionBackColor = SystemColors.Highlight;
-        dataGridViewCellStyle9.SelectionForeColor = SystemColors.HighlightText;
-        _appsWarpDataGridView.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle9;
+        dataGridViewCellStyle1.BackColor = Color.FromArgb(245, 245, 245);
+        dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+        dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+        dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+        _appsWarpDataGridView.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
         _appsWarpDataGridView.BackgroundColor = SystemColors.Window;
-        dataGridViewCellStyle10.Alignment = DataGridViewContentAlignment.MiddleLeft;
-        dataGridViewCellStyle10.BackColor = SystemColors.Control;
-        dataGridViewCellStyle10.Font = new Font("Segoe UI", 9F);
-        dataGridViewCellStyle10.ForeColor = SystemColors.ControlText;
-        dataGridViewCellStyle10.SelectionBackColor = SystemColors.Control;
-        dataGridViewCellStyle10.SelectionForeColor = SystemColors.ControlText;
-        dataGridViewCellStyle10.WrapMode = DataGridViewTriState.True;
-        _appsWarpDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle10;
+        dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+        dataGridViewCellStyle2.BackColor = SystemColors.Control;
+        dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
+        dataGridViewCellStyle2.ForeColor = SystemColors.ControlText;
+        dataGridViewCellStyle2.SelectionBackColor = SystemColors.Control;
+        dataGridViewCellStyle2.SelectionForeColor = SystemColors.ControlText;
+        dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+        _appsWarpDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
         _appsWarpDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-        dataGridViewCellStyle11.Alignment = DataGridViewContentAlignment.MiddleLeft;
-        dataGridViewCellStyle11.BackColor = SystemColors.Window;
-        dataGridViewCellStyle11.Font = new Font("Segoe UI", 9F);
-        dataGridViewCellStyle11.ForeColor = SystemColors.WindowText;
-        dataGridViewCellStyle11.SelectionBackColor = SystemColors.Highlight;
-        dataGridViewCellStyle11.SelectionForeColor = SystemColors.HighlightText;
-        dataGridViewCellStyle11.WrapMode = DataGridViewTriState.False;
-        _appsWarpDataGridView.DefaultCellStyle = dataGridViewCellStyle11;
+        dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+        dataGridViewCellStyle3.BackColor = SystemColors.Window;
+        dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F);
+        dataGridViewCellStyle3.ForeColor = SystemColors.WindowText;
+        dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
+        dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
+        dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
+        _appsWarpDataGridView.DefaultCellStyle = dataGridViewCellStyle3;
         _appsWarpDataGridView.Dock = DockStyle.Fill;
         _appsWarpDataGridView.EnableHeadersVisualStyles = false;
         _appsWarpDataGridView.GridColor = SystemColors.ControlDark;
         _appsWarpDataGridView.Location = new Point(0, 0);
-        _appsWarpDataGridView.Margin = new Padding(4, 4, 4, 4);
+        _appsWarpDataGridView.Margin = new Padding(4);
         _appsWarpDataGridView.MultiSelect = false;
         _appsWarpDataGridView.Name = "_appsWarpDataGridView";
-        dataGridViewCellStyle12.Alignment = DataGridViewContentAlignment.MiddleLeft;
-        dataGridViewCellStyle12.BackColor = SystemColors.Control;
-        dataGridViewCellStyle12.Font = new Font("Segoe UI", 9F);
-        dataGridViewCellStyle12.ForeColor = SystemColors.ControlText;
-        dataGridViewCellStyle12.SelectionBackColor = SystemColors.Highlight;
-        dataGridViewCellStyle12.SelectionForeColor = SystemColors.HighlightText;
-        dataGridViewCellStyle12.WrapMode = DataGridViewTriState.True;
-        _appsWarpDataGridView.RowHeadersDefaultCellStyle = dataGridViewCellStyle12;
+        dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+        dataGridViewCellStyle4.BackColor = SystemColors.Control;
+        dataGridViewCellStyle4.Font = new Font("Segoe UI", 9F);
+        dataGridViewCellStyle4.ForeColor = SystemColors.ControlText;
+        dataGridViewCellStyle4.SelectionBackColor = SystemColors.Highlight;
+        dataGridViewCellStyle4.SelectionForeColor = SystemColors.HighlightText;
+        dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
+        _appsWarpDataGridView.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
         _appsWarpDataGridView.RowHeadersWidth = 62;
         _appsWarpDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        _appsWarpDataGridView.Size = new Size(1061, 514);
+        _appsWarpDataGridView.Size = new Size(968, 444);
         _appsWarpDataGridView.TabIndex = 1;
         // 
         // _consoleControl
         // 
         _consoleControl.Dock = DockStyle.Fill;
         _consoleControl.Location = new Point(0, 0);
-        _consoleControl.Margin = new Padding(4, 4, 4, 4);
+        _consoleControl.Margin = new Padding(4);
         _consoleControl.Name = "_consoleControl";
         _consoleControl.ReadOnly = true;
-        _consoleControl.Size = new Size(1061, 331);
+        _consoleControl.Size = new Size(968, 286);
         _consoleControl.TabIndex = 0;
         _consoleControl.Text = "";
         // 
@@ -480,11 +451,11 @@ public partial class MainForm : Form, IServiceProvider
         // 
         _statusStrip.ImageScalingSize = new Size(24, 24);
         _statusStrip.Items.AddRange(new ToolStripItem[] { _statusLabel });
-        _statusStrip.Location = new Point(0, 917);
+        _statusStrip.Location = new Point(0, 802);
         _statusStrip.Margin = new Padding(0, 2, 0, 2);
         _statusStrip.Name = "_statusStrip";
         _statusStrip.Padding = new Padding(1, 0, 18, 0);
-        _statusStrip.Size = new Size(1478, 32);
+        _statusStrip.Size = new Size(1348, 32);
         _statusStrip.TabIndex = 3;
         // 
         // _statusLabel
@@ -493,55 +464,17 @@ public partial class MainForm : Form, IServiceProvider
         _statusLabel.Size = new Size(60, 25);
         _statusLabel.Text = "Ready";
         // 
-        // _newFromExistingMenuItem
-        // 
-        _newFromExistingMenuItem.Name = "_newFromExistingMenuItem";
-        _newFromExistingMenuItem.Size = new Size(341, 34);
-        _newFromExistingMenuItem.Text = "New from existing package...";
-        // 
-        // _updatePackageMenuItem
-        // 
-        _updatePackageMenuItem.Name = "_updatePackageMenuItem";
-        _updatePackageMenuItem.Size = new Size(315, 34);
-        _updatePackageMenuItem.Text = "Update current package...";
-        // 
-        // toolStripSeparator1
-        // 
-        toolStripSeparator1.Name = "toolStripSeparator1";
-        toolStripSeparator1.Size = new Size(338, 6);
-        // 
-        // toolStripSeparator2
-        // 
-        toolStripSeparator2.Name = "toolStripSeparator2";
-        toolStripSeparator2.Size = new Size(338, 6);
-        // 
-        // toolStripSeparator3
-        // 
-        toolStripSeparator3.Name = "toolStripSeparator3";
-        toolStripSeparator3.Size = new Size(267, 6);
-        // 
-        // _removePackageMenuItem
-        // 
-        _removePackageMenuItem.Name = "_removePackageMenuItem";
-        _removePackageMenuItem.Size = new Size(341, 34);
-        _removePackageMenuItem.Text = "Remove package";
-        // 
-        // toolStripSeparator4
-        // 
-        toolStripSeparator4.Name = "toolStripSeparator4";
-        toolStripSeparator4.Size = new Size(338, 6);
-        // 
         // MainForm
         // 
         AutoScaleDimensions = new SizeF(10F, 25F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1478, 949);
+        ClientSize = new Size(1348, 834);
         Controls.Add(_mainSplitContainer);
         Controls.Add(_statusStrip);
         Controls.Add(_mainToolStrip);
         Controls.Add(_mainMenuStrip);
         MainMenuStrip = _mainMenuStrip;
-        Margin = new Padding(4, 4, 4, 4);
+        Margin = new Padding(4);
         Name = "MainForm";
         Text = "WinGet Package Editor";
         _mainMenuStrip.ResumeLayout(false);

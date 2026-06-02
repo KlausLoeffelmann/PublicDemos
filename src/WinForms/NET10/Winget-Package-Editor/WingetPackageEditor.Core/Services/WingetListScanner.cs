@@ -7,14 +7,10 @@ namespace WingetPackageEditor.Core.Services;
 ///  Discovers installed winget package Ids by running <c>winget list</c> and parsing its tabular
 ///  output. All output is streamed to the console; failures are non-fatal and yield an empty result.
 /// </summary>
-public sealed class WingetListScanner : IInstalledAppScanner
+public sealed class WingetListScanner(IConsoleService consoleService) 
+    : IInstalledAppScanner
 {
-    private readonly IConsoleService _consoleService;
-
-    public WingetListScanner(IConsoleService consoleService)
-    {
-        _consoleService = consoleService ?? throw new ArgumentNullException(nameof(consoleService));
-    }
+    private readonly IConsoleService _consoleService = consoleService ?? throw new ArgumentNullException(nameof(consoleService));
 
     public IReadOnlyList<string> GetInstalledWingetIds()
     {

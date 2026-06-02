@@ -1,8 +1,10 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Windows.Input;
+using WarpToolkit.ComponentModel;
 using WarpToolkit.WinForms.Extensions.UI;
 using WarpToolkit.WinForms.Specialized;
 using WarpToolkit.WinForms.Symbols;
@@ -16,6 +18,7 @@ public partial class MainForm : Form, IServiceProvider
 {
     private static readonly string SettingsKey_MainFormBounds
         = nameof(SettingsKey_MainFormBounds);
+
     private const string SettingsKey_MainFormWindowState = "MainForm.WindowState";
     private const string SettingsKey_MainSplitter = "MainForm.MainSplitter";
     private const string SettingsKey_RightSplitter = "MainForm.RightSplitter";
@@ -34,9 +37,62 @@ public partial class MainForm : Form, IServiceProvider
     private string? _currentGridColumnSettingsKey;
     private bool _layoutStateRestored;
 
+    private readonly MainViewModel? _viewModel;
+    private ObservableBindingList<AppEntryViewModel>? _appsBindingList;
+    private TreeViewBinder? _treeViewBinder;
+    private GridSelectionBinder? _gridSelectionBinder;
+
+    private readonly IUserSettingsService? _userSettingsService;
+    private readonly IServiceProvider? _serviceProvider;
+
     public MainForm()
     {
         InitializeComponent();
+    }
+
+    /// <summary>
+    ///  Initializes a new instance of the <see cref="MainForm"/> class with dependency injection support.
+    /// </summary>
+    /// <param name="serviceProvider">
+    ///  The service provider that contains all registered services for dependency injection.
+    ///  This parameter is used to resolve dependencies and configure the form with the required services.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///  Thrown when <paramref name="serviceProvider"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="NullReferenceException">
+    ///  Thrown when the required <see cref="IUserSettingsService"/> is not registered in the service provider.
+    /// </exception>
+    /// <remarks>
+    ///  This constructor overload is specifically designed to be used when the Form is instantiated 
+    ///  through Dependency Injection (DI) using the <c>WinFormsApplication</c> class and the 
+    ///  <c>WinFormsApplicationBuilder</c>. This approach provides the same infrastructure pattern 
+    ///  as ASP.NET Core applications, enabling familiar service registration, configuration, 
+    ///  and dependency injection patterns in WinForms applications.
+    ///  <para>
+    ///   When using this constructor, the Form acts as a ServiceProvider-aware component, 
+    ///   allowing it to resolve and utilize services that have been registered in the 
+    ///   application's service container. This enables loose coupling, testability, 
+    ///   and modern application architecture patterns in WinForms development.
+    ///  </para>
+    ///  <para>
+    ///   The constructor automatically assigns the service provider to the form using the 
+    ///   <c>AssignServiceProvider</c> extension method and resolves the required 
+    ///   <see cref="IUserSettingsService"/> from the container.
+    ///  </para>
+    /// </remarks>
+    public MainForm(IServiceProvider serviceProvider) : this()
+    {
+        ArgumentNullException.ThrowIfNull(serviceProvider, nameof(serviceProvider));
+        _serviceProvider = new DeferredServiceProvider(serviceProvider);
+
+        _userSettingsService = serviceProvider.GetRequiredService<IUserSettingsService>();
+        _viewModel = serviceProvider.GetRequiredService<MainViewModel>();
+
+        if (_userSettingsService is null)
+        {
+            throw new NullReferenceException($"The service '{nameof(IUserSettingsService)}' is not registered.");
+        }
     }
 
     protected override void OnLoad(EventArgs e)
@@ -52,6 +108,19 @@ public partial class MainForm : Form, IServiceProvider
         // With AutoScaleMode.Font, applying a font rescales the form and would otherwise
         // clobber any previously restored size/position.
         RestoreWindowBounds();
+    }
+
+    object IServiceProvider.GetService(Type serviceType)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType, nameof(serviceType));
+
+        if (_serviceProvider is null)
+        {
+            throw new InvalidOperationException("Service provider is not initialized.");
+        }
+
+        return _serviceProvider.GetService(serviceType)
+            ?? throw new InvalidOperationException($"Service of type '{serviceType.Name}' is not registered.");
     }
 
     protected override void OnShown(EventArgs e)

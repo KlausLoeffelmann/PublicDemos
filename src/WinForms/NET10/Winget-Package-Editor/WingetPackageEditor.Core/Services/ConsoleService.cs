@@ -6,9 +6,9 @@ public sealed class ConsoleService : IConsoleService
 {
     public ObservableCollection<ConsoleMessage> Messages { get; } = [];
 
-    public void Write(ConsoleMessageKind kind, string text)
+    public void Write(ConsoleMessageKind kind, string? text)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        text ??= string.Empty;
         Messages.Add(new ConsoleMessage(DateTimeOffset.Now, kind, text));
     }
 }
