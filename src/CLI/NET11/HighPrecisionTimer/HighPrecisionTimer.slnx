@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/HighPrecisionTimer/HighPrecisionTimer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HighPrecisionTimer.Tests/HighPrecisionTimer.Tests.csproj" />
+  </Folder>
+</Solution>
