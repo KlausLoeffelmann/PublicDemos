@@ -46,14 +46,17 @@ public partial class CarrierForm : Form
 
     private void AddContainersForCtorPhase(List<ContainerDefinition> defs, Control parent)
     {
-        int y = 0;
+        Rectangle display = parent.DisplayRectangle;
+        int originX = display.X;
+        int y = display.Y;
+
         foreach (var def in defs)
         {
             if (def.Kind == ContainerKind.CTor)
             {
                 CarrierContainerBase control = new CTorContainerControl();
                 control.Configure(def.Parameters, def.Name);
-                control.Location = new Point(0, y);
+                control.Location = new Point(originX, y);
                 parent.Controls.Add(control);
                 _containerHosts[def.Id] = control;
                 y += control.Height + 8;
@@ -73,8 +76,10 @@ public partial class CarrierForm : Form
 
     private void AddContainersForLazyPhase(List<ContainerDefinition> defs, Control parent)
     {
+        Rectangle display = parent.DisplayRectangle;
+        int originX = display.X;
         int y = parent.Controls.Count == 0
-            ? 0
+            ? display.Y
             : parent.Controls.Cast<Control>().Max(c => c.Bottom) + 8;
 
         foreach (var def in defs)
@@ -83,7 +88,7 @@ public partial class CarrierForm : Form
             {
                 CarrierContainerBase control = new LazyContainerControl();
                 control.Configure(def.Parameters, def.Name);
-                control.Location = new Point(0, y);
+                control.Location = new Point(originX, y);
                 parent.Controls.Add(control);
                 _containerHosts[def.Id] = control;
                 y += control.Height + 8;
