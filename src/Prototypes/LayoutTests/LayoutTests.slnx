@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Warp/">
+    <Project Path="../../../../WARP/src/WarpToolkit.WinForms.AppServices/WarpToolkit.WinForms.AppServices.csproj" />
+    <Project Path="../../../../WARP/src/WarpToolkit.WinForms.Extensions/WarpToolkit.WinForms.Extensions.csproj" />
+    <Project Path="../../../../WARP/src/WarpToolkit.WinForms/WarpToolkit.WinForms.csproj" />
+  </Folder>
+  <Project Path="LayoutTests.App/LayoutTests.App.csproj" />
+</Solution>
