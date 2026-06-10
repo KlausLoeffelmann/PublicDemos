@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="C:\Users\klloeffe\Downloads\c64-fonts-master\c64-fonts-master\custom\aniron.bin" Link="Resources\aniron.bin" />
+    <EmbeddedResource Include="C:\Users\klloeffe\Downloads\c64-fonts-master\c64-fonts-master\custom\apple_ii.bin" Link="Resources\apple_ii.bin" />
+    <EmbeddedResource Include="C:\Users\klloeffe\Downloads\c64-fonts-master\c64-fonts-master\custom\comic_sans.bin" Link="Resources\comic_sans.bin" />
+    <EmbeddedResource Include="C:\Users\klloeffe\Downloads\c64-fonts-master\c64-fonts-master\custom\hachicro.bin" Link="Resources\hachicro.bin" />
+    <EmbeddedResource Include="C:\Users\klloeffe\Downloads\c64-fonts-master\c64-fonts-master\custom\minecraft.bin" Link="Resources\minecraft.bin" />
+    <EmbeddedResource Include="C:\Users\klloeffe\Downloads\c64-fonts-master\c64-fonts-master\custom\zx_spectrum.bin" Link="Resources\zx_spectrum.bin" />
+    <EmbeddedResource Include="C:\Users\klloeffe\Downloads\c64-fonts-master\c64-fonts-master\original\c64.bin" Link="Resources\c64.bin" />
+  </ItemGroup>
+
+</Project>
