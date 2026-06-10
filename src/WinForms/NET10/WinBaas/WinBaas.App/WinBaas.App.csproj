@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>WinBaas</RootNamespace>
+    <AssemblyName>WinBaas</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.Specialized\WarpToolkit.WinForms.Specialized.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms\WarpToolkit.WinForms.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.Extensions\WarpToolkit.WinForms.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.AppServices\WarpToolkit.WinForms.AppServices.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.Typography\WarpToolkit.WinForms.Typography.csproj" />
+  </ItemGroup>
+
+</Project>
+

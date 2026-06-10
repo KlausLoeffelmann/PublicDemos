@@ -1,6 +1,6 @@
 ---
 name: warp-winforms-controls
-description: Use this skill when adding modern WinForms UI with the WARP-Toolkit — fluent controls (FluentTabControl, FluentMessageBox, WizardContainer, FilePathPicker, BindableComboBox), adorned/grid layouts, MVVM-style commands for WinForms, control-tree helpers, dark-mode for DataGridView, persisting form/grid state, async ShowDialog, and developer tools such as ConsoleControl and FilenameDisambiguator. Bundles WarpToolkit.WinForms, WarpToolkit.WinForms.Extensions, and WarpToolkit.WinForms.Tooling because they are designed to be used together.
+description: Use this skill when adding modern WinForms UI with the WARP-Toolkit — fluent controls (FluentTabControl, FluentMessageBox, WizardContainer, FilePathPicker, BindableComboBox), adorned/grid layouts, MVVM-style commands for WinForms, control-tree helpers, dark-mode for DataGridView, persisting form/grid state, async ShowDialog, and developer tools such as ConsoleControl and FilenameDisambiguator. Bundles WarpToolkit.WinForms, WarpToolkit.WinForms.Extensions, and WarpToolkit.WinForms.Specialized because they are designed to be used together.
 ---
 
 # WARP WinForms Controls, Components and Helpers
@@ -12,14 +12,14 @@ day-to-day WinForms control surface:
 |---------|------|
 | `WarpToolkit.WinForms` | Flagship controls, adorners, wizards, commands, symbol fonts. |
 | `WarpToolkit.WinForms.Extensions` | Static helper methods (control-tree traversal, binding converters, dark-mode helpers, persistence). **Often references types from `WarpToolkit.WinForms`** — keep them paired. |
-| `WarpToolkit.WinForms.Tooling` | Developer-flavored helpers: interactive `ConsoleControl`, `FilenameDisambiguator`. |
+| `WarpToolkit.WinForms.Specialized` | Purpose-built controls and helpers: interactive `ConsoleControl`, `FilenameDisambiguator`, `HexAsciiDumper`. |
 
-Current preview version: `0.9.86-preview.g8bc92e2168`.
+Current preview version: `0.9.7-preview.g32895b766b`.
 
 Reference files:
 - `src/docs/reference/WarpToolkit.WinForms.md`
 - `src/docs/reference/WarpToolkit.WinForms.Extensions.md`
-- `src/docs/reference/WarpToolkit.WinForms.Tooling.md`
+- `src/docs/reference/WarpToolkit.WinForms.Specialized.md`
 
 ## When to use this skill
 
@@ -218,7 +218,7 @@ toolStripButton.ConfigureItem(
     size: 20);
 ```
 
-## Developer tools — `WarpToolkit.WinForms.Tooling`
+## Specialized controls — `WarpToolkit.WinForms.Specialized`
 
 ### ConsoleControl
 

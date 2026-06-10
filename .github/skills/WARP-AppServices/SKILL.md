@@ -13,7 +13,7 @@ infrastructure for a WARP-based WinForms app:
 | `WarpToolkit.Desktop.AppServices` | UI-framework-agnostic **contracts** (interfaces, `ViewModelBase`). View-models depend on this only. |
 | `WarpToolkit.WinForms.AppServices` | WinForms-specific **implementations** plus the `IHost`-based application builder. |
 
-Current preview version: `0.9.86-preview.g8bc92e2168`.
+Current preview version: `0.9.7-preview.g32895b766b`.
 
 Reference files:
 - `src/docs/reference/WarpToolkit.Desktop.AppServices.md`
@@ -47,13 +47,7 @@ Reference files:
   that the ViewModels need to talk to UI services without depending on 
   `System.Windows.Forms`.
 
-Use the standard WinForms SDK for plain desktop apps:
-
-```
-<Project Sdk="Microsoft.NET.Sdk">
-```
-
-Change the project SDK to Razor only when the app hosts Razor/WebView UI:
+**MOST IMPORTANT CHANGE TO TAKE INTO ACCOUNT**: The Project SDK of the WinForms App need to be changed to:
 
 ```
 <Project Sdk="Microsoft.NET.Sdk.Razor">
