@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Define the version as a property -->
+    <WarpToolkitVersion>[0.*-preview*,)</WarpToolkitVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Use the property in the PackageReference -->
+    <PackageReference Include="WarpToolkit.WinForms" Version="$(WarpToolkitVersion)" />
+    <PackageReference Include="WarpToolkit.WinForms.AI" Version="$(WarpToolkitVersion)" />
+    <PackageReference Include="WarpToolkit.WinForms.AppServices" Version="$(WarpToolkitVersion)" />
+  </ItemGroup>
+
+</Project>
