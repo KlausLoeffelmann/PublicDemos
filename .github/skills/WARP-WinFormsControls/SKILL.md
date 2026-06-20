@@ -14,7 +14,7 @@ day-to-day WinForms control surface:
 | `WarpToolkit.WinForms.Extensions` | Static helper methods (control-tree traversal, binding converters, dark-mode helpers, persistence). **Often references types from `WarpToolkit.WinForms`** — keep them paired. |
 | `WarpToolkit.WinForms.Specialized` | Purpose-built controls and helpers: interactive `ConsoleControl`, `FilenameDisambiguator`, `HexAsciiDumper`. |
 
-Current preview version: `0.9.7-preview.g32895b766b`.
+Current preview version: `0.9.217-preview.gd29245666b`.
 
 Reference files:
 - `src/docs/reference/WarpToolkit.WinForms.md`

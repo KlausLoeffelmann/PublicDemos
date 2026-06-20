@@ -28,16 +28,8 @@ related areas:
 For apps that can use the package:
 
 ```xml
-<PackageReference Include="WarpToolkit.WinForms.Github" Version="0.9.79-preview.g5a320ad311" />
+<PackageReference Include="WarpToolkit.WinForms.Github" Version="0.9.217-preview.gd29245666b" />
 ```
-
-If the API is still being evolved inside the WARP repo, reference the project:
-
-```xml
-<ProjectReference Include="..\..\..\warp\src\WarpToolkit.WinForms.Github\WarpToolkit.WinForms.Github.csproj" />
-```
-
-Adjust the relative path for the consuming project.
 
 ## DI registration
 

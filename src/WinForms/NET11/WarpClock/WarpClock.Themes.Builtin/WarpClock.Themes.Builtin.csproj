@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net11.0-windows10.0.22000.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>WarpClock.Themes.Builtin</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WarpClock.Abstractions\WarpClock.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.DirectX\WarpToolkit.WinForms.DirectX.csproj" />
+  </ItemGroup>
+
+</Project>

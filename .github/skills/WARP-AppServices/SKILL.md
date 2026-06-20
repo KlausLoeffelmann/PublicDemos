@@ -1,19 +1,18 @@
 ---
 name: warp-app-services
-description: Use this skill when bootstrapping a WinForms application with the WARP-Toolkit's hosting/DI infrastructure, registering app-level services (dialogs, exception handling, user settings, API-key retrieval), implementing IDialogService consumers in view-models, or wiring AI provider keys from environment variables. Covers WarpToolkit.WinForms.AppServices and WarpToolkit.Desktop.AppServices together because they form one logical feature.
+description: Use this skill when bootstrapping a WinForms application with the WARP-Toolkit's hosting/DI infrastructure, registering app-level services (dialogs, exception handling, user settings, API-key retrieval), implementing IDialogService consumers in view-models, or wiring AI provider keys from environment variables.
+metadata: Required nuget packages "WarpToolkit.WinForms.AppServices", "WarpToolkit.Desktop.AppServices"; latest version "0.9.217-preview.gd29245666b"
 ---
 
 # WARP App Services
 
 This skill covers the two packages that together provide application-level
-infrastructure for a WARP-based WinForms app:
+infrastructure for a WARP-based WinForms app.
 
 | Package | Role |
 |---------|------|
 | `WarpToolkit.Desktop.AppServices` | UI-framework-agnostic **contracts** (interfaces, `ViewModelBase`). View-models depend on this only. |
 | `WarpToolkit.WinForms.AppServices` | WinForms-specific **implementations** plus the `IHost`-based application builder. |
-
-Current preview version: `0.9.7-preview.g32895b766b`.
 
 Reference files:
 - `src/docs/reference/WarpToolkit.Desktop.AppServices.md`
