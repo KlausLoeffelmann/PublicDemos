@@ -69,25 +69,35 @@ public sealed partial class NerdTheme
                 ]);
             }
 
-            // Hour in binary near the tip (5 bits), minute near the pivot (6 bits).
             int hour = ctx.Time.Now.Hour;   // 0..23
             int minute = ctx.Time.Now.Minute; // 0..59
 
             float dotR = 11f * scale;
             float top = tipY + dotR + 6f * scale;
             float bottom = pivotY - dotR - 6f * scale;
-            int totalBits = 5 + 6;
-            float step = (bottom - top) / (totalBits - 1);
+
+            // Two visually separated groups along the blade: the minute (6 bits) is read
+            // toward the tip (outer) and the hour (5 bits) toward the pivot (inner), with a
+            // clear gap between them so the two readouts never blur together. Both groups
+            // share the same dot spacing; the gap simply consumes extra vertical room.
+            const int minuteBits = 6;
+            const int hourBits = 5;
+            float gap = 34f * scale;
+            float step = (bottom - top - gap) / (minuteBits - 1 + hourBits - 1);
 
             int slot = 0;
-            for (int b = 4; b >= 0; b--, slot++)
-            {
-                DrawBit(g, cx, top + step * slot, dotR, (hour & (1 << b)) != 0);
-            }
 
-            for (int b = 5; b >= 0; b--, slot++)
+            // Minute, MSB first, starting at the tip end.
+            for (int b = minuteBits - 1; b >= 0; b--, slot++)
             {
                 DrawBit(g, cx, top + step * slot, dotR, (minute & (1 << b)) != 0);
+            }
+
+            // Gap, then the hour, MSB first, ending near the pivot.
+            float hourTop = top + step * (minuteBits - 1) + gap;
+            for (int b = hourBits - 1, h = 0; b >= 0; b--, h++)
+            {
+                DrawBit(g, cx, hourTop + step * h, dotR, (hour & (1 << b)) != 0);
             }
         }
 
