@@ -5,4 +5,5 @@
   <Project Path="WarpClock.App/WarpClock.App.csproj" />
   <Project Path="WarpClock.Themes.Nerd/WarpClock.Themes.Nerd.csproj" />
   <Project Path="WarpClock.Themes.Scatter/WarpClock.Themes.Scatter.csproj" />
+  <Project Path="WarpClock.Themes.SunFlower/WarpClock.Themes.SunFlower.csproj" />
 </Solution>
