@@ -416,7 +416,7 @@ public partial class FormMain : Form
 
     private void OnKioskFullScreenChanged(object? sender, EventArgs e)
     {
-        bool fullscreen = _kioskModeManager.IsFullScreen;
+        bool fullscreen = _kioskModeManager.FullScreen;
         _menuStrip.Visible = !fullscreen;
         _statusStrip.Visible = !fullscreen;
         _statusMode.Text = fullscreen ? "Kiosk" : "Windowed";

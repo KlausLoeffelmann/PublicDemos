@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\..\WARP\src\WarpToolkit.WinForms.DirectX\WarpToolkit.WinForms.DirectX.csproj" />
+    <PackageReference Include="WarpToolkit.WinForms.DirectX" Version="0.9.232-preview.g249e043a41" />
   </ItemGroup>
 
 </Project>
