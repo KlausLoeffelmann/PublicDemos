@@ -3,6 +3,5 @@
   <Project Path="WarpClock.Engine/WarpClock.Engine.csproj" />
   <Project Path="WarpClock.Themes.Builtin/WarpClock.Themes.Builtin.csproj" />
   <Project Path="WarpClock.App/WarpClock.App.csproj" />
-  <Project Path="WarpClock.Themes.LoseHour/WarpClock.Themes.LoseHour.csproj" />
   <Project Path="WarpClock.Themes.Nerd/WarpClock.Themes.Nerd.csproj" />
 </Solution>

@@ -39,7 +39,6 @@ hour hand's tip follows them; you still cannot make it lie about the time.
 | `WarpClock.Engine` | `WarpClockControl` (a `D2DPanel`): authoritative time, anchor resolution, hand-pointing solver + grace, transform composition, the high-precision frame loop. |
 | `WarpClock.Themes.Builtin` | The three built-in radial themes: **Railway Classic**, **Modern Minimal**, **Antique Worn**. |
 | `WarpClock.App` | The kiosk host form (real `System.Windows.Forms.KioskModeManager`), theme menu, plug-in loader/watcher. |
-| `WarpClock.Themes.LoseHour` | Sample free-floating plug-in: hours stacked in a left column, only three visible, falling/fading as time passes. |
 | `WarpClock.Themes.Nerd` | Sample plug-in: a single second hand that encodes hour & minute in binary; octal hour markers. |
 
 ## Kiosk mode

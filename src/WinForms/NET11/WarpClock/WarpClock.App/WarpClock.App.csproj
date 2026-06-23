@@ -23,10 +23,6 @@
        plugins\; ReferenceOutputAssembly=false keeps them out of the app's
        compile-time closure so they behave like real drop-in assemblies. -->
   <ItemGroup>
-    <ProjectReference Include="..\WarpClock.Themes.LoseHour\WarpClock.Themes.LoseHour.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <Private>false</Private>
-    </ProjectReference>
     <ProjectReference Include="..\WarpClock.Themes.Nerd\WarpClock.Themes.Nerd.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>false</Private>
@@ -35,7 +31,6 @@
 
   <Target Name="CopyClockPlugins" AfterTargets="Build">
     <ItemGroup>
-      <PluginAssembly Include="..\WarpClock.Themes.LoseHour\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.LoseHour.dll" />
       <PluginAssembly Include="..\WarpClock.Themes.Nerd\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.Nerd.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(PluginAssembly)"

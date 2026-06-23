@@ -24,9 +24,6 @@ public sealed record ThemeCapabilities
     /// </summary>
     public bool HandsFollowFaceRotation { get; init; } = true;
 
-    /// <summary>The number of hour markers the theme intends to show (default 12).</summary>
-    public int VisibleHourCount { get; init; } = 12;
-
-    /// <summary>The default themes' capabilities (radial, hands follow face, 12 markers).</summary>
+    /// <summary>The default themes' capabilities (radial, hands follow face).</summary>
     public static ThemeCapabilities Default { get; } = new();
 }
