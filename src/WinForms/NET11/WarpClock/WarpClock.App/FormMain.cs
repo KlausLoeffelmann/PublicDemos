@@ -32,6 +32,7 @@ public partial class FormMain : Form
 
         RefreshGraceChecks();
         RefreshSpeedChecks();
+        RefreshKioskChecks();
 
         // Built-in themes are in-memory and instantaneous, so loading them and selecting
         // the first one here keeps the clock populated the moment the window appears.
@@ -312,6 +313,16 @@ public partial class FormMain : Form
         _kioskModeManager.HideTaskbar = !_kioskModeManager.HideTaskbar;
         _miHideTaskbar.Checked = _kioskModeManager.HideTaskbar;
         _statusInfo.Text = $"Hide taskbar: {(_kioskModeManager.HideTaskbar ? "On" : "Off")}";
+    }
+
+    /// <summary>
+    ///  Syncs the View-menu check marks with the live kiosk-manager state so they are
+    ///  correct at startup (the Designer sets <c>HideTaskbar = true</c>) and never drift.
+    /// </summary>
+    private void RefreshKioskChecks()
+    {
+        _miHideTaskbar.Checked = _kioskModeManager.HideTaskbar;
+        _miPreventSleep.Checked = _kioskModeManager.SuppressPowerSaving;
     }
 
     private void OnPreventSleepClick(object? sender, EventArgs e)
