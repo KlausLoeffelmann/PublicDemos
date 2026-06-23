@@ -225,29 +225,37 @@ public partial class FormMain : Form
             return ClockHandMotion.Crawling;
         }
 
-        if (ReferenceEquals(sender, _miSecondTick)
-            || ReferenceEquals(sender, _miMinuteTick)
-            || ReferenceEquals(sender, _miHourTick))
+        if (ReferenceEquals(sender, _miSecondSweep)
+            || ReferenceEquals(sender, _miMinuteSweep)
+            || ReferenceEquals(sender, _miHourSweep))
         {
-            return ClockHandMotion.Tick;
+            return ClockHandMotion.Sweep;
         }
 
-        return ClockHandMotion.Sweep;
+        if (ReferenceEquals(sender, _miSecondFastTick)
+            || ReferenceEquals(sender, _miMinuteFastTick)
+            || ReferenceEquals(sender, _miHourFastTick))
+        {
+            return ClockHandMotion.FastTick;
+        }
+
+        return ClockHandMotion.Tick;
     }
 
     private void OnSecondMotionOpening(object? sender, EventArgs e)
-        => RefreshMotionChecks(_clock.SecondMotion, _miSecondCrawling, _miSecondSweep, _miSecondTick);
+        => RefreshMotionChecks(_clock.SecondMotion, _miSecondCrawling, _miSecondSweep, _miSecondFastTick, _miSecondTick);
 
     private void OnMinuteMotionOpening(object? sender, EventArgs e)
-        => RefreshMotionChecks(_clock.MinuteMotion, _miMinuteCrawling, _miMinuteSweep, _miMinuteTick);
+        => RefreshMotionChecks(_clock.MinuteMotion, _miMinuteCrawling, _miMinuteSweep, _miMinuteFastTick, _miMinuteTick);
 
     private void OnHourMotionOpening(object? sender, EventArgs e)
-        => RefreshMotionChecks(_clock.HourMotion, _miHourCrawling, _miHourSweep, _miHourTick);
+        => RefreshMotionChecks(_clock.HourMotion, _miHourCrawling, _miHourSweep, _miHourFastTick, _miHourTick);
 
     private void RefreshMotionChecks(
         ClockHandMotion current,
         ToolStripMenuItem crawling,
         ToolStripMenuItem sweep,
+        ToolStripMenuItem fastTick,
         ToolStripMenuItem tick)
     {
         // A free-floating theme cannot crawl; reflect that in the menu.
@@ -255,6 +263,7 @@ public partial class FormMain : Form
         crawling.Enabled = !freeFloating;
         crawling.Checked = current == ClockHandMotion.Crawling;
         sweep.Checked = current == ClockHandMotion.Sweep;
+        fastTick.Checked = current == ClockHandMotion.FastTick;
         tick.Checked = current == ClockHandMotion.Tick;
     }
 

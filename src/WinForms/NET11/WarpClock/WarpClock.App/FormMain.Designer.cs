@@ -30,14 +30,17 @@ partial class FormMain
         _secondMotionMenu = new ToolStripMenuItem();
         _miSecondCrawling = new ToolStripMenuItem();
         _miSecondSweep = new ToolStripMenuItem();
+        _miSecondFastTick = new ToolStripMenuItem();
         _miSecondTick = new ToolStripMenuItem();
         _minuteMotionMenu = new ToolStripMenuItem();
         _miMinuteCrawling = new ToolStripMenuItem();
         _miMinuteSweep = new ToolStripMenuItem();
+        _miMinuteFastTick = new ToolStripMenuItem();
         _miMinuteTick = new ToolStripMenuItem();
         _hourMotionMenu = new ToolStripMenuItem();
         _miHourCrawling = new ToolStripMenuItem();
         _miHourSweep = new ToolStripMenuItem();
+        _miHourFastTick = new ToolStripMenuItem();
         _miHourTick = new ToolStripMenuItem();
         _graceMenu = new ToolStripMenuItem();
         _miGrace1 = new ToolStripMenuItem();
@@ -134,6 +137,7 @@ partial class FormMain
         {
             _miSecondCrawling,
             _miSecondSweep,
+            _miSecondFastTick,
             _miSecondTick
         });
         _secondMotionMenu.Name = "_secondMotionMenu";
@@ -147,8 +151,13 @@ partial class FormMain
 
         // _miSecondSweep
         _miSecondSweep.Name = "_miSecondSweep";
-        _miSecondSweep.Text = "Sweep";
+        _miSecondSweep.Text = "Sweep (glide)";
         _miSecondSweep.Click += OnSecondMotionClick;
+
+        // _miSecondFastTick
+        _miSecondFastTick.Name = "_miSecondFastTick";
+        _miSecondFastTick.Text = "Fast Tick";
+        _miSecondFastTick.Click += OnSecondMotionClick;
 
         // _miSecondTick
         _miSecondTick.Name = "_miSecondTick";
@@ -160,6 +169,7 @@ partial class FormMain
         {
             _miMinuteCrawling,
             _miMinuteSweep,
+            _miMinuteFastTick,
             _miMinuteTick
         });
         _minuteMotionMenu.Name = "_minuteMotionMenu";
@@ -173,8 +183,13 @@ partial class FormMain
 
         // _miMinuteSweep
         _miMinuteSweep.Name = "_miMinuteSweep";
-        _miMinuteSweep.Text = "Sweep";
+        _miMinuteSweep.Text = "Sweep (glide)";
         _miMinuteSweep.Click += OnMinuteMotionClick;
+
+        // _miMinuteFastTick
+        _miMinuteFastTick.Name = "_miMinuteFastTick";
+        _miMinuteFastTick.Text = "Fast Tick";
+        _miMinuteFastTick.Click += OnMinuteMotionClick;
 
         // _miMinuteTick
         _miMinuteTick.Name = "_miMinuteTick";
@@ -186,6 +201,7 @@ partial class FormMain
         {
             _miHourCrawling,
             _miHourSweep,
+            _miHourFastTick,
             _miHourTick
         });
         _hourMotionMenu.Name = "_hourMotionMenu";
@@ -199,8 +215,13 @@ partial class FormMain
 
         // _miHourSweep
         _miHourSweep.Name = "_miHourSweep";
-        _miHourSweep.Text = "Sweep";
+        _miHourSweep.Text = "Sweep (glide)";
         _miHourSweep.Click += OnHourMotionClick;
+
+        // _miHourFastTick
+        _miHourFastTick.Name = "_miHourFastTick";
+        _miHourFastTick.Text = "Fast Tick";
+        _miHourFastTick.Click += OnHourMotionClick;
 
         // _miHourTick
         _miHourTick.Name = "_miHourTick";
@@ -410,14 +431,17 @@ partial class FormMain
     private ToolStripMenuItem _secondMotionMenu;
     private ToolStripMenuItem _miSecondCrawling;
     private ToolStripMenuItem _miSecondSweep;
+    private ToolStripMenuItem _miSecondFastTick;
     private ToolStripMenuItem _miSecondTick;
     private ToolStripMenuItem _minuteMotionMenu;
     private ToolStripMenuItem _miMinuteCrawling;
     private ToolStripMenuItem _miMinuteSweep;
+    private ToolStripMenuItem _miMinuteFastTick;
     private ToolStripMenuItem _miMinuteTick;
     private ToolStripMenuItem _hourMotionMenu;
     private ToolStripMenuItem _miHourCrawling;
     private ToolStripMenuItem _miHourSweep;
+    private ToolStripMenuItem _miHourFastTick;
     private ToolStripMenuItem _miHourTick;
 
     private ToolStripMenuItem _graceMenu;

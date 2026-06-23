@@ -43,6 +43,7 @@ public sealed class WarpClockControl : D2DPanel
     private SizeF _surface = new(2, 2);
     private float _faceRotation;
     private int _graceSeconds = 5;
+    private float _glideDurationSeconds = 0.5f;
     private bool _sceneBuilt;
 
     /// <summary>Initializes a new <see cref="WarpClockControl"/>.</summary>
@@ -99,6 +100,19 @@ public sealed class WarpClockControl : D2DPanel
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public ClockHandMotion HourMotion { get; set; } = ClockHandMotion.Crawling;
+
+    /// <summary>
+    ///  The ease-in-out glide duration (seconds) used by <see cref="ClockHandMotion.Sweep"/>
+    ///  and by the magnetic-numeral aiming. A second-hand glide of 0.5s reaches the next
+    ///  mark half-way through the second and rests for the remainder. Clamped to 0.1..5s.
+    /// </summary>
+    [Browsable(true)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public float GlideDurationSeconds
+    {
+        get => _glideDurationSeconds;
+        set => _glideDurationSeconds = Math.Clamp(value, 0.1f, 5f);
+    }
 
     /// <summary>A demo time offset added to the real wall clock.</summary>
     [Browsable(false)]
@@ -442,7 +456,7 @@ public sealed class WarpClockControl : D2DPanel
         }
         else
         {
-            target = HandPointingSolver.RadialTargetAngle(time, descriptor.Hand, MotionFor(descriptor.Hand));
+            target = HandPointingSolver.RadialTargetAngle(time, descriptor.Hand, MotionFor(descriptor.Hand), _glideDurationSeconds);
             if (_theme.Capabilities.HandsFollowFaceRotation)
             {
                 target += _faceRotation;
