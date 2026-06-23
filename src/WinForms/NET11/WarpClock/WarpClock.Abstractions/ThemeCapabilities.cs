@@ -24,6 +24,13 @@ public sealed record ThemeCapabilities
     /// </summary>
     public bool HandsFollowFaceRotation { get; init; } = true;
 
+    /// <summary>
+    ///  A hint that the host should switch the clock into <c>MagneticNumerals</c> mode
+    ///  when this theme is selected (the user can still toggle it afterwards). Magnetism
+    ///  itself remains a property of the clock control, not of the theme.
+    /// </summary>
+    public bool MagneticByDefault { get; init; }
+
     /// <summary>The default themes' capabilities (radial, hands follow face).</summary>
     public static ThemeCapabilities Default { get; } = new();
 }

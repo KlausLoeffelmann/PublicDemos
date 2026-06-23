@@ -178,13 +178,20 @@ public partial class FormMain : Form
         _current = entry;
         _clock.Theme = entry.Theme;
 
+        // A theme may ask the host to start in Magnetic-numerals mode (e.g. the Scatter
+        // demo). Magnetism stays a clock-control property; this just sets a sensible
+        // default on selection, and the user can still toggle it from the View menu.
+        _clock.MagneticNumerals = entry.Theme.Capabilities.MagneticByDefault;
+        _miMagnetic.Checked = _clock.MagneticNumerals;
+
         foreach ((ThemeEntry candidate, ToolStripMenuItem item) in _themeItems)
         {
             item.Checked = ReferenceEquals(candidate, entry);
         }
 
         _statusInfo.Text = $"Theme: {entry.Display} ({entry.Source})" +
-            (entry.Theme.Capabilities.FreeFloating ? " — free-floating" : string.Empty);
+            (entry.Theme.Capabilities.FreeFloating ? " — free-floating" : string.Empty) +
+            (_clock.MagneticNumerals ? " — magnetic" : string.Empty);
     }
 
     // ── Motion menu handlers ──
