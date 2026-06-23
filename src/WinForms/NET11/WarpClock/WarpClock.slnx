@@ -4,4 +4,5 @@
   <Project Path="WarpClock.Themes.Builtin/WarpClock.Themes.Builtin.csproj" />
   <Project Path="WarpClock.App/WarpClock.App.csproj" />
   <Project Path="WarpClock.Themes.Nerd/WarpClock.Themes.Nerd.csproj" />
+  <Project Path="WarpClock.Themes.Scatter/WarpClock.Themes.Scatter.csproj" />
 </Solution>

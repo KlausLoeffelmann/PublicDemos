@@ -57,6 +57,7 @@ partial class FormMain
         _miKiosk = new ToolStripMenuItem();
         _miHideTaskbar = new ToolStripMenuItem();
         _miPreventSleep = new ToolStripMenuItem();
+        _miMagnetic = new ToolStripMenuItem();
         _miProperties = new ToolStripMenuItem();
         _viewSeparator = new ToolStripSeparator();
         _miExit = new ToolStripMenuItem();
@@ -311,6 +312,7 @@ partial class FormMain
             _miKiosk,
             _miHideTaskbar,
             _miPreventSleep,
+            _miMagnetic,
             _miProperties,
             _viewSeparator,
             _miExit
@@ -333,6 +335,11 @@ partial class FormMain
         _miPreventSleep.Name = "_miPreventSleep";
         _miPreventSleep.Text = "Prevent &sleep / screensaver";
         _miPreventSleep.Click += OnPreventSleepClick;
+
+        // _miMagnetic
+        _miMagnetic.Name = "_miMagnetic";
+        _miMagnetic.Text = "&Magnetic numerals";
+        _miMagnetic.Click += OnMagneticClick;
 
         // _miProperties
         _miProperties.Name = "_miProperties";
@@ -461,6 +468,7 @@ partial class FormMain
     private ToolStripMenuItem _miKiosk;
     private ToolStripMenuItem _miHideTaskbar;
     private ToolStripMenuItem _miPreventSleep;
+    private ToolStripMenuItem _miMagnetic;
     private ToolStripMenuItem _miProperties;
     private ToolStripSeparator _viewSeparator;
     private ToolStripMenuItem _miExit;

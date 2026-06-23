@@ -15,6 +15,16 @@ public sealed class ClockElementParameters
     /// <summary>Whether the element's visual is shown.</summary>
     public bool Visible { get; set; } = true;
 
+    /// <summary>
+    ///  Tri-state numeral visibility used by the engine's magnetic-numeral aiming.
+    ///  <see cref="ClockNumeralVisibility.Transparent"/> hides the numeral but keeps it
+    ///  as a target; <see cref="ClockNumeralVisibility.Invisible"/> hides it and makes the
+    ///  hands skip it. Defaults to <see cref="ClockNumeralVisibility.Visible"/> and has no
+    ///  effect on non-magnetic themes beyond hiding the visual when not
+    ///  <see cref="ClockNumeralVisibility.Visible"/>.
+    /// </summary>
+    public ClockNumeralVisibility Visibility { get; set; } = ClockNumeralVisibility.Visible;
+
     /// <summary>Offset (design units) added to the element's layout anchor.</summary>
     public PointF AnchorOffset { get; set; }
 

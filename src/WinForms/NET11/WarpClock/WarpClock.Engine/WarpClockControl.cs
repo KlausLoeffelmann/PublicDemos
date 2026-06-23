@@ -22,6 +22,7 @@ public sealed class WarpClockControl : D2DPanel
     private readonly Lock _sync = new();
     private readonly ClockTimeModel _timeModel = new();
     private readonly HandPointingSolver _solver = new();
+    private readonly MagneticNumeralSolver _magneticSolver = new();
     private readonly DefaultClockLayout _defaultLayout = new();
     private readonly Dictionary<ClockElementId, ElementRuntime> _runtime = [];
     private readonly Action _frameAction;
@@ -44,6 +45,7 @@ public sealed class WarpClockControl : D2DPanel
     private float _faceRotation;
     private int _graceSeconds = 5;
     private float _glideDurationSeconds = 0.5f;
+    private bool _magneticNumerals;
     private bool _sceneBuilt;
 
     /// <summary>Initializes a new <see cref="WarpClockControl"/>.</summary>
@@ -130,6 +132,34 @@ public sealed class WarpClockControl : D2DPanel
     {
         get => _timeModel.SpeedMultiplier;
         set => _timeModel.SpeedMultiplier = value;
+    }
+
+    /// <summary>
+    ///  When <see langword="true"/>, every hand "finds" the hour numerals wherever the
+    ///  theme has placed them on the canvas and swings to the next one at its own rate
+    ///  (second-by-second, minute-by-minute, hour-by-hour). Numerals marked
+    ///  <see cref="ClockNumeralVisibility.Invisible"/> (or absent) are skipped — a hand
+    ///  that would land on one stays where it is. Independent of the per-hand
+    ///  <see cref="ClockHandMotion"/>; the glide uses <see cref="GlideDurationSeconds"/>.
+    /// </summary>
+    [Browsable(true)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool MagneticNumerals
+    {
+        get => _magneticNumerals;
+        set
+        {
+            if (_magneticNumerals == value)
+            {
+                return;
+            }
+
+            _magneticNumerals = value;
+
+            // Drop stale per-hand state so the hands don't jump from an old solver's pose.
+            _magneticSolver.Reset();
+            _solver.Reset();
+        }
     }
 
     /// <summary>Whether the active theme uses a free-floating (non-radial) layout.</summary>
@@ -223,6 +253,7 @@ public sealed class WarpClockControl : D2DPanel
     private void ActivateTheme()
     {
         _solver.Reset();
+        _magneticSolver.Reset();
         _faceRotation = 0f;
 
         if (IsHandleCreated)
@@ -403,7 +434,11 @@ public sealed class WarpClockControl : D2DPanel
             Math.Max(1, height));
 
         runtime.Visual.Bounds = bounds;
-        runtime.Visual.Visible = parameters.Visible;
+
+        // Transparent / Invisible numerals are placed (so magnetic aiming can still target
+        // a Transparent one) but not drawn; only a Visible+Visible element shows its visual.
+        runtime.Visual.Visible = parameters.Visible
+            && parameters.Visibility == ClockNumeralVisibility.Visible;
 
         float selfRotation = ComputeSelfRotation(descriptor, parameters, time, anchor, geometry, dt);
 
@@ -446,6 +481,23 @@ public sealed class WarpClockControl : D2DPanel
             return _faceRotation + parameters.ExtraRotationDegrees;
         }
 
+        // Magnetic mode overrides ordinary pointing: the hand aims at scattered hour
+        // numerals (skipping Invisible ones) and glides/tracks their live positions.
+        if (_magneticNumerals)
+        {
+            float magnetic = _magneticSolver.Solve(
+                descriptor.Hand,
+                anchor,
+                time,
+                _glideDurationSeconds,
+                dt,
+                NumeralVisibilityAt,
+                index => ResolveAnchor(ClockElementId.HourMarker(index), geometry));
+
+            float magneticWobble = Math.Clamp(parameters.ExtraRotationDegrees, -5f, 5f);
+            return magnetic + magneticWobble;
+        }
+
         bool freeFloating = _theme!.Capabilities.FreeFloating;
         float target;
 
@@ -477,6 +529,16 @@ public sealed class WarpClockControl : D2DPanel
             ClockHandKind.Minute => MinuteMotion,
             _ => SecondMotion,
         };
+
+    /// <summary>
+    ///  Returns the visibility of hour numeral <paramref name="index"/> (0..11), or
+    ///  <see langword="null"/> when the active theme did not materialize that numeral.
+    ///  Used by the magnetic solver to decide which numerals are valid targets.
+    /// </summary>
+    private ClockNumeralVisibility? NumeralVisibilityAt(int index)
+        => _runtime.TryGetValue(ClockElementId.HourMarker(index), out ElementRuntime? runtime)
+            ? runtime.Parameters.Visibility
+            : null;
 
     private PointF ResolveAnchor(ClockElementId id, ClockGeometry geometry)
     {

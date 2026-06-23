@@ -341,6 +341,13 @@ public partial class FormMain : Form
         _statusInfo.Text = $"Prevent sleep: {(_kioskModeManager.SuppressPowerSaving ? "On" : "Off")}";
     }
 
+    private void OnMagneticClick(object? sender, EventArgs e)
+    {
+        _clock.MagneticNumerals = !_clock.MagneticNumerals;
+        _miMagnetic.Checked = _clock.MagneticNumerals;
+        _statusInfo.Text = $"Magnetic numerals: {(_clock.MagneticNumerals ? "On" : "Off")}";
+    }
+
     private void OnTogglePropertiesClick(object? sender, EventArgs e)
     {
         if (_splitContainer.Panel2Collapsed && _propertyGrid.Parent is null)

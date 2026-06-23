@@ -40,6 +40,7 @@ hour hand's tip follows them; you still cannot make it lie about the time.
 | `WarpClock.Themes.Builtin` | The three built-in radial themes: **Railway Classic**, **Modern Minimal**, **Antique Worn**. |
 | `WarpClock.App` | The kiosk host form (real `System.Windows.Forms.KioskModeManager`), theme menu, plug-in loader/watcher. |
 | `WarpClock.Themes.Nerd` | Sample plug-in: a single second hand that encodes hour & minute in binary; octal hour markers. |
+| `WarpClock.Themes.Scatter` | Sample free-floating plug-in: hour numerals scattered (and drifting) across the canvas to demonstrate **Magnetic numerals** and the tri-state numeral visibility. |
 
 ## Kiosk mode
 

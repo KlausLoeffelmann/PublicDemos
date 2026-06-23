@@ -27,11 +27,16 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="..\WarpClock.Themes.Scatter\WarpClock.Themes.Scatter.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
   <Target Name="CopyClockPlugins" AfterTargets="Build">
     <ItemGroup>
       <PluginAssembly Include="..\WarpClock.Themes.Nerd\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.Nerd.dll" />
+      <PluginAssembly Include="..\WarpClock.Themes.Scatter\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.Scatter.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(PluginAssembly)"
           DestinationFolder="$(OutDir)plugins"
