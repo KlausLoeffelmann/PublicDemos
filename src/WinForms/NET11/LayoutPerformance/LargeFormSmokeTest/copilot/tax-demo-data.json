@@ -1,0 +1,1718 @@
+{
+  "SchemaVersion": "1.0",
+  "Generated": "2026-06-24T19:06:15.838590+00:00",
+  "Persons": [
+    {
+      "Id": 1,
+      "TaxNumber": "57/354/00011",
+      "Title": "",
+      "FirstName": "Sabine",
+      "LastName": "Schmidt",
+      "MaidenName": null,
+      "BirthDate": "1958-03-04",
+      "BirthPlace": "Soest",
+      "CurrentAddress": {
+        "Street": "Kirchplatz",
+        "HouseNumber": "123",
+        "PostalCode": "67227",
+        "City": "Frankenthal",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": null,
+      "Contacts": [
+        {
+          "Kind": "Email",
+          "Value": "user807@example.de"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        },
+        {
+          "Kind": "Mobile",
+          "Value": "+49 179 1985645"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Monika",
+        "LastName": "Müller",
+        "BirthDate": "1921-09-28",
+        "BirthPlace": "Duvall"
+      },
+      "Father": {
+        "FirstName": "Hans",
+        "LastName": "Fischer",
+        "BirthDate": "1932-10-05",
+        "BirthPlace": "Dortmund"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 108156.68,
+          "AssessedTax": 31379.35,
+          "DueDate": "2021-09-18",
+          "OutstandingAmount": 23919.86,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 127983.75,
+          "AssessedTax": 49957.05,
+          "DueDate": "2022-11-01",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 142306.21,
+          "AssessedTax": 23064.37,
+          "DueDate": "2024-11-05",
+          "OutstandingAmount": 10392.33,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 105077.4,
+          "AssessedTax": 42226.78,
+          "DueDate": "2026-01-20",
+          "OutstandingAmount": 23107.59,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 2,
+      "TaxNumber": "53/721/00020",
+      "Title": "",
+      "FirstName": "Hans",
+      "LastName": "Wagner",
+      "MaidenName": null,
+      "BirthDate": "1976-06-03",
+      "BirthPlace": "Hamburg",
+      "CurrentAddress": {
+        "Street": "Lindenallee",
+        "HouseNumber": "23",
+        "PostalCode": "70173",
+        "City": "Stuttgart",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Birkenweg",
+        "HouseNumber": "115",
+        "PostalCode": "59494",
+        "City": "Soest",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user150@example.de"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Martina",
+        "LastName": "Hofmann",
+        "BirthDate": "1950-04-22",
+        "BirthPlace": "Bremen"
+      },
+      "Father": {
+        "FirstName": "Tobias",
+        "LastName": "Becker",
+        "BirthDate": "1942-06-18",
+        "BirthPlace": "Soest"
+      },
+      "Declarations": [
+        {
+          "Year": 2021,
+          "AssessmentBasis": 123535.06,
+          "AssessedTax": 33888.72,
+          "DueDate": "2022-02-24",
+          "OutstandingAmount": 12769.44,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 95107.6,
+          "AssessedTax": 39145.46,
+          "DueDate": "2024-07-09",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 130452.04,
+          "AssessedTax": 23634.99,
+          "DueDate": "2026-07-29",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        }
+      ]
+    },
+    {
+      "Id": 3,
+      "TaxNumber": "37/674/00032",
+      "Title": "",
+      "FirstName": "Monika",
+      "LastName": "Wagner",
+      "MaidenName": null,
+      "BirthDate": "1974-02-06",
+      "BirthPlace": "Düsseldorf",
+      "CurrentAddress": {
+        "Street": "Schillerweg",
+        "HouseNumber": "153",
+        "PostalCode": "10115",
+        "City": "Berlin",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Lindenallee",
+        "HouseNumber": "109",
+        "PostalCode": "80331",
+        "City": "München",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Mobile",
+          "Value": "+49 169 4371338"
+        },
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        },
+        {
+          "Kind": "Fax",
+          "Value": "+49 153 2976212"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Stefanie",
+        "LastName": "Becker",
+        "BirthDate": "1951-01-14",
+        "BirthPlace": "Berlin"
+      },
+      "Father": {
+        "FirstName": "Michael",
+        "LastName": "Lange",
+        "BirthDate": "1945-01-31",
+        "BirthPlace": "Lippstadt"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 94570.32,
+          "AssessedTax": 32947.2,
+          "DueDate": "2021-03-14",
+          "OutstandingAmount": 21008.57,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 56866.66,
+          "AssessedTax": 22718.55,
+          "DueDate": "2022-09-21",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 82838.38,
+          "AssessedTax": 30144.39,
+          "DueDate": "2023-12-15",
+          "OutstandingAmount": 12716.84,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 131093.26,
+          "AssessedTax": 54331.36,
+          "DueDate": "2024-03-22",
+          "OutstandingAmount": 33660.46,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 86993.86,
+          "AssessedTax": 34909.27,
+          "DueDate": "2025-01-05",
+          "OutstandingAmount": 14379.22,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 40658.32,
+          "AssessedTax": 5982.65,
+          "DueDate": "2026-03-18",
+          "OutstandingAmount": 5795.7,
+          "Status": "Offen"
+        }
+      ]
+    },
+    {
+      "Id": 4,
+      "TaxNumber": "79/703/00045",
+      "Title": "",
+      "FirstName": "Peter",
+      "LastName": "Zimmermann",
+      "MaidenName": null,
+      "BirthDate": "1976-01-01",
+      "BirthPlace": "Eickelborn",
+      "CurrentAddress": {
+        "Street": "Gartenstraße",
+        "HouseNumber": "69",
+        "PostalCode": "40210",
+        "City": "Düsseldorf",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Am Markt",
+        "HouseNumber": "37",
+        "PostalCode": "80331",
+        "City": "München",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Fax",
+          "Value": "+49 174 1090722"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user953@example.de"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        },
+        {
+          "Kind": "Phone",
+          "Value": "+49 178 6215002"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Heike",
+        "LastName": "Müller",
+        "BirthDate": "1941-06-19",
+        "BirthPlace": "Hamburg"
+      },
+      "Father": {
+        "FirstName": "Andreas",
+        "LastName": "Weber",
+        "BirthDate": "1956-02-08",
+        "BirthPlace": "Berlin"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 110117.39,
+          "AssessedTax": 30640.78,
+          "DueDate": "2021-03-13",
+          "OutstandingAmount": 17827.67,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 47329.42,
+          "AssessedTax": 16224.1,
+          "DueDate": "2023-03-17",
+          "OutstandingAmount": 4066.5,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 110505.18,
+          "AssessedTax": 33703.79,
+          "DueDate": "2025-03-12",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        }
+      ]
+    },
+    {
+      "Id": 5,
+      "TaxNumber": "62/581/00052",
+      "Title": "Dipl.-Ing.",
+      "FirstName": "Christina",
+      "LastName": "Koch",
+      "MaidenName": "Schäfer",
+      "BirthDate": "1992-01-21",
+      "BirthPlace": "Hamburg",
+      "CurrentAddress": {
+        "Street": "Schloßstraße",
+        "HouseNumber": "109",
+        "PostalCode": "67227",
+        "City": "Frankenthal",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Schillerweg",
+        "HouseNumber": "39",
+        "PostalCode": "70173",
+        "City": "Stuttgart",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Email",
+          "Value": "user872@example.de"
+        },
+        {
+          "Kind": "Fax",
+          "Value": "+49 166 2233382"
+        },
+        {
+          "Kind": "Phone",
+          "Value": "+49 170 1242182"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Renate",
+        "LastName": "Klein",
+        "BirthDate": "1956-07-25",
+        "BirthPlace": "Stuttgart"
+      },
+      "Father": {
+        "FirstName": "Michael",
+        "LastName": "Wolf",
+        "BirthDate": "1965-02-17",
+        "BirthPlace": "Berlin"
+      },
+      "Declarations": [
+        {
+          "Year": 2022,
+          "AssessmentBasis": 29545.24,
+          "AssessedTax": 7921.35,
+          "DueDate": "2023-06-26",
+          "OutstandingAmount": 1195.07,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 20640.28,
+          "AssessedTax": 6593.82,
+          "DueDate": "2026-10-04",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        }
+      ]
+    },
+    {
+      "Id": 6,
+      "TaxNumber": "99/932/00065",
+      "Title": "",
+      "FirstName": "Christina",
+      "LastName": "Braun",
+      "MaidenName": null,
+      "BirthDate": "1955-03-20",
+      "BirthPlace": "Düsseldorf",
+      "CurrentAddress": {
+        "Street": "Goethestraße",
+        "HouseNumber": "123",
+        "PostalCode": "28195",
+        "City": "Bremen",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Mozartstraße",
+        "HouseNumber": "68",
+        "PostalCode": "40210",
+        "City": "Düsseldorf",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Fax",
+          "Value": "+49 152 8376096"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "Phone",
+          "Value": "+49 167 5084659"
+        },
+        {
+          "Kind": "Mobile",
+          "Value": "+49 165 4020954"
+        },
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user141@example.de"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Julia",
+        "LastName": "Schneider",
+        "BirthDate": "1923-01-24",
+        "BirthPlace": "Düsseldorf"
+      },
+      "Father": {
+        "FirstName": "Lukas",
+        "LastName": "Richter",
+        "BirthDate": "1931-06-11",
+        "BirthPlace": "Duvall"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 26519.55,
+          "AssessedTax": 6800.06,
+          "DueDate": "2021-09-04",
+          "OutstandingAmount": 4166.97,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 139498.95,
+          "AssessedTax": 25564.72,
+          "DueDate": "2022-06-19",
+          "OutstandingAmount": 20606.89,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 78131.0,
+          "AssessedTax": 27902.37,
+          "DueDate": "2023-04-20",
+          "OutstandingAmount": 23915.76,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 93064.79,
+          "AssessedTax": 17801.53,
+          "DueDate": "2024-08-23",
+          "OutstandingAmount": 11375.98,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 111135.21,
+          "AssessedTax": 19828.54,
+          "DueDate": "2025-11-14",
+          "OutstandingAmount": 19051.79,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 129441.66,
+          "AssessedTax": 23788.28,
+          "DueDate": "2026-10-30",
+          "OutstandingAmount": 6782.62,
+          "Status": "Offen"
+        }
+      ]
+    },
+    {
+      "Id": 7,
+      "TaxNumber": "35/571/00078",
+      "Title": "Dr.",
+      "FirstName": "Tobias",
+      "LastName": "Meyer",
+      "MaidenName": null,
+      "BirthDate": "1995-07-30",
+      "BirthPlace": "Haar",
+      "CurrentAddress": {
+        "Street": "Mozartstraße",
+        "HouseNumber": "178",
+        "PostalCode": "10115",
+        "City": "Berlin",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Schloßstraße",
+        "HouseNumber": "163",
+        "PostalCode": "20095",
+        "City": "Hamburg",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Fax",
+          "Value": "+49 179 4784890"
+        },
+        {
+          "Kind": "Phone",
+          "Value": "+49 156 5580489"
+        },
+        {
+          "Kind": "Mobile",
+          "Value": "+49 161 6791383"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user668@example.de"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Claudia",
+        "LastName": "Koch",
+        "BirthDate": "1958-11-05",
+        "BirthPlace": "Frankenthal"
+      },
+      "Father": {
+        "FirstName": "Rainer",
+        "LastName": "Neumann",
+        "BirthDate": "1961-02-10",
+        "BirthPlace": "Köln"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 18254.54,
+          "AssessedTax": 3693.88,
+          "DueDate": "2021-05-06",
+          "OutstandingAmount": 3416.78,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 99284.83,
+          "AssessedTax": 23418.54,
+          "DueDate": "2022-01-11",
+          "OutstandingAmount": 16003.6,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 90537.41,
+          "AssessedTax": 26724.16,
+          "DueDate": "2023-03-25",
+          "OutstandingAmount": 10017.6,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 66234.45,
+          "AssessedTax": 15023.18,
+          "DueDate": "2024-09-07",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 88464.29,
+          "AssessedTax": 14589.93,
+          "DueDate": "2025-06-21",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 37645.94,
+          "AssessedTax": 6748.58,
+          "DueDate": "2026-05-14",
+          "OutstandingAmount": 5644.77,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 8,
+      "TaxNumber": "60/836/00080",
+      "Title": "Dr.",
+      "FirstName": "Ursula",
+      "LastName": "Lange",
+      "MaidenName": "Müller",
+      "BirthDate": "1995-06-13",
+      "BirthPlace": "München",
+      "CurrentAddress": {
+        "Street": "Postweg",
+        "HouseNumber": "89",
+        "PostalCode": "50667",
+        "City": "Köln",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Michaelstraße",
+        "HouseNumber": "86",
+        "PostalCode": "50667",
+        "City": "Köln",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "Fax",
+          "Value": "+49 176 1985177"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Martina",
+        "LastName": "Richter",
+        "BirthDate": "1968-02-25",
+        "BirthPlace": "Frankenthal"
+      },
+      "Father": {
+        "FirstName": "Michael",
+        "LastName": "Wolf",
+        "BirthDate": "1966-12-01",
+        "BirthPlace": "Hamburg"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 133321.63,
+          "AssessedTax": 29494.59,
+          "DueDate": "2021-02-10",
+          "OutstandingAmount": 12928.08,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 85709.14,
+          "AssessedTax": 21151.42,
+          "DueDate": "2022-06-08",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 98770.72,
+          "AssessedTax": 36615.14,
+          "DueDate": "2023-10-25",
+          "OutstandingAmount": 27855.72,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 63045.37,
+          "AssessedTax": 17922.19,
+          "DueDate": "2024-09-13",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 114082.52,
+          "AssessedTax": 20242.35,
+          "DueDate": "2025-08-12",
+          "OutstandingAmount": 4228.08,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 53881.67,
+          "AssessedTax": 15171.98,
+          "DueDate": "2026-05-08",
+          "OutstandingAmount": 9881.92,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 9,
+      "TaxNumber": "55/627/00090",
+      "Title": "Mag.",
+      "FirstName": "Claudia",
+      "LastName": "Koch",
+      "MaidenName": null,
+      "BirthDate": "1987-03-03",
+      "BirthPlace": "Duvall",
+      "CurrentAddress": {
+        "Street": "Postweg",
+        "HouseNumber": "23",
+        "PostalCode": "40210",
+        "City": "Düsseldorf",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": null,
+      "Contacts": [
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        },
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Birgit",
+        "LastName": "Krüger",
+        "BirthDate": "1966-11-28",
+        "BirthPlace": "München"
+      },
+      "Father": {
+        "FirstName": "Thomas",
+        "LastName": "Bauer",
+        "BirthDate": "1963-06-09",
+        "BirthPlace": "München"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 61106.62,
+          "AssessedTax": 25389.77,
+          "DueDate": "2021-01-28",
+          "OutstandingAmount": 4910.74,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 50693.53,
+          "AssessedTax": 14639.28,
+          "DueDate": "2022-09-09",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 67517.85,
+          "AssessedTax": 9805.26,
+          "DueDate": "2023-02-18",
+          "OutstandingAmount": 3646.71,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 62401.96,
+          "AssessedTax": 19225.94,
+          "DueDate": "2025-10-19",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 40324.35,
+          "AssessedTax": 8962.71,
+          "DueDate": "2026-03-21",
+          "OutstandingAmount": 6643.28,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 10,
+      "TaxNumber": "40/386/00107",
+      "Title": "",
+      "FirstName": "Stefanie",
+      "LastName": "Schäfer",
+      "MaidenName": null,
+      "BirthDate": "1975-11-06",
+      "BirthPlace": "Frankenthal",
+      "CurrentAddress": {
+        "Street": "Bahnhofstraße",
+        "HouseNumber": "154",
+        "PostalCode": "70173",
+        "City": "Stuttgart",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Postweg",
+        "HouseNumber": "51",
+        "PostalCode": "44135",
+        "City": "Dortmund",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Email",
+          "Value": "user723@example.de"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "Mobile",
+          "Value": "+49 154 6552693"
+        },
+        {
+          "Kind": "Phone",
+          "Value": "+49 153 1794972"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Nicole",
+        "LastName": "Schwarz",
+        "BirthDate": "1948-01-13",
+        "BirthPlace": "Frankenthal"
+      },
+      "Father": {
+        "FirstName": "Werner",
+        "LastName": "Müller",
+        "BirthDate": "1944-10-21",
+        "BirthPlace": "Düsseldorf"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 66404.88,
+          "AssessedTax": 18983.9,
+          "DueDate": "2021-02-04",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        }
+      ]
+    },
+    {
+      "Id": 11,
+      "TaxNumber": "54/876/00110",
+      "Title": "Mag.",
+      "FirstName": "Klaus",
+      "LastName": "Koch",
+      "MaidenName": null,
+      "BirthDate": "1955-04-09",
+      "BirthPlace": "Stuttgart",
+      "CurrentAddress": {
+        "Street": "Hauptstraße",
+        "HouseNumber": "155",
+        "PostalCode": "59555",
+        "City": "Lippstadt",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Am Markt",
+        "HouseNumber": "64",
+        "PostalCode": "28195",
+        "City": "Bremen",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user875@example.de"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Monika",
+        "LastName": "Wagner",
+        "BirthDate": "1918-01-18",
+        "BirthPlace": "Frankenthal"
+      },
+      "Father": {
+        "FirstName": "Michael",
+        "LastName": "Hofmann",
+        "BirthDate": "1928-12-06",
+        "BirthPlace": "München"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 86073.56,
+          "AssessedTax": 28829.8,
+          "DueDate": "2021-03-04",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 80060.2,
+          "AssessedTax": 31699.52,
+          "DueDate": "2026-01-30",
+          "OutstandingAmount": 17449.8,
+          "Status": "Offen"
+        }
+      ]
+    },
+    {
+      "Id": 12,
+      "TaxNumber": "63/794/00124",
+      "Title": "",
+      "FirstName": "Jürgen",
+      "LastName": "Becker",
+      "MaidenName": null,
+      "BirthDate": "1967-12-16",
+      "BirthPlace": "Lippstadt",
+      "CurrentAddress": {
+        "Street": "Am Markt",
+        "HouseNumber": "176",
+        "PostalCode": "80331",
+        "City": "München",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Schloßstraße",
+        "HouseNumber": "154",
+        "PostalCode": "28195",
+        "City": "Bremen",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Mobile",
+          "Value": "+49 174 6842001"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user338@example.de"
+        },
+        {
+          "Kind": "Fax",
+          "Value": "+49 177 3090970"
+        },
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Martina",
+        "LastName": "Wagner",
+        "BirthDate": "1930-07-04",
+        "BirthPlace": "Berlin"
+      },
+      "Father": {
+        "FirstName": "Thomas",
+        "LastName": "Schäfer",
+        "BirthDate": "1936-07-19",
+        "BirthPlace": "Hamburg"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 30217.46,
+          "AssessedTax": 6192.03,
+          "DueDate": "2021-12-31",
+          "OutstandingAmount": 3286.92,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 99385.15,
+          "AssessedTax": 17224.35,
+          "DueDate": "2023-10-11",
+          "OutstandingAmount": 12169.29,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 33236.07,
+          "AssessedTax": 6284.21,
+          "DueDate": "2024-08-27",
+          "OutstandingAmount": 2407.6,
+          "Status": "Offen"
+        }
+      ]
+    },
+    {
+      "Id": 13,
+      "TaxNumber": "41/133/00130",
+      "Title": "Prof. Dr.",
+      "FirstName": "Frank",
+      "LastName": "Schneider",
+      "MaidenName": null,
+      "BirthDate": "1987-09-27",
+      "BirthPlace": "Duvall",
+      "CurrentAddress": {
+        "Street": "Bahnhofstraße",
+        "HouseNumber": "10",
+        "PostalCode": "44135",
+        "City": "Dortmund",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": null,
+      "Contacts": [
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user624@example.de"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        },
+        {
+          "Kind": "Phone",
+          "Value": "+49 160 3240243"
+        },
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Susanne",
+        "LastName": "Koch",
+        "BirthDate": "1966-12-06",
+        "BirthPlace": "Eickelborn"
+      },
+      "Father": {
+        "FirstName": "Jürgen",
+        "LastName": "Bauer",
+        "BirthDate": "1960-12-22",
+        "BirthPlace": "Düsseldorf"
+      },
+      "Declarations": [
+        {
+          "Year": 2021,
+          "AssessmentBasis": 85369.79,
+          "AssessedTax": 34072.13,
+          "DueDate": "2022-02-09",
+          "OutstandingAmount": 3572.28,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 14,
+      "TaxNumber": "21/439/00140",
+      "Title": "",
+      "FirstName": "Werner",
+      "LastName": "Wagner",
+      "MaidenName": null,
+      "BirthDate": "1980-11-21",
+      "BirthPlace": "Köln",
+      "CurrentAddress": {
+        "Street": "Mozartstraße",
+        "HouseNumber": "107",
+        "PostalCode": "70173",
+        "City": "Stuttgart",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": null,
+      "Contacts": [
+        {
+          "Kind": "Fax",
+          "Value": "+49 171 7959408"
+        },
+        {
+          "Kind": "Phone",
+          "Value": "+49 162 1751915"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user131@example.de"
+        },
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        },
+        {
+          "Kind": "Mobile",
+          "Value": "+49 165 3964627"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Christina",
+        "LastName": "Koch",
+        "BirthDate": "1947-03-16",
+        "BirthPlace": "Frankenthal"
+      },
+      "Father": {
+        "FirstName": "Hans",
+        "LastName": "Weber",
+        "BirthDate": "1955-08-22",
+        "BirthPlace": "Bremen"
+      },
+      "Declarations": [
+        {
+          "Year": 2023,
+          "AssessmentBasis": 39108.89,
+          "AssessedTax": 11397.6,
+          "DueDate": "2024-08-01",
+          "OutstandingAmount": 2240.97,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 137792.29,
+          "AssessedTax": 44467.17,
+          "DueDate": "2025-08-16",
+          "OutstandingAmount": 19401.78,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 15,
+      "TaxNumber": "65/262/00153",
+      "Title": "Mag.",
+      "FirstName": "Sebastian",
+      "LastName": "Koch",
+      "MaidenName": null,
+      "BirthDate": "1981-01-07",
+      "BirthPlace": "Lippstadt",
+      "CurrentAddress": {
+        "Street": "Hauptstraße",
+        "HouseNumber": "117",
+        "PostalCode": "59494",
+        "City": "Soest",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Gartenstraße",
+        "HouseNumber": "120",
+        "PostalCode": "40210",
+        "City": "Düsseldorf",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Monika",
+        "LastName": "Hoffmann",
+        "BirthDate": "1943-08-24",
+        "BirthPlace": "Eickelborn"
+      },
+      "Father": {
+        "FirstName": "Matthias",
+        "LastName": "Hofmann",
+        "BirthDate": "1960-07-18",
+        "BirthPlace": "Hamburg"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 94229.39,
+          "AssessedTax": 39439.15,
+          "DueDate": "2021-02-23",
+          "OutstandingAmount": 35173.86,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 108517.52,
+          "AssessedTax": 39409.76,
+          "DueDate": "2022-03-09",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 112097.58,
+          "AssessedTax": 42330.63,
+          "DueDate": "2023-04-25",
+          "OutstandingAmount": 13866.99,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 94232.34,
+          "AssessedTax": 33041.33,
+          "DueDate": "2025-08-07",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 52008.69,
+          "AssessedTax": 11401.79,
+          "DueDate": "2026-09-16",
+          "OutstandingAmount": 3698.34,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 16,
+      "TaxNumber": "96/394/00163",
+      "Title": "",
+      "FirstName": "Rainer",
+      "LastName": "Becker",
+      "MaidenName": null,
+      "BirthDate": "1967-12-16",
+      "BirthPlace": "Köln",
+      "CurrentAddress": {
+        "Street": "Lindenallee",
+        "HouseNumber": "108",
+        "PostalCode": "44135",
+        "City": "Dortmund",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Schloßstraße",
+        "HouseNumber": "19",
+        "PostalCode": "40210",
+        "City": "Düsseldorf",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Fax",
+          "Value": "+49 173 5692532"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Renate",
+        "LastName": "Schmidt",
+        "BirthDate": "1935-05-26",
+        "BirthPlace": "Eickelborn"
+      },
+      "Father": {
+        "FirstName": "Uwe",
+        "LastName": "Schmidt",
+        "BirthDate": "1940-08-20",
+        "BirthPlace": "Lippstadt"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 109932.11,
+          "AssessedTax": 40113.8,
+          "DueDate": "2021-09-03",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 28147.37,
+          "AssessedTax": 6903.8,
+          "DueDate": "2022-03-18",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 83708.01,
+          "AssessedTax": 22653.69,
+          "DueDate": "2023-12-01",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 100234.0,
+          "AssessedTax": 34707.5,
+          "DueDate": "2024-11-12",
+          "OutstandingAmount": 21427.19,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 128361.42,
+          "AssessedTax": 43144.81,
+          "DueDate": "2026-02-23",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        }
+      ]
+    },
+    {
+      "Id": 17,
+      "TaxNumber": "32/291/00174",
+      "Title": "Dr.",
+      "FirstName": "Andrea",
+      "LastName": "Wagner",
+      "MaidenName": null,
+      "BirthDate": "1962-09-14",
+      "BirthPlace": "Eickelborn",
+      "CurrentAddress": {
+        "Street": "Postweg",
+        "HouseNumber": "12",
+        "PostalCode": "80331",
+        "City": "München",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Am Markt",
+        "HouseNumber": "149",
+        "PostalCode": "59556",
+        "City": "Eickelborn",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Mobile",
+          "Value": "+49 160 7075211"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Monika",
+        "LastName": "Müller",
+        "BirthDate": "1924-02-06",
+        "BirthPlace": "Stuttgart"
+      },
+      "Father": {
+        "FirstName": "Rainer",
+        "LastName": "Hoffmann",
+        "BirthDate": "1927-02-24",
+        "BirthPlace": "Berlin"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 143464.5,
+          "AssessedTax": 54112.16,
+          "DueDate": "2021-08-18",
+          "OutstandingAmount": 20023.87,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2021,
+          "AssessmentBasis": 28953.59,
+          "AssessedTax": 8166.92,
+          "DueDate": "2022-09-14",
+          "OutstandingAmount": 5805.01,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 87299.32,
+          "AssessedTax": 17071.77,
+          "DueDate": "2023-09-23",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 72219.18,
+          "AssessedTax": 11955.81,
+          "DueDate": "2024-06-13",
+          "OutstandingAmount": 8215.92,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 138867.03,
+          "AssessedTax": 37440.19,
+          "DueDate": "2025-07-07",
+          "OutstandingAmount": 34676.44,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2025,
+          "AssessmentBasis": 109085.59,
+          "AssessedTax": 19542.47,
+          "DueDate": "2026-03-20",
+          "OutstandingAmount": 3837.09,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 18,
+      "TaxNumber": "57/289/00181",
+      "Title": "",
+      "FirstName": "Monika",
+      "LastName": "Müller",
+      "MaidenName": "Schindler",
+      "BirthDate": "1985-03-23",
+      "BirthPlace": "Eickelborn",
+      "CurrentAddress": {
+        "Street": "Kirchplatz",
+        "HouseNumber": "35",
+        "PostalCode": "20095",
+        "City": "Hamburg",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Kirchplatz",
+        "HouseNumber": "85",
+        "PostalCode": "28195",
+        "City": "Bremen",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Fax",
+          "Value": "+49 177 8207184"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        },
+        {
+          "Kind": "Email",
+          "Value": "user23@example.de"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Gabriele",
+        "LastName": "Schmidt",
+        "BirthDate": "1964-12-29",
+        "BirthPlace": "Stuttgart"
+      },
+      "Father": {
+        "FirstName": "Michael",
+        "LastName": "Bauer",
+        "BirthDate": "1964-10-04",
+        "BirthPlace": "Soest"
+      },
+      "Declarations": [
+        {
+          "Year": 2021,
+          "AssessmentBasis": 23012.12,
+          "AssessedTax": 6182.82,
+          "DueDate": "2022-11-08",
+          "OutstandingAmount": 1022.65,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2022,
+          "AssessmentBasis": 109508.08,
+          "AssessedTax": 44141.24,
+          "DueDate": "2023-04-09",
+          "OutstandingAmount": 22547.82,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 74890.61,
+          "AssessedTax": 12349.6,
+          "DueDate": "2024-04-22",
+          "OutstandingAmount": 2651.14,
+          "Status": "Gestundet"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 59210.94,
+          "AssessedTax": 18292.33,
+          "DueDate": "2025-07-31",
+          "OutstandingAmount": 12970.29,
+          "Status": "Offen"
+        }
+      ]
+    },
+    {
+      "Id": 19,
+      "TaxNumber": "95/696/00197",
+      "Title": "",
+      "FirstName": "Monika",
+      "LastName": "Schmidt",
+      "MaidenName": "Schmidt",
+      "BirthDate": "1972-01-09",
+      "BirthPlace": "München",
+      "CurrentAddress": {
+        "Street": "Michaelstraße",
+        "HouseNumber": "38",
+        "PostalCode": "20095",
+        "City": "Hamburg",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Schloßstraße",
+        "HouseNumber": "142",
+        "PostalCode": "80331",
+        "City": "München",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "Phone",
+          "Value": "+49 151 8553070"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Brigitte",
+        "LastName": "Löffelmann",
+        "BirthDate": "1949-05-02",
+        "BirthPlace": "Berlin"
+      },
+      "Father": {
+        "FirstName": "Bernd",
+        "LastName": "Schneider",
+        "BirthDate": "1932-12-14",
+        "BirthPlace": "Stuttgart"
+      },
+      "Declarations": [
+        {
+          "Year": 2020,
+          "AssessmentBasis": 100214.1,
+          "AssessedTax": 15143.49,
+          "DueDate": "2021-12-13",
+          "OutstandingAmount": 4921.08,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2023,
+          "AssessmentBasis": 105266.85,
+          "AssessedTax": 28169.7,
+          "DueDate": "2024-02-28",
+          "OutstandingAmount": 13919.95,
+          "Status": "Offen"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 125566.46,
+          "AssessedTax": 19338.85,
+          "DueDate": "2025-04-03",
+          "OutstandingAmount": 2224.07,
+          "Status": "Gestundet"
+        }
+      ]
+    },
+    {
+      "Id": 20,
+      "TaxNumber": "93/297/00203",
+      "Title": "",
+      "FirstName": "Julia",
+      "LastName": "Müller",
+      "MaidenName": "Fischer",
+      "BirthDate": "1986-01-20",
+      "BirthPlace": "Köln",
+      "CurrentAddress": {
+        "Street": "Postweg",
+        "HouseNumber": "87",
+        "PostalCode": "44135",
+        "City": "Dortmund",
+        "Country": "Deutschland"
+      },
+      "PreviousAddress": {
+        "Street": "Hauptstraße",
+        "HouseNumber": "40",
+        "PostalCode": "50667",
+        "City": "Köln",
+        "Country": "Deutschland"
+      },
+      "Contacts": [
+        {
+          "Kind": "LinkedIn",
+          "Value": "linkedin.com/in/example"
+        },
+        {
+          "Kind": "Fax",
+          "Value": "+49 156 4737583"
+        },
+        {
+          "Kind": "X",
+          "Value": "@example"
+        },
+        {
+          "Kind": "Website",
+          "Value": "https://example.de"
+        },
+        {
+          "Kind": "Mastodon",
+          "Value": "@example@mastodon.social"
+        }
+      ],
+      "Mother": {
+        "FirstName": "Adriana",
+        "LastName": "Braun",
+        "BirthDate": "1963-11-24",
+        "BirthPlace": "Dortmund"
+      },
+      "Father": {
+        "FirstName": "Dieter",
+        "LastName": "Weber",
+        "BirthDate": "1946-12-09",
+        "BirthPlace": "Lippstadt"
+      },
+      "Declarations": [
+        {
+          "Year": 2023,
+          "AssessmentBasis": 142528.41,
+          "AssessedTax": 51423.85,
+          "DueDate": "2024-09-16",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        },
+        {
+          "Year": 2024,
+          "AssessmentBasis": 64981.18,
+          "AssessedTax": 24079.44,
+          "DueDate": "2025-01-12",
+          "OutstandingAmount": 0.0,
+          "Status": "Beglichen"
+        }
+      ]
+    }
+  ]
+}

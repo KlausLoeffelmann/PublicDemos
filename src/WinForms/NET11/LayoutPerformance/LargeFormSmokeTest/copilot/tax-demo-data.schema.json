@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.de/schemas/tax-demo-data.schema.json",
+  "title": "TaxDemoDataset",
+  "description": "Sample data for the WinForms performance-test tax application (Einkommensteuererklärung demo).",
+  "type": "object",
+  "required": ["SchemaVersion", "Persons"],
+  "properties": {
+    "SchemaVersion": { "type": "string" },
+    "Generated": { "type": "string", "format": "date-time" },
+    "Persons": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Person" }
+    }
+  },
+  "$defs": {
+    "Address": {
+      "type": "object",
+      "required": ["Street", "HouseNumber", "PostalCode", "City", "Country"],
+      "properties": {
+        "Street": { "type": "string" },
+        "HouseNumber": { "type": "string" },
+        "PostalCode": { "type": "string" },
+        "City": { "type": "string" },
+        "Country": { "type": "string" }
+      }
+    },
+    "Contact": {
+      "type": "object",
+      "required": ["Kind", "Value"],
+      "properties": {
+        "Kind": {
+          "type": "string",
+          "enum": ["Phone", "Mobile", "Email", "Fax", "LinkedIn", "X", "Mastodon", "Website"]
+        },
+        "Value": { "type": "string" }
+      }
+    },
+    "PersonRef": {
+      "description": "Lightweight reference to a related person (mother, father).",
+      "type": "object",
+      "required": ["FirstName", "LastName", "BirthDate", "BirthPlace"],
+      "properties": {
+        "FirstName": { "type": "string" },
+        "LastName": { "type": "string" },
+        "BirthDate": { "type": "string", "format": "date" },
+        "BirthPlace": { "type": "string" }
+      }
+    },
+    "Declaration": {
+      "description": "One Einkommensteuererklärung for a given tax year.",
+      "type": "object",
+      "required": ["Year", "AssessmentBasis", "AssessedTax", "DueDate", "OutstandingAmount", "Status"],
+      "properties": {
+        "Year": { "type": "integer", "minimum": 2020, "maximum": 2025 },
+        "AssessmentBasis": { "type": "number", "description": "Bemessungsgrundlage" },
+        "AssessedTax": { "type": "number", "description": "Festgesetzte / zu zahlende Steuer" },
+        "DueDate": { "type": "string", "format": "date", "description": "Fälligkeit" },
+        "OutstandingAmount": { "type": "number", "description": "Ausstehender Betrag" },
+        "Status": { "type": "string", "enum": ["Offen", "Beglichen", "Gestundet"] }
+      }
+    },
+    "Person": {
+      "type": "object",
+      "required": ["Id", "TaxNumber", "FirstName", "LastName", "BirthDate", "BirthPlace", "CurrentAddress", "Contacts", "Mother", "Father", "Declarations"],
+      "properties": {
+        "Id": { "type": "integer" },
+        "TaxNumber": { "type": "string", "description": "Steuernummer" },
+        "Title": { "type": "string" },
+        "FirstName": { "type": "string" },
+        "LastName": { "type": "string" },
+        "MaidenName": { "type": ["string", "null"], "description": "Geburtsname" },
+        "BirthDate": { "type": "string", "format": "date" },
+        "BirthPlace": { "type": "string" },
+        "CurrentAddress": { "$ref": "#/$defs/Address" },
+        "PreviousAddress": { "oneOf": [ { "$ref": "#/$defs/Address" }, { "type": "null" } ] },
+        "Contacts": { "type": "array", "items": { "$ref": "#/$defs/Contact" } },
+        "Mother": { "$ref": "#/$defs/PersonRef" },
+        "Father": { "$ref": "#/$defs/PersonRef" },
+        "Declarations": { "type": "array", "items": { "$ref": "#/$defs/Declaration" } }
+      }
+    }
+  }
+}
