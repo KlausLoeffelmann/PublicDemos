@@ -26,7 +26,7 @@ public sealed class SunFlowerTheme : IClockTheme
     public string Description => "A sunflower dial with bee numerals that spin when a branch-hand passes them.";
 
     /// <inheritdoc/>
-    public string Author => "WarpClock sample plug-in";
+    public string Author => "Preeti Kurup";
 
     /// <inheritdoc/>
     public ThemeCapabilities Capabilities { get; } = ThemeCapabilities.Default;

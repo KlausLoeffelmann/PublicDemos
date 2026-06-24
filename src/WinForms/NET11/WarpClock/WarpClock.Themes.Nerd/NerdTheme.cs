@@ -22,7 +22,7 @@ public sealed partial class NerdTheme : IClockTheme
 
     /// <inheritdoc/>
     public string Author 
-        => "WarpClock sample plug-in";
+        => "stock theme";
 
     /// <inheritdoc/>
     public ThemeCapabilities Capabilities { get; } = ThemeCapabilities.Default;

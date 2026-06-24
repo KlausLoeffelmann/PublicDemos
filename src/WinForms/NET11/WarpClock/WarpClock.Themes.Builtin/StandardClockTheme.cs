@@ -22,7 +22,7 @@ public sealed class StandardClockTheme : IClockTheme
     public string Description => _design.Description;
 
     /// <inheritdoc/>
-    public string Author => "WarpClock built-in";
+    public string Author => "stock theme";
 
     /// <inheritdoc/>
     public ThemeCapabilities Capabilities { get; } = ThemeCapabilities.Default;

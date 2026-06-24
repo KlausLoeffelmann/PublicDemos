@@ -31,7 +31,7 @@ public sealed class ScatterTheme : IClockTheme
         "Numerals start home, then wander (max 4 at a time) while the hands magnetically chase them.";
 
     /// <inheritdoc/>
-    public string Author => "WarpClock sample plug-in";
+    public string Author => "Klaus Loeffelmann";
 
     /// <inheritdoc/>
     public ThemeCapabilities Capabilities { get; } = new()
