@@ -34,6 +34,9 @@ public partial class FormMain : Form
         RefreshSpeedChecks();
         RefreshKioskChecks();
 
+        _miVSync.Checked = _clock.VSyncEnabled;
+        _fpsTimer.Start();
+
         // Built-in themes are in-memory and instantaneous, so loading them and selecting
         // the first one here keeps the clock populated the moment the window appears.
         LoadBuiltInThemes();
@@ -354,6 +357,18 @@ public partial class FormMain : Form
         _miMagnetic.Checked = _clock.MagneticNumerals;
         _statusInfo.Text = $"Magnetic numerals: {(_clock.MagneticNumerals ? "On" : "Off")}";
     }
+
+    private void OnVSyncClick(object? sender, EventArgs e)
+    {
+        _clock.VSyncEnabled = !_clock.VSyncEnabled;
+        _miVSync.Checked = _clock.VSyncEnabled;
+        _statusInfo.Text = $"VSync: {(_clock.VSyncEnabled ? "On" : "Off")}";
+    }
+
+    // Polls the clock's smoothed frame rate at the timer's 200 ms cadence so the readout
+    // updates a few times a second without churning the status bar every frame.
+    private void OnFpsTimerTick(object? sender, EventArgs e)
+        => _statusFps.Text = $"{_clock.CurrentFramesPerSecond:0} fps";
 
     private void OnTogglePropertiesClick(object? sender, EventArgs e)
     {

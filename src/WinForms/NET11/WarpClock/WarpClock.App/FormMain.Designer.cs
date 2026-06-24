@@ -58,6 +58,7 @@ partial class FormMain
         _miHideTaskbar = new ToolStripMenuItem();
         _miPreventSleep = new ToolStripMenuItem();
         _miMagnetic = new ToolStripMenuItem();
+        _miVSync = new ToolStripMenuItem();
         _miProperties = new ToolStripMenuItem();
         _viewSeparator = new ToolStripSeparator();
         _miExit = new ToolStripMenuItem();
@@ -66,8 +67,10 @@ partial class FormMain
         _miOpenPluginsFolder = new ToolStripMenuItem();
         _statusStrip = new StatusStrip();
         _statusInfo = new ToolStripStatusLabel();
+        _statusFps = new ToolStripStatusLabel();
         _statusMode = new ToolStripStatusLabel();
         _kioskModeManager = new KioskModeManager(components);
+        _fpsTimer = new System.Windows.Forms.Timer(components);
 
         ((ISupportInitialize)_splitContainer).BeginInit();
         _splitContainer.Panel1.SuspendLayout();
@@ -313,6 +316,7 @@ partial class FormMain
             _miHideTaskbar,
             _miPreventSleep,
             _miMagnetic,
+            _miVSync,
             _miProperties,
             _viewSeparator,
             _miExit
@@ -340,6 +344,11 @@ partial class FormMain
         _miMagnetic.Name = "_miMagnetic";
         _miMagnetic.Text = "&Magnetic numerals";
         _miMagnetic.Click += OnMagneticClick;
+
+        // _miVSync
+        _miVSync.Name = "_miVSync";
+        _miVSync.Text = "&VSync";
+        _miVSync.Click += OnVSyncClick;
 
         // _miProperties
         _miProperties.Name = "_miProperties";
@@ -376,6 +385,7 @@ partial class FormMain
         _statusStrip.Items.AddRange(new ToolStripItem[]
         {
             _statusInfo,
+            _statusFps,
             _statusMode
         });
         _statusStrip.Location = new Point(0, 738);
@@ -389,6 +399,13 @@ partial class FormMain
         _statusInfo.Text = "Ready.";
         _statusInfo.TextAlign = ContentAlignment.MiddleLeft;
 
+        // _statusFps
+        _statusFps.Name = "_statusFps";
+        _statusFps.AutoSize = false;
+        _statusFps.Width = 90;
+        _statusFps.Text = "— fps";
+        _statusFps.TextAlign = ContentAlignment.MiddleRight;
+
         // _statusMode
         _statusMode.Name = "_statusMode";
         _statusMode.Text = "Windowed";
@@ -400,6 +417,10 @@ partial class FormMain
         _kioskModeManager.ToggleFullScreenKey = Keys.F11;
         _kioskModeManager.FullScreenChanged += OnKioskFullScreenChanged;
         _kioskModeManager.Wakeup += OnKioskWakeup;
+
+        // _fpsTimer
+        _fpsTimer.Interval = 200;
+        _fpsTimer.Tick += OnFpsTimerTick;
 
         // FormMain
         AutoScaleDimensions = new SizeF(7f, 15f);
@@ -469,6 +490,7 @@ partial class FormMain
     private ToolStripMenuItem _miHideTaskbar;
     private ToolStripMenuItem _miPreventSleep;
     private ToolStripMenuItem _miMagnetic;
+    private ToolStripMenuItem _miVSync;
     private ToolStripMenuItem _miProperties;
     private ToolStripSeparator _viewSeparator;
     private ToolStripMenuItem _miExit;
@@ -479,7 +501,9 @@ partial class FormMain
 
     private StatusStrip _statusStrip;
     private ToolStripStatusLabel _statusInfo;
+    private ToolStripStatusLabel _statusFps;
     private ToolStripStatusLabel _statusMode;
 
     private KioskModeManager _kioskModeManager;
+    private System.Windows.Forms.Timer _fpsTimer;
 }

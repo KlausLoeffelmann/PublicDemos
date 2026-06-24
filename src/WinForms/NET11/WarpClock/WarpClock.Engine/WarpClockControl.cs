@@ -44,6 +44,7 @@ public sealed class WarpClockControl : D2DPanel
     private float _glideDurationSeconds = 0.5f;
     private bool _magneticNumerals;
     private bool _sceneBuilt;
+    private double _framesPerSecond;
 
     /// <summary>Initializes a new <see cref="WarpClockControl"/>.</summary>
     public WarpClockControl()
@@ -52,9 +53,19 @@ public sealed class WarpClockControl : D2DPanel
         BackColor = Color.Black;
         RenderMode = RenderMode.D2DWinFormsClassic;
         PreserveLastFrame = true;
+
+        // VSync is off by default; the high-precision frame loop paces presentation. The
+        // host exposes this as a View-menu toggle.
+        VSyncEnabled = false;
+
         _frameAction = RenderFrameOnUiThread;
         RenderBackground += OnRenderBackground;
     }
+
+    /// <summary>The most recent smoothed render frame rate (frames per second).</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public double CurrentFramesPerSecond => _framesPerSecond;
 
     // ── Public configuration ──
 
@@ -367,6 +378,16 @@ public sealed class WarpClockControl : D2DPanel
         long now = System.Diagnostics.Stopwatch.GetTimestamp();
         float dt = (float)System.Diagnostics.Stopwatch.GetElapsedTime(_lastFrameTimestamp).TotalSeconds;
         _lastFrameTimestamp = now;
+
+        // Smooth the instantaneous frame rate with an exponential moving average so the
+        // status-bar readout doesn't jitter frame to frame.
+        if (dt > 0f)
+        {
+            double instantaneous = 1.0 / dt;
+            _framesPerSecond = _framesPerSecond <= 0.0
+                ? instantaneous
+                : _framesPerSecond * 0.9 + instantaneous * 0.1;
+        }
 
         ClockTimeSnapshot time = _timeModel.CreateSnapshot();
         ClockGeometry geometry = ClockGeometry.ForSurface(Surface);
