@@ -205,8 +205,10 @@ public sealed class ScatterTheme : IClockTheme
             float homeAngle = index * 30f;
             PointF home = Polar(HomeRadius, homeAngle);
 
-            // A random absolute position within the dial, then expressed relative to home.
-            float radius = 70f + (float)_rng.NextDouble() * 380f;
+            // A random absolute position within an annulus that stays well clear of the
+            // center (so numerals are far less likely to pile up over the arbour), then
+            // expressed relative to home.
+            float radius = 230f + (float)_rng.NextDouble() * 230f; // ~230..460 of the 500 dial
             float angle = (float)_rng.NextDouble() * 360f;
             PointF target = Polar(radius, angle);
             return new PointF(target.X - home.X, target.Y - home.Y);
