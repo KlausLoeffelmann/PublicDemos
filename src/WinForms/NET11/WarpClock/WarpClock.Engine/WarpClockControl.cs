@@ -37,12 +37,15 @@ public sealed class WarpClockControl : D2DPanel
     private IReadOnlyList<ClockElementDescriptor> _descriptors = [];
     private ThemeTickContext? _tickContext;
     private readonly ElementRenderContext _renderContext = new();
+    private readonly ThemeInfoOverlay _themeInfoOverlay = new();
 
     private SizeF _surface = new(2, 2);
     private float _faceRotation;
     private int _graceSeconds = 5;
     private float _glideDurationSeconds = 0.5f;
     private bool _magneticNumerals;
+    private RenderThemeInfo _renderThemeInfo = RenderThemeInfo.FadeAlternateScreenSides;
+    private ThemeInfoPlacement _themeInfoPlacement = ThemeInfoPlacement.LeftScreenSide;
     private bool _sceneBuilt;
     private double _framesPerSecond;
 
@@ -60,12 +63,31 @@ public sealed class WarpClockControl : D2DPanel
 
         _frameAction = RenderFrameOnUiThread;
         RenderBackground += OnRenderBackground;
+        Render += OnRenderForeground;
     }
 
     /// <summary>The most recent smoothed render frame rate (frames per second).</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public double CurrentFramesPerSecond => _framesPerSecond;
+
+    /// <summary>How (and whether) the "{theme} - {author}" info overlay is rendered.</summary>
+    [Browsable(true)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public RenderThemeInfo RenderThemeInfo
+    {
+        get => _renderThemeInfo;
+        set => _renderThemeInfo = value;
+    }
+
+    /// <summary>Where the info overlay sits for the fixed-position render modes.</summary>
+    [Browsable(true)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public ThemeInfoPlacement ThemeInfoPlacement
+    {
+        get => _themeInfoPlacement;
+        set => _themeInfoPlacement = value;
+    }
 
     // ── Public configuration ──
 
@@ -251,6 +273,7 @@ public sealed class WarpClockControl : D2DPanel
         {
             StopLoop();
             _timer.Dispose();
+            _themeInfoOverlay.Dispose();
         }
 
         base.Dispose(disposing);
@@ -615,4 +638,24 @@ public sealed class WarpClockControl : D2DPanel
 
     private void OnRenderBackground(object? sender, D2DRenderEventArgs e)
         => e.Graphics.Clear(BackColor);
+
+    /// <summary>
+    ///  Foreground pass (composited on top of the element visuals): draws the theme-info
+    ///  overlay. Because <see cref="PreserveLastFrame"/> keeps the last foreground content
+    ///  when a handler draws nothing, we clear the surface to transparent every frame —
+    ///  otherwise a faded-out (or disabled) overlay would stay frozen on screen. The clear
+    ///  is transparent so the retained hand/numeral visuals continue to show through.
+    /// </summary>
+    private void OnRenderForeground(object? sender, D2DRenderEventArgs e)
+    {
+        e.Graphics.Clear(Color.Transparent);
+
+        if (_renderThemeInfo == RenderThemeInfo.Never || _theme is null)
+        {
+            return;
+        }
+
+        _themeInfoOverlay.Configure(_theme.Name, _theme.Author);
+        _themeInfoOverlay.Render(e.Graphics, ClientSize, _renderThemeInfo, _themeInfoPlacement);
+    }
 }

@@ -59,6 +59,16 @@ partial class FormMain
         _miPreventSleep = new ToolStripMenuItem();
         _miMagnetic = new ToolStripMenuItem();
         _miVSync = new ToolStripMenuItem();
+        _themeInfoMenu = new ToolStripMenuItem();
+        _miInfoNever = new ToolStripMenuItem();
+        _miInfoFixed = new ToolStripMenuItem();
+        _miInfoFadeFixed = new ToolStripMenuItem();
+        _miInfoFadeSides = new ToolStripMenuItem();
+        _infoPlacementSeparator = new ToolStripSeparator();
+        _placementMenu = new ToolStripMenuItem();
+        _miPlaceLeft = new ToolStripMenuItem();
+        _miPlaceRight = new ToolStripMenuItem();
+        _miPlaceFace = new ToolStripMenuItem();
         _miProperties = new ToolStripMenuItem();
         _viewSeparator = new ToolStripSeparator();
         _miExit = new ToolStripMenuItem();
@@ -317,6 +327,7 @@ partial class FormMain
             _miPreventSleep,
             _miMagnetic,
             _miVSync,
+            _themeInfoMenu,
             _miProperties,
             _viewSeparator,
             _miExit
@@ -349,6 +360,66 @@ partial class FormMain
         _miVSync.Name = "_miVSync";
         _miVSync.Text = "&VSync";
         _miVSync.Click += OnVSyncClick;
+
+        // _themeInfoMenu
+        _themeInfoMenu.DropDownItems.AddRange(new ToolStripItem[]
+        {
+            _miInfoNever,
+            _miInfoFixed,
+            _miInfoFadeFixed,
+            _miInfoFadeSides,
+            _infoPlacementSeparator,
+            _placementMenu
+        });
+        _themeInfoMenu.Name = "_themeInfoMenu";
+        _themeInfoMenu.Text = "Theme &info";
+        _themeInfoMenu.DropDownOpening += OnThemeInfoOpening;
+
+        // _miInfoNever
+        _miInfoNever.Name = "_miInfoNever";
+        _miInfoNever.Text = "Never";
+        _miInfoNever.Click += OnThemeInfoModeClick;
+
+        // _miInfoFixed
+        _miInfoFixed.Name = "_miInfoFixed";
+        _miInfoFixed.Text = "Fixed position";
+        _miInfoFixed.Click += OnThemeInfoModeClick;
+
+        // _miInfoFadeFixed
+        _miInfoFadeFixed.Name = "_miInfoFadeFixed";
+        _miInfoFadeFixed.Text = "Fade in/out (fixed)";
+        _miInfoFadeFixed.Click += OnThemeInfoModeClick;
+
+        // _miInfoFadeSides
+        _miInfoFadeSides.Name = "_miInfoFadeSides";
+        _miInfoFadeSides.Text = "Fade alternate sides";
+        _miInfoFadeSides.Click += OnThemeInfoModeClick;
+
+        // _placementMenu
+        _placementMenu.DropDownItems.AddRange(new ToolStripItem[]
+        {
+            _miPlaceLeft,
+            _miPlaceRight,
+            _miPlaceFace
+        });
+        _placementMenu.Name = "_placementMenu";
+        _placementMenu.Text = "Placement";
+        _placementMenu.DropDownOpening += OnThemeInfoPlacementOpening;
+
+        // _miPlaceLeft
+        _miPlaceLeft.Name = "_miPlaceLeft";
+        _miPlaceLeft.Text = "Left screen side";
+        _miPlaceLeft.Click += OnThemeInfoPlacementClick;
+
+        // _miPlaceRight
+        _miPlaceRight.Name = "_miPlaceRight";
+        _miPlaceRight.Text = "Right screen side";
+        _miPlaceRight.Click += OnThemeInfoPlacementClick;
+
+        // _miPlaceFace
+        _miPlaceFace.Name = "_miPlaceFace";
+        _miPlaceFace.Text = "On clock face";
+        _miPlaceFace.Click += OnThemeInfoPlacementClick;
 
         // _miProperties
         _miProperties.Name = "_miProperties";
@@ -491,6 +562,16 @@ partial class FormMain
     private ToolStripMenuItem _miPreventSleep;
     private ToolStripMenuItem _miMagnetic;
     private ToolStripMenuItem _miVSync;
+    private ToolStripMenuItem _themeInfoMenu;
+    private ToolStripMenuItem _miInfoNever;
+    private ToolStripMenuItem _miInfoFixed;
+    private ToolStripMenuItem _miInfoFadeFixed;
+    private ToolStripMenuItem _miInfoFadeSides;
+    private ToolStripSeparator _infoPlacementSeparator;
+    private ToolStripMenuItem _placementMenu;
+    private ToolStripMenuItem _miPlaceLeft;
+    private ToolStripMenuItem _miPlaceRight;
+    private ToolStripMenuItem _miPlaceFace;
     private ToolStripMenuItem _miProperties;
     private ToolStripSeparator _viewSeparator;
     private ToolStripMenuItem _miExit;

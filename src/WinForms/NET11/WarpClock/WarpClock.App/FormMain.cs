@@ -370,6 +370,57 @@ public partial class FormMain : Form
     private void OnFpsTimerTick(object? sender, EventArgs e)
         => _statusFps.Text = $"{_clock.CurrentFramesPerSecond:0} fps";
 
+    // ── Theme-info overlay menu ──
+
+    private void OnThemeInfoModeClick(object? sender, EventArgs e)
+    {
+        RenderThemeInfo mode = ThemeInfoModeFor(sender);
+        _clock.RenderThemeInfo = mode;
+        _statusInfo.Text = $"Theme info: {mode}";
+    }
+
+    private RenderThemeInfo ThemeInfoModeFor(object? sender)
+    {
+        if (ReferenceEquals(sender, _miInfoNever)) return RenderThemeInfo.Never;
+        if (ReferenceEquals(sender, _miInfoFixed)) return RenderThemeInfo.FixedPosition;
+        if (ReferenceEquals(sender, _miInfoFadeFixed)) return RenderThemeInfo.FadeInAndOutAtFixedPosition;
+        return RenderThemeInfo.FadeAlternateScreenSides;
+    }
+
+    private void OnThemeInfoOpening(object? sender, EventArgs e)
+    {
+        RenderThemeInfo mode = _clock.RenderThemeInfo;
+        _miInfoNever.Checked = mode == RenderThemeInfo.Never;
+        _miInfoFixed.Checked = mode == RenderThemeInfo.FixedPosition;
+        _miInfoFadeFixed.Checked = mode == RenderThemeInfo.FadeInAndOutAtFixedPosition;
+        _miInfoFadeSides.Checked = mode == RenderThemeInfo.FadeAlternateScreenSides;
+
+        // Placement only applies to the fixed-position render modes.
+        _placementMenu.Enabled = mode is RenderThemeInfo.FixedPosition or RenderThemeInfo.FadeInAndOutAtFixedPosition;
+    }
+
+    private void OnThemeInfoPlacementClick(object? sender, EventArgs e)
+    {
+        ThemeInfoPlacement placement = ThemeInfoPlacementFor(sender);
+        _clock.ThemeInfoPlacement = placement;
+        _statusInfo.Text = $"Theme info placement: {placement}";
+    }
+
+    private ThemeInfoPlacement ThemeInfoPlacementFor(object? sender)
+    {
+        if (ReferenceEquals(sender, _miPlaceRight)) return ThemeInfoPlacement.RightScreenSide;
+        if (ReferenceEquals(sender, _miPlaceFace)) return ThemeInfoPlacement.OnClockFace;
+        return ThemeInfoPlacement.LeftScreenSide;
+    }
+
+    private void OnThemeInfoPlacementOpening(object? sender, EventArgs e)
+    {
+        ThemeInfoPlacement placement = _clock.ThemeInfoPlacement;
+        _miPlaceLeft.Checked = placement == ThemeInfoPlacement.LeftScreenSide;
+        _miPlaceRight.Checked = placement == ThemeInfoPlacement.RightScreenSide;
+        _miPlaceFace.Checked = placement == ThemeInfoPlacement.OnClockFace;
+    }
+
     private void OnTogglePropertiesClick(object? sender, EventArgs e)
     {
         if (_splitContainer.Panel2Collapsed && _propertyGrid.Parent is null)
