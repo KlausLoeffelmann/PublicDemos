@@ -17,8 +17,6 @@ namespace WarpClock.Engine;
 /// </summary>
 public sealed class WarpClockControl : D2DPanel
 {
-    private const double AnimatorCadenceSeconds = 0.1; // tenths of a second
-
     private readonly Lock _sync = new();
     private readonly ClockTimeModel _timeModel = new();
     private readonly HandPointingSolver _solver = new();
@@ -31,7 +29,6 @@ public sealed class WarpClockControl : D2DPanel
     private TimerRegistration? _registration;
     private int _framePending;
     private long _lastFrameTimestamp;
-    private double _animatorAccumulator;
 
     private IClockTheme? _theme;
     private IClockLayout? _activeLayout;
@@ -392,18 +389,14 @@ public sealed class WarpClockControl : D2DPanel
             return;
         }
 
-        _animatorAccumulator += dt;
-        if (_animatorAccumulator < AnimatorCadenceSeconds)
-        {
-            return;
-        }
-
+        // The animator runs once per rendered frame (not on a coarse 10 Hz cadence), so
+        // parameter-driven motion such as a theme's wandering numerals is as smooth as the
+        // engine-driven hands, which are also recomputed every frame.
         _tickContext.Time = time;
-        _tickContext.FrameDelta = TimeSpan.FromSeconds(_animatorAccumulator);
+        _tickContext.FrameDelta = TimeSpan.FromSeconds(dt);
         _tickContext.FaceRotationDegrees = _faceRotation;
         _animator.OnTick(_tickContext);
         _faceRotation = _tickContext.FaceRotationDegrees;
-        _animatorAccumulator = 0;
     }
 
     private void UpdateElement(ElementRuntime runtime, ClockTimeSnapshot time, ClockGeometry geometry, float dt)
