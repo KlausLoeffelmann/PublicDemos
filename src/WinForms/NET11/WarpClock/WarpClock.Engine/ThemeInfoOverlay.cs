@@ -356,15 +356,25 @@ internal sealed class ThemeInfoOverlay : IDisposable
         _lineCount = lines.Length;
         _lineWidths = new float[lines.Length];
 
+        // MeasureString trims trailing whitespace by default, which would drop the width of
+        // a trailing space in a prefix (e.g. "Klaus ") and shift every following character by
+        // one — turning "Klaus Loeffelmann" into "KlausL oeffelmann". Measure prefixes with
+        // MeasureTrailingSpaces so the space width is preserved.
+        using var measure = new StringFormat
+        {
+            FormatFlags = StringFormatFlags.MeasureTrailingSpaces,
+        };
+        var bounds = new SizeF(float.MaxValue, float.MaxValue);
+
         int index = 0;
         for (int li = 0; li < lines.Length; li++)
         {
             string line = lines[li];
-            _lineWidths[li] = g.MeasureString(line, _font).Width;
+            _lineWidths[li] = g.MeasureString(line, _font, bounds, measure).Width;
 
             for (int c = 0; c < line.Length; c++)
             {
-                float along = c == 0 ? 0f : g.MeasureString(line[..c], _font).Width;
+                float along = c == 0 ? 0f : g.MeasureString(line[..c], _font, bounds, measure).Width;
                 _glyphs.Add(new Glyph(line[c], along, li, index++));
             }
         }
