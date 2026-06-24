@@ -356,31 +356,47 @@ internal sealed class ThemeInfoOverlay : IDisposable
         _lineCount = lines.Length;
         _lineWidths = new float[lines.Length];
 
-        // MeasureString trims trailing whitespace by default, which would drop the width of
-        // a trailing space in a prefix (e.g. "Klaus ") and shift every following character by
-        // one — turning "Klaus Loeffelmann" into "KlausL oeffelmann". Measure prefixes with
-        // MeasureTrailingSpaces so the space width is preserved.
-        using var measure = new StringFormat
-        {
-            FormatFlags = StringFormatFlags.MeasureTrailingSpaces,
-        };
-        var bounds = new SizeF(float.MaxValue, float.MaxValue);
-
         int index = 0;
         for (int li = 0; li < lines.Length; li++)
         {
             string line = lines[li];
-            _lineWidths[li] = g.MeasureString(line, _font, bounds, measure).Width;
+            _lineWidths[li] = MeasurePrefix(g, line, line.Length);
 
             for (int c = 0; c < line.Length; c++)
             {
-                float along = c == 0 ? 0f : g.MeasureString(line[..c], _font, bounds, measure).Width;
+                float along = MeasurePrefix(g, line, c);
                 _glyphs.Add(new Glyph(line[c], along, li, index++));
             }
         }
 
         // Orders depend on the glyph count, which may have changed.
         _animationInitialized = false;
+    }
+
+    /// <summary>
+    ///  Measures the advance width of the first <paramref name="count"/> characters of
+    ///  <paramref name="line"/> in a way that is robust to trailing-whitespace trimming.
+    /// </summary>
+    /// <remarks>
+    ///  Both GDI+ and DirectWrite drop the width of <i>trailing</i> spaces by default (and
+    ///  the WARP DirectWrite-backed <c>MeasureString</c> ignores
+    ///  <see cref="StringFormatFlags.MeasureTrailingSpaces"/>). When the prefix ends in a
+    ///  space — e.g. positioning the 'C' in "Railway Classic" — that lost space width would
+    ///  shift every following glyph one slot early ("RailwayC lassic"). Appending a sentinel
+    ///  glyph makes any trailing spaces interior, so they are measured; we then subtract the
+    ///  sentinel's own width to recover the true prefix advance.
+    /// </remarks>
+    private float MeasurePrefix(ID2DGraphics g, string line, int count)
+    {
+        if (count <= 0 || _font is null)
+        {
+            return 0f;
+        }
+
+        const string sentinel = "I";
+        float sentinelWidth = g.MeasureString(sentinel, _font).Width;
+        float withSentinel = g.MeasureString(string.Concat(line.AsSpan(0, count), sentinel), _font).Width;
+        return MathF.Max(0f, withSentinel - sentinelWidth);
     }
 
     // ── Drawing ────────────────────────────────────────────────────────────────────────
