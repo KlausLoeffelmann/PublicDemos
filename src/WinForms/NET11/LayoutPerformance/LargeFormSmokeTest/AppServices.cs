@@ -33,7 +33,7 @@ public static class AppServices
     {
         Settings = AppSettings.Load();
         Localizer = new Localizer(Settings.Language);
-        Theme = new ThemeManager(Settings.Theme);
+        Theme = new ThemeManager();
 
         // Persist the choices whenever the user flips language or theme at runtime.
         Localizer.LanguageChanged += static (_, _) =>

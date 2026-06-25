@@ -21,6 +21,7 @@ internal static class Program
         System.Diagnostics.Trace.Listeners.Clear();
 
         ApplicationConfiguration.Initialize();
+        Application.SetColorMode(SystemColorMode.System);
 
         // Build the cross-cutting services from persisted settings and apply the saved theme
         // app-wide before the first form is created (avoids a light->dark flash).

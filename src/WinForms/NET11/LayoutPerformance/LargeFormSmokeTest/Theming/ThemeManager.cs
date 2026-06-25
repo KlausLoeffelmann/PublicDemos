@@ -10,7 +10,7 @@ public sealed class ThemeManager
     private AppTheme _theme;
 
     /// <summary>Initializes a new manager in the given <paramref name="theme"/>.</summary>
-    public ThemeManager(AppTheme theme = AppTheme.Classic)
+    public ThemeManager(AppTheme theme = AppTheme.Dark)
     {
         _theme = theme;
     }
