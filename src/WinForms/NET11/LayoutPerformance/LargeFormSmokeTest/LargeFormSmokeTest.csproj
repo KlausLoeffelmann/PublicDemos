@@ -6,6 +6,16 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <RootNamespace>LargeFormSmokeTest</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The demo dataset is loaded at startup from the app base directory. -->
+    <Content Include="copilot\tax-demo-data.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
 </Project>
