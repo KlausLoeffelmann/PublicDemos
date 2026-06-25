@@ -49,6 +49,26 @@ public sealed class WarpClockControl : D2DPanel
     private bool _sceneBuilt;
     private double _framesPerSecond;
 
+    private bool _diagnosticsEnabled;
+    private int _redrawsThisFrame;
+
+    // Resize-burst measurement. While diagnostics is on, consecutive size changes are
+    // bracketed into one "session" whose per-phase Stopwatch spans are accumulated here and
+    // reported via ResizeMeasured once the burst goes idle.
+    private bool _resizeActive;
+    private long _resizeStartTimestamp;
+    private long _lastSizeChangeTimestamp;
+    private int _resizeSizeChanges;
+    private int _resizeFrames;
+    private double _resizeFrameMsSum;
+    private double _resizeFrameMsMax;
+    private double _resizeUpdateMsSum;
+    private double _resizeUpdateMsMax;
+    private double _resizeCommitMsSum;
+    private double _resizeCommitMsMax;
+    private long _resizeRedrawSum;
+    private static readonly TimeSpan s_resizeIdleThreshold = TimeSpan.FromMilliseconds(250);
+
     /// <summary>Initializes a new <see cref="WarpClockControl"/>.</summary>
     public WarpClockControl()
     {
@@ -196,6 +216,33 @@ public sealed class WarpClockControl : D2DPanel
     [Browsable(false)]
     public bool FreeFloating => _theme?.Capabilities.FreeFloating ?? false;
 
+    /// <summary>
+    ///  When <see langword="true"/>, every rendered frame is timed and a
+    ///  <see cref="FrameMeasured"/> event is raised. The measurement itself adds only a
+    ///  few <see cref="System.Diagnostics.Stopwatch"/> reads, so leaving it off keeps the
+    ///  hot path free of any per-frame overhead.
+    /// </summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool DiagnosticsEnabled
+    {
+        get => _diagnosticsEnabled;
+        set => _diagnosticsEnabled = value;
+    }
+
+    /// <summary>
+    ///  Raised once per rendered frame while <see cref="DiagnosticsEnabled"/> is on,
+    ///  carrying the per-phase cost of that frame. Always raised on the UI thread.
+    /// </summary>
+    public event EventHandler<FrameMetrics>? FrameMeasured;
+
+    /// <summary>
+    ///  Raised on the UI thread when a burst of resize size-changes settles (while
+    ///  <see cref="DiagnosticsEnabled"/> is on), carrying the aggregate timing of that
+    ///  resize. Use it to quantify how much the surface lagged the new dimensions.
+    /// </summary>
+    public event EventHandler<ResizeMeasurement>? ResizeMeasured;
+
     /// <summary>Resets accumulated fast-forward time (call when returning to 1× speed).</summary>
     public void ResetTimeAcceleration() => _timeModel.ResetAccumulatedOffset();
 
@@ -215,6 +262,37 @@ public sealed class WarpClockControl : D2DPanel
     {
         base.OnSizeChanged(e);
         CacheSurface();
+
+        if (_diagnosticsEnabled)
+        {
+            NoteSizeChange();
+        }
+    }
+
+    // Brackets consecutive size changes into one measured resize session. The first change
+    // opens the session; every change extends it and bumps the WM_SIZE counter. The session
+    // is finalized from the render loop once no size change has arrived for a short while.
+    private void NoteSizeChange()
+    {
+        long now = System.Diagnostics.Stopwatch.GetTimestamp();
+
+        if (!_resizeActive)
+        {
+            _resizeActive = true;
+            _resizeStartTimestamp = now;
+            _resizeSizeChanges = 0;
+            _resizeFrames = 0;
+            _resizeFrameMsSum = 0;
+            _resizeFrameMsMax = 0;
+            _resizeUpdateMsSum = 0;
+            _resizeUpdateMsMax = 0;
+            _resizeCommitMsSum = 0;
+            _resizeCommitMsMax = 0;
+            _resizeRedrawSum = 0;
+        }
+
+        _resizeSizeChanges++;
+        _lastSizeChangeTimestamp = now;
     }
 
     private void CacheSurface()
@@ -415,15 +493,105 @@ public sealed class WarpClockControl : D2DPanel
         ClockTimeSnapshot time = _timeModel.CreateSnapshot();
         ClockGeometry geometry = ClockGeometry.ForSurface(Surface);
 
-        RunAnimator(time, dt);
+        bool measure = _diagnosticsEnabled;
+        long frameStart = measure ? now : 0;
 
+        long phaseStart = measure ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        RunAnimator(time, dt);
+        double animatorMs = measure ? System.Diagnostics.Stopwatch.GetElapsedTime(phaseStart).TotalMilliseconds : 0;
+
+        _redrawsThisFrame = 0;
+        phaseStart = measure ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         foreach (ElementRuntime runtime in _runtime.Values)
         {
             UpdateElement(runtime, time, geometry, dt);
         }
+        double updateMs = measure ? System.Diagnostics.Stopwatch.GetElapsedTime(phaseStart).TotalMilliseconds : 0;
 
+        // The visual commit is awaited synchronously, so this measures how long the UI
+        // thread is blocked handing the new visual tree to DirectComposition.
+        phaseStart = measure ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         CommitVisualsAsync(false).GetAwaiter().GetResult();
+        double commitMs = measure ? System.Diagnostics.Stopwatch.GetElapsedTime(phaseStart).TotalMilliseconds : 0;
+
         Invalidate();
+
+        if (measure)
+        {
+            ReportFrameMetrics(frameStart, animatorMs, updateMs, commitMs);
+        }
+    }
+
+    // Reuses the already-smoothed _framesPerSecond (computed above) so diagnostics never
+    // maintains a second, divergent fps estimate.
+    private void ReportFrameMetrics(long frameStart, double animatorMs, double updateMs, double commitMs)
+    {
+        double frameMs = System.Diagnostics.Stopwatch.GetElapsedTime(frameStart).TotalMilliseconds;
+
+        FrameMeasured?.Invoke(this, new FrameMetrics(
+            FrameMs: frameMs,
+            AnimatorMs: animatorMs,
+            UpdateMs: updateMs,
+            CommitMs: commitMs,
+            ElementCount: _runtime.Count,
+            RedrawCount: _redrawsThisFrame,
+            Fps: _framesPerSecond,
+            Surface: Surface));
+
+        AccumulateOrFinalizeResize(frameMs, updateMs, commitMs);
+    }
+
+    // Feeds the current frame into the active resize session, or finalizes the session once
+    // the surface has stopped changing size. Only frames that fall within the idle window of
+    // a size change are counted, so the trailing steady-state frames do not dilute the
+    // resize-cost averages.
+    private void AccumulateOrFinalizeResize(double frameMs, double updateMs, double commitMs)
+    {
+        if (!_resizeActive)
+        {
+            return;
+        }
+
+        double idleMs = System.Diagnostics.Stopwatch.GetElapsedTime(_lastSizeChangeTimestamp).TotalMilliseconds;
+        if (idleMs > s_resizeIdleThreshold.TotalMilliseconds)
+        {
+            FinalizeResize();
+            return;
+        }
+
+        _resizeFrames++;
+        _resizeFrameMsSum += frameMs;
+        _resizeFrameMsMax = Math.Max(_resizeFrameMsMax, frameMs);
+        _resizeUpdateMsSum += updateMs;
+        _resizeUpdateMsMax = Math.Max(_resizeUpdateMsMax, updateMs);
+        _resizeCommitMsSum += commitMs;
+        _resizeCommitMsMax = Math.Max(_resizeCommitMsMax, commitMs);
+        _resizeRedrawSum += _redrawsThisFrame;
+    }
+
+    private void FinalizeResize()
+    {
+        _resizeActive = false;
+
+        if (_resizeFrames == 0)
+        {
+            return;
+        }
+
+        TimeSpan duration = System.Diagnostics.Stopwatch.GetElapsedTime(_resizeStartTimestamp, _lastSizeChangeTimestamp);
+
+        ResizeMeasured?.Invoke(this, new ResizeMeasurement(
+            Duration: duration,
+            SizeChanges: _resizeSizeChanges,
+            Frames: _resizeFrames,
+            AvgFrameMs: _resizeFrameMsSum / _resizeFrames,
+            MaxFrameMs: _resizeFrameMsMax,
+            AvgUpdateMs: _resizeUpdateMsSum / _resizeFrames,
+            MaxUpdateMs: _resizeUpdateMsMax,
+            AvgCommitMs: _resizeCommitMsSum / _resizeFrames,
+            MaxCommitMs: _resizeCommitMsMax,
+            AvgRedraws: (double)_resizeRedrawSum / _resizeFrames,
+            FinalSurface: Surface));
     }
 
     private void RunAnimator(ClockTimeSnapshot time, float dt)
@@ -501,6 +669,7 @@ public sealed class WarpClockControl : D2DPanel
             RedrawElement(runtime, contentSize, pivotPixels, scale, time);
             runtime.ContentDrawn = true;
             parameters.RedrawRequested = false;
+            _redrawsThisFrame++;
         }
     }
 
