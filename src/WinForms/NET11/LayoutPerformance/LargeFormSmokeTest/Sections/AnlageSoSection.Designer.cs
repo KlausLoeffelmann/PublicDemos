@@ -1,6 +1,6 @@
 namespace LargeFormSmokeTest.Sections
 {
-    partial class SonderausgabenSection
+    partial class AnlageSoSection
     {
         /// <summary>Required designer variable.</summary>
         private System.ComponentModel.IContainer components = null;
@@ -33,25 +33,17 @@ namespace LargeFormSmokeTest.Sections
             _inp1 = new System.Windows.Forms.NumericUpDown();
             _lbl2 = new System.Windows.Forms.Label();
             _inp2 = new System.Windows.Forms.NumericUpDown();
-            _lbl3 = new System.Windows.Forms.Label();
-            _inp3 = new System.Windows.Forms.NumericUpDown();
-            _lbl4 = new System.Windows.Forms.Label();
-            _inp4 = new System.Windows.Forms.NumericUpDown();
-            _inp5 = new System.Windows.Forms.CheckBox();
+            _inp3 = new System.Windows.Forms.CheckBox();
             _table.SuspendLayout();
             _groupBox.SuspendLayout();
             SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)_inp0).BeginInit();
             ((System.ComponentModel.ISupportInitialize)_inp1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)_inp2).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)_inp3).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)_inp4).BeginInit();
             _table.ColumnCount = 2;
             _table.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 240F));
             _table.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            _table.RowCount = 6;
-            _table.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
-            _table.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            _table.RowCount = 4;
             _table.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             _table.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             _table.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
@@ -65,7 +57,7 @@ namespace LargeFormSmokeTest.Sections
             _lbl0.AutoSize = true;
             _lbl0.Margin = new System.Windows.Forms.Padding(3, 0, 8, 0);
             _lbl0.Name = "_lbl0";
-            _lbl0.Text = "Spenden & Mitgliedsbeiträge";
+            _lbl0.Text = "Private Veräußerungsgeschäfte";
             _table.Controls.Add(_lbl0, 0, 0);
             _inp0.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             _inp0.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
@@ -78,7 +70,7 @@ namespace LargeFormSmokeTest.Sections
             _lbl1.AutoSize = true;
             _lbl1.Margin = new System.Windows.Forms.Padding(3, 0, 8, 0);
             _lbl1.Name = "_lbl1";
-            _lbl1.Text = "Gezahlte Kirchensteuer";
+            _lbl1.Text = "Wiederkehrende Bezüge";
             _table.Controls.Add(_lbl1, 0, 1);
             _inp1.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             _inp1.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
@@ -91,7 +83,7 @@ namespace LargeFormSmokeTest.Sections
             _lbl2.AutoSize = true;
             _lbl2.Margin = new System.Windows.Forms.Padding(3, 0, 8, 0);
             _lbl2.Name = "_lbl2";
-            _lbl2.Text = "Unterhaltsleistungen";
+            _lbl2.Text = "Sonstige Einkünfte";
             _table.Controls.Add(_lbl2, 0, 2);
             _inp2.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             _inp2.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
@@ -100,39 +92,13 @@ namespace LargeFormSmokeTest.Sections
             _inp2.DecimalPlaces = 2;
             _inp2.ThousandsSeparator = true;
             _table.Controls.Add(_inp2, 1, 2);
-            _lbl3.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            _lbl3.AutoSize = true;
-            _lbl3.Margin = new System.Windows.Forms.Padding(3, 0, 8, 0);
-            _lbl3.Name = "_lbl3";
-            _lbl3.Text = "Berufsausbildungskosten";
-            _table.Controls.Add(_lbl3, 0, 3);
-            _inp3.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            _inp3.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            _inp3.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            _inp3.AutoSize = true;
+            _inp3.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             _inp3.Name = "_inp3";
-            _inp3.Maximum = new decimal(new int[] { 1000000000, 0, 0, 0 });
-            _inp3.DecimalPlaces = 2;
-            _inp3.ThousandsSeparator = true;
-            _table.Controls.Add(_inp3, 1, 3);
-            _lbl4.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            _lbl4.AutoSize = true;
-            _lbl4.Margin = new System.Windows.Forms.Padding(3, 0, 8, 0);
-            _lbl4.Name = "_lbl4";
-            _lbl4.Text = "Altersvorsorgeaufwendungen";
-            _table.Controls.Add(_lbl4, 0, 4);
-            _inp4.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            _inp4.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
-            _inp4.Name = "_inp4";
-            _inp4.Maximum = new decimal(new int[] { 1000000000, 0, 0, 0 });
-            _inp4.DecimalPlaces = 2;
-            _inp4.ThousandsSeparator = true;
-            _table.Controls.Add(_inp4, 1, 4);
-            _inp5.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            _inp5.AutoSize = true;
-            _inp5.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            _inp5.Name = "_inp5";
-            _inp5.Text = "Kirchenmitglied";
-            _table.Controls.Add(_inp5, 0, 5);
-            _table.SetColumnSpan(_inp5, 2);
+            _inp3.Text = "Spekulationsfrist überschritten";
+            _table.Controls.Add(_inp3, 0, 3);
+            _table.SetColumnSpan(_inp3, 2);
             _groupBox.Controls.Add(_table);
             _groupBox.Dock = System.Windows.Forms.DockStyle.Top;
             _groupBox.AutoSize = true;
@@ -146,13 +112,11 @@ namespace LargeFormSmokeTest.Sections
             AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             Controls.Add(_groupBox);
             Margin = new System.Windows.Forms.Padding(0);
-            Name = "SonderausgabenSection";
+            Name = "AnlageSoSection";
             Size = new System.Drawing.Size(720, 320);
             ((System.ComponentModel.ISupportInitialize)_inp0).EndInit();
             ((System.ComponentModel.ISupportInitialize)_inp1).EndInit();
             ((System.ComponentModel.ISupportInitialize)_inp2).EndInit();
-            ((System.ComponentModel.ISupportInitialize)_inp3).EndInit();
-            ((System.ComponentModel.ISupportInitialize)_inp4).EndInit();
             _table.ResumeLayout(false);
             _table.PerformLayout();
             _groupBox.ResumeLayout(false);
@@ -170,10 +134,6 @@ namespace LargeFormSmokeTest.Sections
         private System.Windows.Forms.NumericUpDown _inp1;
         private System.Windows.Forms.Label _lbl2;
         private System.Windows.Forms.NumericUpDown _inp2;
-        private System.Windows.Forms.Label _lbl3;
-        private System.Windows.Forms.NumericUpDown _inp3;
-        private System.Windows.Forms.Label _lbl4;
-        private System.Windows.Forms.NumericUpDown _inp4;
-        private System.Windows.Forms.CheckBox _inp5;
+        private System.Windows.Forms.CheckBox _inp3;
     }
 }

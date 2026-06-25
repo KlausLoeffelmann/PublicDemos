@@ -8,10 +8,10 @@ using LargeFormSmokeTest.Models;
 ///  rows + margins) lives in the Designer file; shared localization / read-only plumbing comes
 ///  from <see cref="SectionControl"/>. Inputs are bound from the deterministic detail in LoadData.
 /// </summary>
-public partial class VorsorgeSection : SectionControl
+public partial class AnlageSoSection : SectionControl
 {
     /// <summary>Initializes the section and registers its GroupBox for title localization.</summary>
-    public VorsorgeSection()
+    public AnlageSoSection()
     {
         InitializeComponent();
         SectionGroupBox = _groupBox;
@@ -19,20 +19,14 @@ public partial class VorsorgeSection : SectionControl
 
     /// <inheritdoc/>
     public override string TitleKey
-        => StringKeys.SecVorsorge;
+        => StringKeys.SecAnlageSo;
 
     /// <inheritdoc/>
     public override void LoadData(Person person, Declaration declaration, DeclarationDetail detail)
     {
-        SetNumeric(_inp0, (decimal)detail.PensionInsurance);
-        SetNumeric(_inp1, (decimal)detail.HealthInsurance);
-        SetNumeric(_inp2, (decimal)detail.CareInsurance);
-        SetNumeric(_inp3, (decimal)detail.UnemploymentInsurance);
-        SetNumeric(_inp4, (decimal)detail.LiabilityInsurance);
-        SetNumeric(_inp5, (decimal)detail.AccidentInsurance);
-        SetNumeric(_inp7, (decimal)detail.Riester);
-        SetNumeric(_inp8, (decimal)detail.Ruerup);
-        SetNumeric(_inp9, (decimal)detail.BasicPension);
-        SetNumeric(_inp10, (decimal)detail.SupplementaryPension);
+        SetNumeric(_inp0, (decimal)detail.PrivateSaleGains);
+        SetNumeric(_inp1, (decimal)detail.RecurringIncome);
+        SetNumeric(_inp2, (decimal)detail.OtherIncome);
+        _inp3.Checked = detail.SpeculationPeriodExceeded;
     }
 }

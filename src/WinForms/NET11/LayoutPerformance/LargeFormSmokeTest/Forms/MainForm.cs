@@ -16,6 +16,9 @@ public partial class MainForm : Form
     private readonly ILocalizer _localizer = AppServices.Localizer;
     private readonly ThemeManager _theme = AppServices.Theme;
 
+    // Owned bold header font, recreated on each theme change (the previous one is disposed).
+    private Font? _headerFont;
+
     // Payer-grid columns kept as fields so their header captions can be re-localized live.
     private readonly DataGridViewTextBoxColumn _colTaxNumber = new();
     private readonly DataGridViewTextBoxColumn _colTitle = new();
@@ -35,6 +38,7 @@ public partial class MainForm : Form
     private readonly DataGridViewTextBoxColumn _dcolDue = new();
     private readonly DataGridViewTextBoxColumn _dcolOutstanding = new();
     private readonly DataGridViewTextBoxColumn _dcolStatus = new();
+    private readonly DataGridViewTextBoxColumn _dcolObligation = new();
 
     /// <summary>Initializes the overview form and binds it to the repository data.</summary>
     public MainForm()
@@ -122,6 +126,7 @@ public partial class MainForm : Form
         ConfigureColumn(_dcolDue, nameof(Declaration.DueDate));
         ConfigureColumn(_dcolOutstanding, nameof(Declaration.OutstandingAmount));
         ConfigureColumn(_dcolStatus, nameof(Declaration.Status));
+        ConfigureColumn(_dcolObligation, nameof(Declaration.Obligation));
 
         _dcolBasis.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         _dcolTax.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
@@ -132,7 +137,7 @@ public partial class MainForm : Form
         _dcolStatus.DefaultCellStyle.Font = new Font(_declarationsGrid.Font, FontStyle.Bold);
 
         _declarationsGrid.Columns.AddRange(
-            _dcolYear, _dcolBasis, _dcolTax, _dcolDue, _dcolOutstanding, _dcolStatus);
+            _dcolYear, _dcolBasis, _dcolTax, _dcolDue, _dcolOutstanding, _dcolStatus, _dcolObligation);
     }
 
     /// <summary>Makes the left-column detail captions bold (kept out of the Designer file).</summary>
@@ -215,11 +220,16 @@ public partial class MainForm : Form
                 declaration.AssessedTax.ToString("N2"),
                 declaration.DueDate.ToString("d"),
                 declaration.OutstandingAmount.ToString("N2"),
-                declaration.Status.ToString());
+                declaration.Status.ToString(),
+                ObligationShort(declaration.Obligation));
 
             _declarationsGrid.Rows[index].Tag = declaration;
         }
     }
+
+    /// <summary>Renders the obligation enum as a compact grid label.</summary>
+    private static string ObligationShort(TaxObligation obligation)
+        => obligation is TaxObligation.LohnsteuerUndEinkommensteuer ? "LSt + ESt" : "ESt";
 
     /// <summary>Color-codes the Status cell by declaration status, theme-aware.</summary>
     private void OnDeclarationCellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
@@ -342,6 +352,7 @@ public partial class MainForm : Form
         _dcolDue.HeaderText = _localizer[StringKeys.ColDueDate];
         _dcolOutstanding.HeaderText = _localizer[StringKeys.ColOutstanding];
         _dcolStatus.HeaderText = _localizer[StringKeys.ColStatus];
+        _dcolObligation.HeaderText = _localizer[StringKeys.ColObligation];
     }
 
     /// <summary>Applies the active theme to both grids and the bold header labels.</summary>
@@ -351,10 +362,15 @@ public partial class MainForm : Form
         _declarationsGrid.ApplyScheme(_theme);
 
         Font headerFont = new(Font.FontFamily, Font.Size + 2f, FontStyle.Bold);
+        _headerFont?.Dispose();
+        _headerFont = headerFont;
         _lblTaxNumber.Font = headerFont;
         _lblName.Font = headerFont;
 
-        // Refresh the toolbar glyphs in a color that reads on the active theme.
+        // Refresh the toolbar glyphs in a color that reads on the active theme, disposing the
+        // previous bitmaps to avoid GDI leaks across theme switches.
+        _btnEditPerson.Image?.Dispose();
+        _btnOpenDeclaration.Image?.Dispose();
         _btnEditPerson.Image = IconFactory.GetIcon(FluentGlyph.Contact, 36, _theme.IconColor);
         _btnOpenDeclaration.Image = IconFactory.GetIcon(FluentGlyph.OpenFile, 36, _theme.IconColor);
 

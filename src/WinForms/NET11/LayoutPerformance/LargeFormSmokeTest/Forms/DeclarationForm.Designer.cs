@@ -34,7 +34,7 @@ namespace LargeFormSmokeTest.Forms
             _btnExport = new System.Windows.Forms.ToolStripButton();
             _btnClose = new System.Windows.Forms.ToolStripButton();
             _banner = new System.Windows.Forms.Label();
-            _host = new System.Windows.Forms.FlowLayoutPanel();
+            _host = new System.Windows.Forms.TableLayoutPanel();
             _menu.SuspendLayout();
             _toolStrip.SuspendLayout();
             SuspendLayout();
@@ -141,13 +141,14 @@ namespace LargeFormSmokeTest.Forms
             // _host
             // 
             _host.AutoScroll = true;
+            _host.ColumnCount = 2;
+            _host.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            _host.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             _host.Dock = System.Windows.Forms.DockStyle.Fill;
-            _host.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             _host.Location = new System.Drawing.Point(0, 95);
             _host.Name = "_host";
             _host.Padding = new System.Windows.Forms.Padding(12);
             _host.Size = new System.Drawing.Size(820, 555);
-            _host.WrapContents = false;
             // 
             // DeclarationForm
             // 
@@ -189,6 +190,6 @@ namespace LargeFormSmokeTest.Forms
         private System.Windows.Forms.ToolStripButton _btnExport;
         private System.Windows.Forms.ToolStripButton _btnClose;
         private System.Windows.Forms.Label _banner;
-        private System.Windows.Forms.FlowLayoutPanel _host;
+        private System.Windows.Forms.TableLayoutPanel _host;
     }
 }
