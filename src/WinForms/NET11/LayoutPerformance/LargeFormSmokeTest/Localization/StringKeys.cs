@@ -52,6 +52,7 @@ public static class StringKeys
     public const string ColDueDate = "Col.DueDate";
     public const string ColOutstanding = "Col.Outstanding";
     public const string ColStatus = "Col.Status";
+    public const string ColObligation = "Col.Obligation";
 
     // ---- Detail field labels --------------------------------------------------------
     public const string FieldName = "Field.Name";
@@ -99,4 +100,14 @@ public static class StringKeys
     public const string SecVorsorge = "Sec.Vorsorge";
     public const string SecAnlageKind = "Sec.AnlageKind";
     public const string SecSonderausgaben = "Sec.Sonderausgaben";
+    public const string SecAussergewBelastungen = "Sec.AussergewBelastungen";
+    public const string SecAnlageR = "Sec.AnlageR";
+    public const string SecAnlageSo = "Sec.AnlageSo";
+    public const string SecAnlageUnterhalt = "Sec.AnlageUnterhalt";
+    public const string SecEnergetische = "Sec.Energetische";
+    public const string SecLohnsteuer = "Sec.Lohnsteuer";
+
+    // ---- Form title banners ---------------------------------------------------------
+    public const string TitleEinkommensteuer = "Title.Einkommensteuer";
+    public const string TitleLohnsteuer = "Title.Lohnsteuer";
 }

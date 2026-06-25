@@ -38,4 +38,10 @@ public sealed class Declaration
 
     /// <summary>Gets or sets the processing status.</summary>
     public DeclarationStatus Status { get; set; }
+
+    /// <summary>
+    ///  Gets or sets which kind(s) of return are owed for this year. Not part of the source JSON;
+    ///  it is assigned deterministically when the dataset is loaded.
+    /// </summary>
+    public TaxObligation Obligation { get; set; }
 }

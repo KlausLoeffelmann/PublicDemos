@@ -19,6 +19,6 @@ public interface ISection
     /// <summary>Switches all input controls between read-only and editable.</summary>
     void SetReadOnly(bool readOnly);
 
-    /// <summary>Populates the section's controls from the given person and declaration.</summary>
-    void LoadData(Person person, Declaration declaration);
+    /// <summary>Populates the section's controls from the given person, declaration and detail.</summary>
+    void LoadData(Person person, Declaration declaration, DeclarationDetail detail);
 }

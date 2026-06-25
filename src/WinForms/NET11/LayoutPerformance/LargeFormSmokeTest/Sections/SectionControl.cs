@@ -38,10 +38,45 @@ public class SectionControl : UserControl, ISection
         => SetReadOnlyRecursive(this, readOnly);
 
     /// <inheritdoc/>
-    public virtual void LoadData(Person person, Declaration declaration)
+    public virtual void LoadData(Person person, Declaration declaration, DeclarationDetail detail)
     {
-        // The base section carries no bindable fields of its own; derived sections that show
-        // real data override this. Most demo sections are intentionally synthetic for density.
+        // The base section carries no bindable fields of its own; generated sections override
+        // this to populate their inputs from the deterministic <see cref="DeclarationDetail"/>.
+    }
+
+    /// <summary>Assigns a value to a NumericUpDown, clamped to its valid range.</summary>
+    protected static void SetNumeric(NumericUpDown numeric, decimal value)
+        => numeric.Value = value < numeric.Minimum
+            ? numeric.Minimum
+            : value > numeric.Maximum
+                ? numeric.Maximum
+                : value;
+
+    /// <summary>Assigns a date to a DateTimePicker, clamped to its valid range.</summary>
+    protected static void SetDate(DateTimePicker picker, DateOnly date)
+    {
+        DateTime value = date.ToDateTime(TimeOnly.MinValue);
+
+        picker.Value = value < picker.MinDate
+            ? picker.MinDate
+            : value > picker.MaxDate
+                ? picker.MaxDate
+                : value;
+    }
+
+    /// <summary>Checks the radio button at <paramref name="index"/> within a radio group panel.</summary>
+    protected static void SelectRadio(Control group, int index)
+    {
+        int i = 0;
+
+        foreach (Control child in group.Controls)
+        {
+            if (child is RadioButton radio)
+            {
+                radio.Checked = i == index;
+                i++;
+            }
+        }
     }
 
     /// <summary>
@@ -67,7 +102,7 @@ public class SectionControl : UserControl, ISection
     /// <summary>
     ///  Recursively switches input controls between read-only and editable. Text boxes use their
     ///  native read-only mode (keeps text crisp); other inputs are disabled so the form clearly
-    ///  reads as locked until the clerk chooses "Edit tax form".
+    ///  reads as locked until the clerk chooses "Edit tax form". Chrome controls are skipped.
     /// </summary>
     private static void SetReadOnlyRecursive(Control parent, bool readOnly)
     {
@@ -79,7 +114,7 @@ public class SectionControl : UserControl, ISection
                     textBox.ReadOnly = readOnly;
                     break;
 
-                case ComboBox or NumericUpDown or CheckBox or DateTimePicker:
+                case ComboBox or NumericUpDown or CheckBox or RadioButton or DateTimePicker:
                     child.Enabled = !readOnly;
                     break;
             }

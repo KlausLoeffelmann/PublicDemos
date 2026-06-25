@@ -54,6 +54,18 @@ public sealed class TaxRepository
         using FileStream stream = File.OpenRead(path);
         TaxDemoDataset? dataset = JsonSerializer.Deserialize<TaxDemoDataset>(stream, options);
 
-        return dataset ?? new TaxDemoDataset();
+        dataset ??= new TaxDemoDataset();
+
+        // The return obligation is not part of the JSON; assign it deterministically so the
+        // overview grid and the declaration form show the same value for each declaration.
+        foreach (Person person in dataset.Persons)
+        {
+            foreach (Declaration declaration in person.Declarations)
+            {
+                declaration.Obligation = DeclarationDetailFactory.ObligationFor(person, declaration);
+            }
+        }
+
+        return dataset;
     }
 }

@@ -91,6 +91,7 @@ public sealed class Localizer : ILocalizer
             [StringKeys.ColDueDate] = "Due date",
             [StringKeys.ColOutstanding] = "Outstanding",
             [StringKeys.ColStatus] = "Status",
+            [StringKeys.ColObligation] = "Obligation",
             [StringKeys.FieldName] = "Name",
             [StringKeys.FieldBirth] = "Born",
             [StringKeys.FieldAddress] = "Address",
@@ -129,7 +130,15 @@ public sealed class Localizer : ILocalizer
             [StringKeys.SecAnlageS] = "Annex S — Self-employment",
             [StringKeys.SecVorsorge] = "Annex — Pension expenses",
             [StringKeys.SecAnlageKind] = "Annex Child",
-            [StringKeys.SecSonderausgaben] = "Special & extraordinary expenses"
+            [StringKeys.SecSonderausgaben] = "Special & extraordinary expenses",
+            [StringKeys.SecAussergewBelastungen] = "Extraordinary burdens",
+            [StringKeys.SecAnlageR] = "Annex R — Pensions",
+            [StringKeys.SecAnlageSo] = "Annex SO — Other income",
+            [StringKeys.SecAnlageUnterhalt] = "Annex Maintenance",
+            [StringKeys.SecEnergetische] = "Energy-efficiency measures (§35c)",
+            [StringKeys.SecLohnsteuer] = "Wage-tax statement",
+            [StringKeys.TitleEinkommensteuer] = "Income-tax return",
+            [StringKeys.TitleLohnsteuer] = "Wage-tax return"
         };
 
     private static Dictionary<string, string> BuildGerman()
@@ -172,6 +181,7 @@ public sealed class Localizer : ILocalizer
             [StringKeys.ColDueDate] = "Fälligkeit",
             [StringKeys.ColOutstanding] = "Ausstehender Betrag",
             [StringKeys.ColStatus] = "Status",
+            [StringKeys.ColObligation] = "Pflicht",
             [StringKeys.FieldName] = "Name",
             [StringKeys.FieldBirth] = "Geboren",
             [StringKeys.FieldAddress] = "Anschrift",
@@ -210,6 +220,14 @@ public sealed class Localizer : ILocalizer
             [StringKeys.SecAnlageS] = "Anlage S — Selbständige Arbeit",
             [StringKeys.SecVorsorge] = "Anlage Vorsorgeaufwand",
             [StringKeys.SecAnlageKind] = "Anlage Kind",
-            [StringKeys.SecSonderausgaben] = "Sonderausgaben / außergewöhnliche Belastungen"
+            [StringKeys.SecSonderausgaben] = "Sonderausgaben / außergewöhnliche Belastungen",
+            [StringKeys.SecAussergewBelastungen] = "Außergewöhnliche Belastungen",
+            [StringKeys.SecAnlageR] = "Anlage R — Renten",
+            [StringKeys.SecAnlageSo] = "Anlage SO — Sonstige Einkünfte",
+            [StringKeys.SecAnlageUnterhalt] = "Anlage Unterhalt",
+            [StringKeys.SecEnergetische] = "Energetische Maßnahmen (§35c)",
+            [StringKeys.SecLohnsteuer] = "Lohnsteuerbescheinigung",
+            [StringKeys.TitleEinkommensteuer] = "Einkommensteuererklärung",
+            [StringKeys.TitleLohnsteuer] = "Lohnsteuererklärung"
         };
 }
