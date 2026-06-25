@@ -50,6 +50,15 @@ Every WinForms Form or UserControl is split across two files via `partial class`
 
 **The Designer file is the code-behind.** It contains all control instantiation, property assignment, and layout wiring. The main file contains only the constructor call to `InitializeComponent()` and application logic.
 
+> **Keep the constructor cheap — don't block startup.** The constructor (regular code,
+> just after `InitializeComponent()`) is a frequent dumping ground for blocking work
+> (file/network I/O, assembly loading, CPU-bound parsing). That freezes startup and
+> can't be `await`ed, and at this point the control has **no handle**, so `InvokeAsync`
+> would throw. Move such work into an `async` lifecycle method (`OnLoad` /
+> `OnHandleCreated` / `OnCreateControl`) and report progress via `InvokeAsync` guarded
+> by `IsHandleCreated`. See **winforms-development → "Async Patterns (.NET 9+)" →
+> "Don't Block in the Constructor — Defer Initialization"** for the full pattern.
+
 ### Required Dispose Pattern
 
 The Designer file must contain a `Dispose` override:

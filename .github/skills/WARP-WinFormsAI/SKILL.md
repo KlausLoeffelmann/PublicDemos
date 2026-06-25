@@ -15,7 +15,7 @@ application a complete AI / chat surface on top of Microsoft.Extensions.AI:
 | `WarpToolkit.WinForms.AI` | Designer-droppable provider components derived from `AIChatServiceBase` (each implements `IChatClient`). |
 | `WarpToolkit.WinForms.Chat` | Polished chat UI: `ChatView`, `ChatRendererControl`, `ChatProcessor`, `ChatViewVm`. |
 
-Current preview version: `0.9.7-preview.g32895b766b`.
+Current preview version: `0.9.217-preview.gd29245666b`.
 
 Reference files:
 - `src/docs/reference/WarpToolkit.Desktop.AI.md`

@@ -2,9 +2,29 @@
 
 Repository for all sorts of quick, simple, sometimes also a bit more extensive Demos for conferences, .NET Blog Posts, LinkedIn- or other social media posts, or just for public Prototyping.
 
-## Layout Tester — published Sat, Jun 06., 2026
+## WARP DirectX Wall Clock — published Fri, Jun 19., 2026
 
-The current featured demo is the **Layout Tester** — a WinForms .NET 10
+The current featured demo is the **WARP DirectX Wall Clock** — a WinForms
+.NET 11 analog clock where **every part (face, numerals, ticks, hands, arbour)
+is its own DirectComposition visual**, composed by a small engine and styled by
+**drop-in plug-in themes**. It doubles as a demo of the new .NET 11
+`KioskModeManager` component (F11 fullscreen, taskbar hiding, sleep suppression,
+wake events).
+
+The headline trick: the engine alone owns time and hand *pointing*, so a theme
+can relocate anchors and restyle visuals but **can never show the wrong time** —
+move the hour numerals into a column on the left and the hour hand's tip simply
+follows them (with an adjustable 1–30 s grace catch-up). Building it added a
+per-visual transform API (`Transform` / `SetRotation`) to WARP's `D2DVisual`.
+Two sample plug-ins ship: a free-floating *Lose-Hour* theme and a *NERD* theme
+whose single second hand encodes the hour and minute in binary. Author your own
+from a natural-language description with the `warpclock-theme-authoring` skill.
+
+[WARP DirectX Wall Clock README](src/WinForms/NET11/WarpClock/README.md)
+
+## Was new on Sat, Jun 06. 2026: Layout Tester
+
+The **Layout Tester** is a WinForms .NET 10
 prototype for poking at **High-DPI cascaded layout**: how `AutoScaleMode`
 propagates through nested `UserControl` containers when the host form moves
 between monitors at different DPI under `PerMonitorV2`.

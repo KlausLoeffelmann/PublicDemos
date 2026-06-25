@@ -406,6 +406,160 @@ private async void LoadButton_Click(object? sender, EventArgs e)
 
 **Without try/catch:** Unhandled exceptions will CRASH the application!
 
+### Don't Block in the Constructor — Defer Initialization
+
+**The anti-pattern.** A very common mistake is to do real work in a Form/UserControl
+constructor, right after `InitializeComponent()`:
+
+```csharp
+// ❌ ANTI-PATTERN — blocking I/O / CPU work in the constructor
+public FormMain()
+{
+    InitializeComponent();
+
+    LoadPluginsFromDisk();   // enumerates a folder, loads assemblies, reflects types…
+    SetUpFileWatcher();      // starts raising events immediately
+    SelectFirst();
+}
+```
+
+Why this is wrong:
+
+- The constructor runs on the UI thread **before the window is shown**. Long work here
+  freezes startup and blocks the message pump.
+- You **cannot `await`** in a constructor, so the work is forced to be synchronous.
+- The control has **no window handle yet**. Any attempt to report progress with
+  `InvokeAsync` / `BeginInvoke` from here (or from a callback that fires this early)
+  throws `InvalidOperationException` ("handle has not been created").
+
+There are two fixes, depending on how heavy the work is.
+
+#### Pattern 1 — Heavy work → dedicated worker Task + marshaled progress
+
+For genuinely long-running or blocking work (disk/network I/O, assembly loading,
+CPU-bound parsing), kick it off on a background `Task` and **marshal results/progress
+back to the UI thread** with `InvokeAsync`. Always **guard the marshal with
+`IsHandleCreated`** — without a handle, `InvokeAsync`/`BeginInvoke` throw.
+
+```csharp
+// Runs the expensive discovery off the UI thread, then updates the UI safely.
+private async Task LoadPluginsAsync()
+{
+    // Report progress only when there is a handle to marshal to.
+    if (IsHandleCreated)
+    {
+        await InvokeAsync(() => _statusInfo.Text = "Loading plug-ins…");
+    }
+
+    // Heavy work on a worker thread — does NOT touch any control.
+    IReadOnlyList<DiscoveredTheme> found =
+        await Task.Run(() => _pluginLoader.LoadNew());
+
+    // UI mutation must happen back on the UI thread.
+    if (IsHandleCreated)
+    {
+        await InvokeAsync(() =>
+        {
+            foreach (DiscoveredTheme theme in found)
+            {
+                AddThemeEntry(theme);   // mutates menu / backing collections
+            }
+
+            _statusInfo.Text = $"Loaded {found.Count} plug-in theme(s).";
+        });
+    }
+}
+```
+
+**Thread-safety / race-condition warning.** If a background load shares mutable state
+with anything that can run concurrently (a `FileSystemWatcher` callback, a timer, a
+second invocation), you have a race. Example: a `FileSystemWatcher` that hot-reloads
+plug-ins can fire `ReloadPlugins()` on the UI thread *while* the initial load is still
+running on the worker thread — both call into a **non-thread-safe** loader at once,
+corrupting its internal collections and double-loading assemblies. Mitigate by
+**serializing the work**:
+
+```csharp
+private readonly SemaphoreSlim _loadGate = new(1, 1);
+
+private async Task LoadPluginsSerializedAsync()
+{
+    // Ensures the initial load and any watcher-triggered reload never overlap.
+    await _loadGate.WaitAsync();
+    try
+    {
+        IReadOnlyList<DiscoveredTheme> found =
+            await Task.Run(() => _pluginLoader.LoadNew());
+
+        if (IsHandleCreated)
+        {
+            await InvokeAsync(() => AddThemes(found));
+        }
+    }
+    finally
+    {
+        _loadGate.Release();
+    }
+}
+```
+
+And **enable the watcher only after the initial load finishes**, so a file drop during
+startup can't introduce a concurrent loader call before the gate is even in play.
+
+#### Pattern 2 — Slightly-slow UI work → defer to an `async` lifecycle method
+
+Trivial UI nudges that belong "in the context of `InitializeComponent`" (setting a few
+properties, checking a couple of menu items) are fine **synchronously in the
+constructor**. But if the work takes *somewhat* longer — even when it doesn't need a
+worker thread — move it out of the constructor into an overridable lifecycle method so
+the body can be `async` and `await`. By the time these run, the handle exists, so
+marshaling/`InvokeAsync` is safe.
+
+| Method | Fires when | Use for |
+|--------|-----------|---------|
+| `OnHandleCreated` | The window handle is created | Work that needs a valid handle |
+| `OnCreateControl` | The control is first created | Early one-time setup |
+| `OnLoad` | The form is about to be shown | Most deferred init (recommended) |
+
+```csharp
+public FormMain()
+{
+    InitializeComponent();
+
+    // Keep the constructor cheap: only in-memory, instantaneous setup.
+    _clock.GraceSeconds = 5;
+    RefreshGraceChecks();
+    LoadBuiltInThemes();          // in-memory, fast — fine to do here
+    SelectFirstTheme();           // UI is populated immediately
+}
+
+// Deferred, awaitable initialization — runs once the handle/window exist.
+protected override async void OnLoad(EventArgs e)
+{
+    base.OnLoad(e);
+
+    try
+    {
+        await LoadPluginsSerializedAsync();   // heavy work, off the ctor
+        EnablePluginWatcher();                // only AFTER the initial load
+    }
+    catch (Exception ex)
+    {
+        // async void event override → must catch, or an exception crashes the app.
+        _statusInfo.Text = $"Plug-in load failed: {ex.Message}";
+    }
+}
+```
+
+> `OnLoad` is overridden as `async void` here on purpose: lifecycle overrides have a
+> `void` signature, so — exactly like an `async void` event handler — they **must**
+> wrap their `await`s in `try/catch` (see *Exception Handling in Async Event Handlers*).
+
+**Worked example:** WarpClock's `FormMain` (`src/WinForms/NET11/WarpClock/WarpClock.App/FormMain.cs`)
+applies all of this: a minimal constructor, plug-in discovery on a worker Task in
+`OnLoad`, `SemaphoreSlim`-serialized loads shared with a `FileSystemWatcher` hot-reload,
+and `IsHandleCreated`-guarded status reporting.
+
 ## Exception Handling
 
 ### Application-Level Handlers

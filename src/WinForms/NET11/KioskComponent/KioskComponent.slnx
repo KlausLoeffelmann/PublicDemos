@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CommunityWallClock/CommunityWallClock/CommunityWallClock.csproj" />
+  <Project Path="KioskComponentFeatureTest/KioskComponentFeatureTest.csproj" />
+</Solution>

@@ -16,7 +16,7 @@ For deep context on each package see
 `src/docs/reference/` in this repo.
 
 The current preview version of every WARP NuGet is:
-`0.9.7-preview.g32895b766b`.
+`0.9.217-preview.gd29245666b`.
 
 ## How to use this skill
 
@@ -41,7 +41,9 @@ The current preview version of every WARP NuGet is:
 | Decorate a TableLayoutPanel with borders / error signalling / per-cell padding | `AdornerPanel` / `AdornerTableLayoutPanel` / `AdornerCellStyle` from `WarpToolkit.WinForms` (with layout primitives from `WarpToolkit.ComponentModel.GridLayouting`) | `WarpToolkit.WinForms.md` |
 | Walk the control tree, plug an `IValueConverter` into a `Binding`, apply dark-mode to a `DataGridView`, show a modal dialog async | `WarpToolkit.WinForms.Extensions` (`ControlExtensions`, `BindableComponentExtensions`, `DataGridViewExtensions.ApplyDarkMode`, `FormExtensions.ShowDialogAsync<T>`) | `WarpToolkit.WinForms.Extensions.md` |
 | An interactive in-process terminal pane, or collision-free filename generation | `WarpToolkit.WinForms.Specialized` (`ConsoleControl`, `FilenameDisambiguator`) | `WarpToolkit.WinForms.Specialized.md` |
-| GDI+-style drawing but **hardware accelerated** (Direct2D/DirectWrite) | Inherit from `D2DPanel` and draw via `D2DGraphics` in `WarpToolkit.WinForms.DirectX`. Each panel owns its own device-manager bundle. | `WarpToolkit.WinForms.DirectX.md` |
+| GDI+-style drawing but **hardware accelerated** (Direct2D/DirectWrite) | Inherit from `D2DPanel` and draw via `D2DGraphics`/`ID2DGraphics` in `WarpToolkit.WinForms.DirectX`. Each host owns its own device-manager bundle. | `warp-directx-getting-started` skill, `WarpToolkit.WinForms.DirectX.md` |
+| A **fullscreen / kiosk / game** window that is entirely Direct2D, with no GDI parent redirection surface | A `D2DForm` with `UseDirectCompositionExclusiveRendering = true` (children must also be Direct2D content) | `warp-directx-dcomp-exclusive-tlw` skill |
+| A **render/animation loop** (games, dashboards, kiosk scenes) with flicker-free, composited **Visuals** | Retained `Visuals` (`Visuals.AddNew`, `D2DVisual`, `D2DGraphics.FromVisual`, `CommitVisualsAsync`) on a `D2DControl`/`D2DForm`, driven by a `HighPrecisionTimer` | `warp-directx-using-visuals` skill |
 | Render Markdown / formatted text with custom layout | `WarpToolkit.WinForms.Typography` (`ITypographyRenderer`, `Block`/`Inline`/`BulletedParagraph`, MarkDig integration) | `WarpToolkit.WinForms.Typography.md` |
 | Wire up `async` button clicks, await a form closing, freeze content with a spinner | `WarpToolkit.WinForms.Async` (`AsyncButton`, `AwaitableForm`, `AwaitableEvent<T>`, `ContentFreezePanel`) | `WarpToolkit.WinForms.Async.md` |
 | Format typed input (date, decimal, AI-described) bound to a `TextBox` | `WarpToolkit.WinForms.Async.TypedInputExtenders` (`DateFormatterComponent`, `DecimalFormatterComponent`, `AITypedFormatter<T>`) | `WarpToolkit.WinForms.Async.md` |
@@ -84,6 +86,19 @@ under `src/CopilotSkills/`):
 - **`warp-github-git`** — `WarpToolkit.WinForms.Github`
   (GitHub auth/client helpers, local Git repository inspection, branch metadata,
   and safe branch composition through temporary worktrees).
+
+- **`warp-directx-getting-started`** — `WarpToolkit.WinForms.DirectX`
+  fundamentals: `D2DPanel`/`D2DForm`/`D2DControl`, the `ID2DGraphics` render
+  callback, and the `RenderMode` backends. **Start here** for any Direct2D /
+  DirectWrite work; it routes on to the two deep-dive DirectX skills below.
+
+- **`warp-directx-dcomp-exclusive-tlw`** — DirectComposition-exclusive
+  top-level windows (`D2DForm` + `UseDirectCompositionExclusiveRendering`) for
+  fullscreen / kiosk / game UIs with no GDI parent redirection surface.
+
+- **`warp-directx-using-visuals`** — retained DirectComposition `Visuals` and a
+  high-precision timer loop for flicker-free animation and complex scene
+  composition.
 
 ## Anti-patterns to avoid
 
