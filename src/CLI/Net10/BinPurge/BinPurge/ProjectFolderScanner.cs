@@ -34,6 +34,7 @@ internal static class ProjectFolderScanner
             var current = pending.Pop();
 
             string[] subDirectories;
+
             try
             {
                 subDirectories = Directory.GetDirectories(current);

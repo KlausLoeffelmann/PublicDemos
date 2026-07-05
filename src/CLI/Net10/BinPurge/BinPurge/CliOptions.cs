@@ -24,13 +24,13 @@ internal sealed class CliOptions
         options = null;
         error = null;
 
-        var purgeBin = false;
-        var purgeObj = false;
-        var dryRun = false;
+        bool purgeBin = false;
+        bool purgeObj = false;
+        bool dryRun = false;
         string? basePathArg = null;
         string? minDateArg = null;
 
-        for (var i = 0; i < args.Length; i++)
+        for (int i = 0; i < args.Length; i++)
         {
             switch (args[i])
             {
@@ -79,7 +79,7 @@ internal sealed class CliOptions
         }
 
         // Resolve base path: default to current directory, otherwise resolve relative/absolute paths.
-        var basePath = string.IsNullOrWhiteSpace(basePathArg)
+        string basePath = string.IsNullOrWhiteSpace(basePathArg)
             ? Environment.CurrentDirectory
             : Path.GetFullPath(basePathArg, Environment.CurrentDirectory);
 
