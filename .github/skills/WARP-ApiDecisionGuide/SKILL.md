@@ -1,6 +1,10 @@
 ---
 name: warp-api-decision-guide
+
 description: Brief decision guide that maps a WinForms development task to the correct WARP-Toolkit NuGet package(s) and entry-point types. Use this skill as the FIRST step when the user asks "how do I do X with WARP?" or "which WARP package should I use for X?" before diving into a topic-specific WARP skill.
+
+metadata: Latest NuGet version for required packages "0.9.323-preview.gb01532b307"
+
 ---
 
 # WARP-Toolkit API Decision Guide
@@ -14,9 +18,6 @@ WARP skill.
 For deep context on each package see
 `src/docs/GettingStarted/API-Overview.md` and the per-package files under
 `src/docs/reference/` in this repo.
-
-The current preview version of every WARP NuGet is:
-`0.9.217-preview.gd29245666b`.
 
 ## How to use this skill
 
@@ -41,15 +42,14 @@ The current preview version of every WARP NuGet is:
 | Decorate a TableLayoutPanel with borders / error signalling / per-cell padding | `AdornerPanel` / `AdornerTableLayoutPanel` / `AdornerCellStyle` from `WarpToolkit.WinForms` (with layout primitives from `WarpToolkit.ComponentModel.GridLayouting`) | `WarpToolkit.WinForms.md` |
 | Walk the control tree, plug an `IValueConverter` into a `Binding`, apply dark-mode to a `DataGridView`, show a modal dialog async | `WarpToolkit.WinForms.Extensions` (`ControlExtensions`, `BindableComponentExtensions`, `DataGridViewExtensions.ApplyDarkMode`, `FormExtensions.ShowDialogAsync<T>`) | `WarpToolkit.WinForms.Extensions.md` |
 | An interactive in-process terminal pane, or collision-free filename generation | `WarpToolkit.WinForms.Specialized` (`ConsoleControl`, `FilenameDisambiguator`) | `WarpToolkit.WinForms.Specialized.md` |
-| GDI+-style drawing but **hardware accelerated** (Direct2D/DirectWrite) | Inherit from `D2DPanel` and draw via `D2DGraphics`/`ID2DGraphics` in `WarpToolkit.WinForms.DirectX`. Each host owns its own device-manager bundle. | `warp-directx-getting-started` skill, `WarpToolkit.WinForms.DirectX.md` |
-| A **fullscreen / kiosk / game** window that is entirely Direct2D, with no GDI parent redirection surface | A `D2DForm` with `UseDirectCompositionExclusiveRendering = true` (children must also be Direct2D content) | `warp-directx-dcomp-exclusive-tlw` skill |
-| A **render/animation loop** (games, dashboards, kiosk scenes) with flicker-free, composited **Visuals** | Retained `Visuals` (`Visuals.AddNew`, `D2DVisual`, `D2DGraphics.FromVisual`, `CommitVisualsAsync`) on a `D2DControl`/`D2DForm`, driven by a `HighPrecisionTimer` | `warp-directx-using-visuals` skill |
+| GDI+-style drawing but **hardware accelerated** (Direct2D/DirectWrite) | Inherit from `D2DPanel` and draw via `D2DGraphics` in `WarpToolkit.WinForms.DirectX`. Each panel owns its own device-manager bundle. | `WarpToolkit.WinForms.DirectX.md` |
 | Render Markdown / formatted text with custom layout | `WarpToolkit.WinForms.Typography` (`ITypographyRenderer`, `Block`/`Inline`/`BulletedParagraph`, MarkDig integration) | `WarpToolkit.WinForms.Typography.md` |
 | Wire up `async` button clicks, await a form closing, freeze content with a spinner | `WarpToolkit.WinForms.Async` (`AsyncButton`, `AwaitableForm`, `AwaitableEvent<T>`, `ContentFreezePanel`) | `WarpToolkit.WinForms.Async.md` |
 | Format typed input (date, decimal, AI-described) bound to a `TextBox` | `WarpToolkit.WinForms.Async.TypedInputExtenders` (`DateFormatterComponent`, `DecimalFormatterComponent`, `AITypedFormatter<T>`) | `WarpToolkit.WinForms.Async.md` |
 | Add AI chat to a form (designer-droppable, provider-agnostic) | Drag an `AIChatServiceBase`-derived component from `WarpToolkit.WinForms.AI` onto the form. The full chat UI is `ChatView` from `WarpToolkit.WinForms.Chat` | `WarpToolkit.WinForms.AI.md`, `WarpToolkit.WinForms.Chat.md` |
 | Build prompts / parse streamed responses / declare `[AITemplate]` request types | `WarpToolkit.Desktop.AI` (`PromptBuilder`, `ReturnTokenParser`) and `WarpToolkit.Microsoft.Extensions.AI` (`AIChatClient<T>`, `AIChatHistory`, `[AITemplate]`, `[AITemplateSegment]`, `[AIGenerated]`) | `WarpToolkit.Desktop.AI.md`, `WarpToolkit.Microsoft.Extensions.AI.md` |
 | Inspect / rewrite C# source with Roslyn, preserving comments | `WarpToolkit.Desktop.Roslyn` (`DocumentExtensions`, `MemberDeclarationExtensions`, `ReplaceCommentsByGuids` / `ReplaceGuidsByComments`) | `WarpToolkit.Desktop.Roslyn.md` |
+| Port / migrate an entire VB.NET project (or every VB project in a `.sln`) to C# | **Don't hand-translate.** Generate a small Roslyn CLI that drives `WarpToolkit.Desktop.Roslyn` (`VisualBasicConverter.ConvertText` + the C#→C# WithEvents collapse pass) over the `.vbproj`/`.sln` — the library does the bulk algorithmically. Hand-fix only `// TODO(vb-convert):` markers (`ConversionResult.HasManualWork` / `Manual` diagnostics). | `warptoolkit-vb-to-csharp-converter` skill |
 | Show a Roslyn-classified source document in a control | `RoslynDocumentView` from `WarpToolkit.WinForms.Roslyn` | `WarpToolkit.WinForms.Roslyn.md` |
 | Add a designer-aware logger to the app | `WarpToolkit.Microsoft.Extensions` (`AddTimeStampedDebug`, `AddWinFormsFileLogger`, `UseWinFormsLogging`) | `WarpToolkit.Microsoft.Extensions.md` |
 | A sub-millisecond timer for animations or media | `HighPrecisionTimer` from `WarpToolkit.Windows.Interop.PrecisionTimer` | `WarpToolkit.Windows.Interop.md` |
@@ -87,18 +87,12 @@ under `src/CopilotSkills/`):
   (GitHub auth/client helpers, local Git repository inspection, branch metadata,
   and safe branch composition through temporary worktrees).
 
-- **`warp-directx-getting-started`** — `WarpToolkit.WinForms.DirectX`
-  fundamentals: `D2DPanel`/`D2DForm`/`D2DControl`, the `ID2DGraphics` render
-  callback, and the `RenderMode` backends. **Start here** for any Direct2D /
-  DirectWrite work; it routes on to the two deep-dive DirectX skills below.
-
-- **`warp-directx-dcomp-exclusive-tlw`** — DirectComposition-exclusive
-  top-level windows (`D2DForm` + `UseDirectCompositionExclusiveRendering`) for
-  fullscreen / kiosk / game UIs with no GDI parent redirection surface.
-
-- **`warp-directx-using-visuals`** — retained DirectComposition `Visuals` and a
-  high-precision timer loop for flicker-free animation and complex scene
-  composition.
+- **`warptoolkit-vb-to-csharp-converter`** — building a `vbconvert`-style CLI on
+  `WarpToolkit.Desktop.Roslyn` that ports a whole VB project to C#: the
+  `ConvertText` / `ConversionOptions` API, the project-wide WithEvents and
+  constructor collectors, the C#→C# WithEvents collapse post-pass, and
+  MSBuildWorkspace wiring. Consult this whenever a VB→C# migration is indicated —
+  the library does the algorithmic bulk so the model never hand-translates.
 
 ## Anti-patterns to avoid
 
@@ -120,3 +114,9 @@ under `src/CopilotSkills/`):
 
 - **Do not** create a `Program.cs` for VB. WARP follows the VB Application
   Framework conventions instead.
+
+- **Do not** hand-translate a VB→C# migration file-by-file in chat — it burns
+  millions of tokens and drifts in style. Generate a CLI on the WARP-Roslyn
+  converter (`WarpToolkit.Desktop.Roslyn`) that does the algorithmic bulk, then
+  review only the `// TODO(vb-convert):` markers / `Manual` diagnostics. See the
+  `warptoolkit-vb-to-csharp-converter` skill.
