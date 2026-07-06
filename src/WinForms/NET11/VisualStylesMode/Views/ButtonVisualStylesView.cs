@@ -3,7 +3,7 @@
 
 using System.Windows.Input;
 
-namespace ScratchProject.Views;
+namespace VisualStylesModeDemo.Views;
 
 /// <summary>
 ///  Visual/functional matrix for plain <see cref="Button"/> controls: FlatStyle variations, the new

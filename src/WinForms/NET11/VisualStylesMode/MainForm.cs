@@ -3,9 +3,9 @@
 
 using System.ComponentModel;
 using System.Text.Json;
-using ScratchProject.Views;
+using VisualStylesModeDemo.Views;
 
-namespace ScratchProject;
+namespace VisualStylesModeDemo;
 
 /// <summary>
 ///  Host shell for a growing set of exploratory .NET 11 WinForms scenarios (tracked in
@@ -30,6 +30,11 @@ public partial class MainForm : Form
     public MainForm()
     {
         InitializeComponent();
+
+        // We will need the components container also for other means,
+        // so, make sure, it got actually initialzed:
+        components ??= new Container();
+
         CreateViews();
 
         if (_views.Count > 0)
@@ -157,7 +162,7 @@ public partial class MainForm : Form
         using SaveFileDialog dialog = new()
         {
             Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
-            FileName = "ScratchProject.settings.json",
+            FileName = "VisualStylesModeDemo.settings.json",
         };
 
         if (dialog.ShowDialog(this) != DialogResult.OK)

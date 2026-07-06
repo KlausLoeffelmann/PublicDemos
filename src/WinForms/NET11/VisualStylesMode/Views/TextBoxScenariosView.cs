@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace ScratchProject.Views;
+namespace VisualStylesModeDemo.Views;
 
 /// <summary>
 ///  Repro scenarios for TextBox / RichTextBox non-client (border) painting: hovering the mouse

@@ -3,7 +3,7 @@
 
 using System.Windows.Input;
 
-namespace ScratchProject.Views;
+namespace VisualStylesModeDemo.Views;
 
 /// <summary>
 ///  Minimal <see cref="ICommand"/> implementation used to exercise <see cref="Button.Command"/> /
