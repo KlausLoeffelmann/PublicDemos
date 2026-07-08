@@ -54,31 +54,33 @@ partial class MainForm
         // 
         // _menuStrip
         // 
+        _menuStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
         _menuStrip.ImageScalingSize = new Size(24, 24);
         _menuStrip.Items.AddRange(new ToolStripItem[] { _fileToolStripMenuItem, _editToolStripMenuItem, _viewToolStripMenuItem });
         _menuStrip.Location = new Point(0, 0);
         _menuStrip.Name = "_menuStrip";
-        _menuStrip.Size = new Size(1440, 33);
+        _menuStrip.Padding = new Padding(7, 2, 0, 2);
+        _menuStrip.Size = new Size(1405, 38);
         _menuStrip.TabIndex = 0;
         // 
         // _fileToolStripMenuItem
         // 
         _fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _saveSettingsToolStripMenuItem, _loadSettingsToolStripMenuItem });
         _fileToolStripMenuItem.Name = "_fileToolStripMenuItem";
-        _fileToolStripMenuItem.Size = new Size(54, 29);
+        _fileToolStripMenuItem.Size = new Size(62, 34);
         _fileToolStripMenuItem.Text = "&File";
         // 
         // _saveSettingsToolStripMenuItem
         // 
         _saveSettingsToolStripMenuItem.Name = "_saveSettingsToolStripMenuItem";
-        _saveSettingsToolStripMenuItem.Size = new Size(306, 34);
+        _saveSettingsToolStripMenuItem.Size = new Size(349, 38);
         _saveSettingsToolStripMenuItem.Text = "&Save property settings...";
         _saveSettingsToolStripMenuItem.Click += SaveSettingsToolStripMenuItem_Click;
         // 
         // _loadSettingsToolStripMenuItem
         // 
         _loadSettingsToolStripMenuItem.Name = "_loadSettingsToolStripMenuItem";
-        _loadSettingsToolStripMenuItem.Size = new Size(306, 34);
+        _loadSettingsToolStripMenuItem.Size = new Size(349, 38);
         _loadSettingsToolStripMenuItem.Text = "&Load property settings...";
         _loadSettingsToolStripMenuItem.Click += LoadSettingsToolStripMenuItem_Click;
         // 
@@ -86,74 +88,80 @@ partial class MainForm
         // 
         _editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _selectAllToolStripMenuItem, _resetSelectionToolStripMenuItem });
         _editToolStripMenuItem.Name = "_editToolStripMenuItem";
-        _editToolStripMenuItem.Size = new Size(58, 29);
+        _editToolStripMenuItem.Size = new Size(65, 34);
         _editToolStripMenuItem.Text = "&Edit";
         // 
         // _selectAllToolStripMenuItem
         // 
         _selectAllToolStripMenuItem.Name = "_selectAllToolStripMenuItem";
         _selectAllToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.A;
-        _selectAllToolStripMenuItem.Size = new Size(248, 34);
+        _selectAllToolStripMenuItem.Size = new Size(280, 38);
         _selectAllToolStripMenuItem.Text = "Select &All";
         _selectAllToolStripMenuItem.Click += SelectAllToolStripMenuItem_Click;
         // 
         // _resetSelectionToolStripMenuItem
         // 
         _resetSelectionToolStripMenuItem.Name = "_resetSelectionToolStripMenuItem";
-        _resetSelectionToolStripMenuItem.Size = new Size(248, 34);
+        _resetSelectionToolStripMenuItem.Size = new Size(280, 38);
         _resetSelectionToolStripMenuItem.Text = "&Reset Selection";
         _resetSelectionToolStripMenuItem.Click += ResetSelectionToolStripMenuItem_Click;
         // 
         // _viewToolStripMenuItem
         // 
         _viewToolStripMenuItem.Name = "_viewToolStripMenuItem";
-        _viewToolStripMenuItem.Size = new Size(65, 29);
+        _viewToolStripMenuItem.Size = new Size(76, 34);
         _viewToolStripMenuItem.Text = "&View";
         // 
         // _statusStrip
         // 
         _statusStrip.ImageScalingSize = new Size(24, 24);
         _statusStrip.Items.AddRange(new ToolStripItem[] { _formSizeStatusLabel, _formClientSizeStatusLabel, _selectedControlStatusLabel });
-        _statusStrip.Location = new Point(0, 562);
+        _statusStrip.Location = new Point(0, 676);
         _statusStrip.Name = "_statusStrip";
-        _statusStrip.Size = new Size(1440, 32);
+        _statusStrip.Padding = new Padding(1, 0, 26, 0);
+        _statusStrip.Size = new Size(1405, 37);
         _statusStrip.TabIndex = 2;
         // 
         // _formSizeStatusLabel
         // 
+        _formSizeStatusLabel.Font = new Font("Segoe UI", 11F);
         _formSizeStatusLabel.Name = "_formSizeStatusLabel";
-        _formSizeStatusLabel.Size = new Size(92, 25);
+        _formSizeStatusLabel.Size = new Size(111, 30);
         _formSizeStatusLabel.Text = "Form size:";
         // 
         // _formClientSizeStatusLabel
         // 
+        _formClientSizeStatusLabel.Font = new Font("Segoe UI", 11F);
         _formClientSizeStatusLabel.Name = "_formClientSizeStatusLabel";
-        _formClientSizeStatusLabel.Size = new Size(138, 25);
+        _formClientSizeStatusLabel.Size = new Size(168, 30);
         _formClientSizeStatusLabel.Text = "Form client size:";
         // 
         // _selectedControlStatusLabel
         // 
+        _selectedControlStatusLabel.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
         _selectedControlStatusLabel.Name = "_selectedControlStatusLabel";
-        _selectedControlStatusLabel.Size = new Size(1187, 25);
+        _selectedControlStatusLabel.Size = new Size(1053, 30);
         _selectedControlStatusLabel.Spring = true;
         _selectedControlStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // _splitContainer
         // 
         _splitContainer.Dock = DockStyle.Fill;
-        _splitContainer.Location = new Point(0, 33);
+        _splitContainer.Location = new Point(0, 38);
+        _splitContainer.Margin = new Padding(4, 4, 4, 4);
         _splitContainer.Name = "_splitContainer";
         // 
         // _splitContainer.Panel1
         // 
         _splitContainer.Panel1.AutoScroll = true;
-        _splitContainer.Panel1.Padding = new Padding(12);
+        _splitContainer.Panel1.Padding = new Padding(14, 14, 14, 14);
         // 
         // _splitContainer.Panel2
         // 
         _splitContainer.Panel2.Controls.Add(_propertyGrid);
-        _splitContainer.Size = new Size(1440, 529);
-        _splitContainer.SplitterDistance = 980;
+        _splitContainer.Size = new Size(1405, 638);
+        _splitContainer.SplitterDistance = 956;
+        _splitContainer.SplitterWidth = 5;
         _splitContainer.TabIndex = 1;
         // 
         // _propertyGrid
@@ -161,21 +169,24 @@ partial class MainForm
         _propertyGrid.BackColor = SystemColors.Control;
         _propertyGrid.Dock = DockStyle.Fill;
         _propertyGrid.Location = new Point(0, 0);
+        _propertyGrid.Margin = new Padding(4, 4, 4, 4);
         _propertyGrid.Name = "_propertyGrid";
-        _propertyGrid.Size = new Size(456, 529);
+        _propertyGrid.Size = new Size(444, 638);
         _propertyGrid.TabIndex = 0;
         _propertyGrid.PropertyValueChanged += PropertyGrid_PropertyValueChanged;
         // 
         // MainForm
         // 
-        AutoScaleDimensions = new SizeF(10F, 25F);
+        AutoScaleDimensions = new SizeF(12F, 30F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1440, 594);
+        ClientSize = new Size(1405, 713);
         Controls.Add(_splitContainer);
         Controls.Add(_statusStrip);
         Controls.Add(_menuStrip);
+        Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
         MainMenuStrip = _menuStrip;
-        MinimumSize = new Size(1000, 650);
+        Margin = new Padding(4, 4, 4, 4);
+        MinimumSize = new Size(1196, 769);
         Name = "MainForm";
         Text = "VisualStylesModeDemo - WinForms NET11 API scratchpad";
         _menuStrip.ResumeLayout(false);
