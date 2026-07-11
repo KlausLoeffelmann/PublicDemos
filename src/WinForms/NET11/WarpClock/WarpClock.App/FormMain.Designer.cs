@@ -70,6 +70,7 @@ partial class FormMain
         _miPlaceRight = new ToolStripMenuItem();
         _miPlaceFace = new ToolStripMenuItem();
         _miProperties = new ToolStripMenuItem();
+        _miDiagnostics = new ToolStripMenuItem();
         _viewSeparator = new ToolStripSeparator();
         _miExit = new ToolStripMenuItem();
         _pluginsMenu = new ToolStripMenuItem();
@@ -77,10 +78,9 @@ partial class FormMain
         _miOpenPluginsFolder = new ToolStripMenuItem();
         _statusStrip = new StatusStrip();
         _statusInfo = new ToolStripStatusLabel();
-        _statusFps = new ToolStripStatusLabel();
+        _statusDiagnostics = new ToolStripStatusLabel();
         _statusMode = new ToolStripStatusLabel();
         _kioskModeManager = new KioskModeManager(components);
-        _fpsTimer = new System.Windows.Forms.Timer(components);
 
         ((ISupportInitialize)_splitContainer).BeginInit();
         _splitContainer.Panel1.SuspendLayout();
@@ -329,6 +329,7 @@ partial class FormMain
             _miVSync,
             _themeInfoMenu,
             _miProperties,
+            _miDiagnostics,
             _viewSeparator,
             _miExit
         });
@@ -426,6 +427,12 @@ partial class FormMain
         _miProperties.Text = "&Properties panel";
         _miProperties.Click += OnTogglePropertiesClick;
 
+        // _miDiagnostics
+        _miDiagnostics.Name = "_miDiagnostics";
+        _miDiagnostics.ShortcutKeys = Keys.F12;
+        _miDiagnostics.Text = "&Diagnostics (frame timing)";
+        _miDiagnostics.Click += OnToggleDiagnosticsClick;
+
         // _miExit
         _miExit.Name = "_miExit";
         _miExit.ShortcutKeys = Keys.Alt | Keys.F4;
@@ -456,11 +463,12 @@ partial class FormMain
         _statusStrip.Items.AddRange(new ToolStripItem[]
         {
             _statusInfo,
-            _statusFps,
+            _statusDiagnostics,
             _statusMode
         });
         _statusStrip.Location = new Point(0, 738);
         _statusStrip.Name = "_statusStrip";
+        _statusStrip.ForeColor = Color.Gainsboro;
         _statusStrip.Size = new Size(760, 22);
         _statusStrip.TabIndex = 2;
 
@@ -470,12 +478,14 @@ partial class FormMain
         _statusInfo.Text = "Ready.";
         _statusInfo.TextAlign = ContentAlignment.MiddleLeft;
 
-        // _statusFps
-        _statusFps.Name = "_statusFps";
-        _statusFps.AutoSize = false;
-        _statusFps.Width = 90;
-        _statusFps.Text = "— fps";
-        _statusFps.TextAlign = ContentAlignment.MiddleRight;
+        // _statusDiagnostics
+        _statusDiagnostics.Name = "_statusDiagnostics";
+        _statusDiagnostics.AutoSize = false;
+        _statusDiagnostics.Width = 600;
+        _statusDiagnostics.TextAlign = ContentAlignment.MiddleRight;
+        _statusDiagnostics.Font = new Font("Consolas", 8.25f);
+        _statusDiagnostics.ForeColor = Color.Lime;
+        _statusDiagnostics.Visible = false;
 
         // _statusMode
         _statusMode.Name = "_statusMode";
@@ -488,10 +498,6 @@ partial class FormMain
         _kioskModeManager.ToggleFullScreenKey = Keys.F11;
         _kioskModeManager.FullScreenChanged += OnKioskFullScreenChanged;
         _kioskModeManager.Wakeup += OnKioskWakeup;
-
-        // _fpsTimer
-        _fpsTimer.Interval = 200;
-        _fpsTimer.Tick += OnFpsTimerTick;
 
         // FormMain
         AutoScaleDimensions = new SizeF(7f, 15f);
@@ -573,6 +579,7 @@ partial class FormMain
     private ToolStripMenuItem _miPlaceRight;
     private ToolStripMenuItem _miPlaceFace;
     private ToolStripMenuItem _miProperties;
+    private ToolStripMenuItem _miDiagnostics;
     private ToolStripSeparator _viewSeparator;
     private ToolStripMenuItem _miExit;
 
@@ -582,9 +589,8 @@ partial class FormMain
 
     private StatusStrip _statusStrip;
     private ToolStripStatusLabel _statusInfo;
-    private ToolStripStatusLabel _statusFps;
+    private ToolStripStatusLabel _statusDiagnostics;
     private ToolStripStatusLabel _statusMode;
 
     private KioskModeManager _kioskModeManager;
-    private System.Windows.Forms.Timer _fpsTimer;
 }

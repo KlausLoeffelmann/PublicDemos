@@ -35,7 +35,6 @@ public partial class FormMain : Form
         RefreshKioskChecks();
 
         _miVSync.Checked = _clock.VSyncEnabled;
-        _fpsTimer.Start();
 
         // Built-in themes are in-memory and instantaneous, so loading them and selecting
         // the first one here keeps the clock populated the moment the window appears.
@@ -365,10 +364,74 @@ public partial class FormMain : Form
         _statusInfo.Text = $"VSync: {(_clock.VSyncEnabled ? "On" : "Off")}";
     }
 
-    // Polls the clock's smoothed frame rate at the timer's 200 ms cadence so the readout
-    // updates a few times a second without churning the status bar every frame.
-    private void OnFpsTimerTick(object? sender, EventArgs e)
-        => _statusFps.Text = $"{_clock.CurrentFramesPerSecond:0} fps";
+    // Throttles the status-bar text so the per-frame metrics update a few times a second
+    // instead of 60×/sec (refreshing a ToolStripStatusLabel that often would itself cost more
+    // than the work we are trying to measure).
+    private readonly System.Diagnostics.Stopwatch _diagnosticsClock = System.Diagnostics.Stopwatch.StartNew();
+    private TimeSpan _lastDiagnosticsUpdate;
+    private TimeSpan _resizeSummaryHoldUntil;
+    private string? _baseTitle;
+
+    private void OnToggleDiagnosticsClick(object? sender, EventArgs e)
+    {
+        bool enable = !_clock.DiagnosticsEnabled;
+        _clock.DiagnosticsEnabled = enable;
+        _miDiagnostics.Checked = enable;
+        _statusDiagnostics.Visible = enable;
+
+        if (enable)
+        {
+            _baseTitle = Text;
+            _statusDiagnostics.Text = "measuring…";
+            _clock.FrameMeasured += OnClockFrameMeasured;
+            _clock.ResizeMeasured += OnClockResizeMeasured;
+        }
+        else
+        {
+            _clock.FrameMeasured -= OnClockFrameMeasured;
+            _clock.ResizeMeasured -= OnClockResizeMeasured;
+            if (_baseTitle is not null)
+            {
+                Text = _baseTitle;
+            }
+        }
+    }
+
+    private void OnClockResizeMeasured(object? sender, ResizeMeasurement m)
+    {
+        // Shown in the persistent info label (not the throttled metrics label) so the
+        // resize summary stays readable after the drag ends and the surface settles.
+        _statusInfo.Text = m.ToString();
+
+        // Also pin it to the title for a few seconds (the per-frame title update is
+        // suppressed during the hold) so the full summary is readable even when the status
+        // label is too narrow.
+        Text = $"{_baseTitle}  —  {m}";
+        _resizeSummaryHoldUntil = _diagnosticsClock.Elapsed + TimeSpan.FromSeconds(4);
+    }
+
+    private void OnClockFrameMeasured(object? sender, FrameMetrics metrics)
+    {
+        TimeSpan elapsed = _diagnosticsClock.Elapsed;
+        if (elapsed - _lastDiagnosticsUpdate < TimeSpan.FromMilliseconds(150))
+        {
+            return;
+        }
+
+        _lastDiagnosticsUpdate = elapsed;
+        _statusDiagnostics.Text = metrics.ToString();
+
+        // The title bar is non-client, so it is never occluded by the clock surface even
+        // while the surface lags a resize — which makes it a reliable place to watch the
+        // frame cost rise during a drag. Hold the last resize summary briefly when present.
+        if (elapsed < _resizeSummaryHoldUntil)
+        {
+            return;
+        }
+
+        Text = $"{_baseTitle}  —  {metrics.Fps:0} fps · frame {metrics.FrameMs:0.0} ms · " +
+               $"commit {metrics.CommitMs:0.0} ms · redraw {metrics.RedrawCount}/{metrics.ElementCount}";
+    }
 
     // ── Theme-info overlay menu ──
 
