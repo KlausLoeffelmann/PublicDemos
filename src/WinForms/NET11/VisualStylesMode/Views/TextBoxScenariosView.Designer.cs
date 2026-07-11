@@ -34,23 +34,23 @@ partial class TextBoxScenariosView
         _rootTableLayoutPanel = new TableLayoutPanel();
         _textBoxGroupBox = new GroupBox();
         _textBoxTableLayoutPanel = new TableLayoutPanel();
-        _textBoxDefaultCheckBox = new CheckBox();
+        _textBoxDefaultLabel = new Label();
         _textBoxDefault = new TextBox();
-        _textBoxFixedSingleCheckBox = new CheckBox();
+        _textBoxFixedSingleLabel = new Label();
         _textBoxFixedSingle = new TextBox();
-        _textBoxMultilineCheckBox = new CheckBox();
+        _textBoxMultilineLabel = new Label();
         _textBoxMultiline = new TextBox();
-        _textBoxNoBorderReadOnlyCheckBox = new CheckBox();
+        _textBoxNoBorderReadOnlyLabel = new Label();
         _textBoxNoBorderReadOnly = new TextBox();
         _richTextBoxGroupBox = new GroupBox();
         _richTextBoxTableLayoutPanel = new TableLayoutPanel();
-        _richTextBoxDefaultCheckBox = new CheckBox();
+        _richTextBoxDefaultLabel = new Label();
         _richTextBoxDefault = new RichTextBox();
-        _richTextBoxFixedSingleCheckBox = new CheckBox();
+        _richTextBoxFixedSingleLabel = new Label();
         _richTextBoxFixedSingle = new RichTextBox();
-        _richTextBoxNoWordWrapCheckBox = new CheckBox();
+        _richTextBoxNoWordWrapLabel = new Label();
         _richTextBoxNoWordWrap = new RichTextBox();
-        _richTextBoxReadOnlyCheckBox = new CheckBox();
+        _richTextBoxReadOnlyLabel = new Label();
         _richTextBoxReadOnly = new RichTextBox();
         _rootTableLayoutPanel.SuspendLayout();
         _textBoxGroupBox.SuspendLayout();
@@ -93,13 +93,13 @@ partial class TextBoxScenariosView
         _textBoxTableLayoutPanel.ColumnCount = 2;
         _textBoxTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _textBoxTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _textBoxTableLayoutPanel.Controls.Add(_textBoxDefaultCheckBox, 0, 0);
+        _textBoxTableLayoutPanel.Controls.Add(_textBoxDefaultLabel, 0, 0);
         _textBoxTableLayoutPanel.Controls.Add(_textBoxDefault, 1, 0);
-        _textBoxTableLayoutPanel.Controls.Add(_textBoxFixedSingleCheckBox, 0, 1);
+        _textBoxTableLayoutPanel.Controls.Add(_textBoxFixedSingleLabel, 0, 1);
         _textBoxTableLayoutPanel.Controls.Add(_textBoxFixedSingle, 1, 1);
-        _textBoxTableLayoutPanel.Controls.Add(_textBoxMultilineCheckBox, 0, 2);
+        _textBoxTableLayoutPanel.Controls.Add(_textBoxMultilineLabel, 0, 2);
         _textBoxTableLayoutPanel.Controls.Add(_textBoxMultiline, 1, 2);
-        _textBoxTableLayoutPanel.Controls.Add(_textBoxNoBorderReadOnlyCheckBox, 0, 3);
+        _textBoxTableLayoutPanel.Controls.Add(_textBoxNoBorderReadOnlyLabel, 0, 3);
         _textBoxTableLayoutPanel.Controls.Add(_textBoxNoBorderReadOnly, 1, 3);
         _textBoxTableLayoutPanel.Dock = DockStyle.Fill;
         _textBoxTableLayoutPanel.Location = new Point(8, 23);
@@ -111,14 +111,14 @@ partial class TextBoxScenariosView
         _textBoxTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _textBoxTableLayoutPanel.TabIndex = 0;
         //
-        // _textBoxDefaultCheckBox
+        // _textBoxDefaultLabel
         //
-        _textBoxDefaultCheckBox.Anchor = AnchorStyles.Left;
-        _textBoxDefaultCheckBox.AutoSize = true;
-        _textBoxDefaultCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _textBoxDefaultCheckBox.Name = "_textBoxDefaultCheckBox";
-        _textBoxDefaultCheckBox.TabIndex = 0;
-        _textBoxDefaultCheckBox.Text = "Default (Fixed3D)";
+        _textBoxDefaultLabel.Anchor = AnchorStyles.Left;
+        _textBoxDefaultLabel.AutoSize = true;
+        _textBoxDefaultLabel.Margin = new Padding(3, 6, 3, 3);
+        _textBoxDefaultLabel.Name = "_textBoxDefaultLabel";
+        _textBoxDefaultLabel.TabIndex = 0;
+        _textBoxDefaultLabel.Text = "Default (Fixed3D)";
         //
         // _textBoxDefault
         //
@@ -129,14 +129,14 @@ partial class TextBoxScenariosView
         _textBoxDefault.Text = "Hover over me";
         _textBoxDefault.Width = 220;
         //
-        // _textBoxFixedSingleCheckBox
+        // _textBoxFixedSingleLabel
         //
-        _textBoxFixedSingleCheckBox.Anchor = AnchorStyles.Left;
-        _textBoxFixedSingleCheckBox.AutoSize = true;
-        _textBoxFixedSingleCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _textBoxFixedSingleCheckBox.Name = "_textBoxFixedSingleCheckBox";
-        _textBoxFixedSingleCheckBox.TabIndex = 2;
-        _textBoxFixedSingleCheckBox.Text = "FixedSingle border";
+        _textBoxFixedSingleLabel.Anchor = AnchorStyles.Left;
+        _textBoxFixedSingleLabel.AutoSize = true;
+        _textBoxFixedSingleLabel.Margin = new Padding(3, 6, 3, 3);
+        _textBoxFixedSingleLabel.Name = "_textBoxFixedSingleLabel";
+        _textBoxFixedSingleLabel.TabIndex = 2;
+        _textBoxFixedSingleLabel.Text = "FixedSingle border";
         //
         // _textBoxFixedSingle
         //
@@ -148,14 +148,14 @@ partial class TextBoxScenariosView
         _textBoxFixedSingle.Text = "Hover over me";
         _textBoxFixedSingle.Width = 220;
         //
-        // _textBoxMultilineCheckBox
+        // _textBoxMultilineLabel
         //
-        _textBoxMultilineCheckBox.Anchor = AnchorStyles.Left;
-        _textBoxMultilineCheckBox.AutoSize = true;
-        _textBoxMultilineCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _textBoxMultilineCheckBox.Name = "_textBoxMultilineCheckBox";
-        _textBoxMultilineCheckBox.TabIndex = 4;
-        _textBoxMultilineCheckBox.Text = "Multiline + FixedSingle";
+        _textBoxMultilineLabel.Anchor = AnchorStyles.Left;
+        _textBoxMultilineLabel.AutoSize = true;
+        _textBoxMultilineLabel.Margin = new Padding(3, 6, 3, 3);
+        _textBoxMultilineLabel.Name = "_textBoxMultilineLabel";
+        _textBoxMultilineLabel.TabIndex = 4;
+        _textBoxMultilineLabel.Text = "Multiline + FixedSingle";
         //
         // _textBoxMultiline
         //
@@ -168,14 +168,14 @@ partial class TextBoxScenariosView
         _textBoxMultiline.TabIndex = 5;
         _textBoxMultiline.Text = "Hover over me\r\nMultiline text";
         //
-        // _textBoxNoBorderReadOnlyCheckBox
+        // _textBoxNoBorderReadOnlyLabel
         //
-        _textBoxNoBorderReadOnlyCheckBox.Anchor = AnchorStyles.Left;
-        _textBoxNoBorderReadOnlyCheckBox.AutoSize = true;
-        _textBoxNoBorderReadOnlyCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _textBoxNoBorderReadOnlyCheckBox.Name = "_textBoxNoBorderReadOnlyCheckBox";
-        _textBoxNoBorderReadOnlyCheckBox.TabIndex = 6;
-        _textBoxNoBorderReadOnlyCheckBox.Text = "No border + ReadOnly";
+        _textBoxNoBorderReadOnlyLabel.Anchor = AnchorStyles.Left;
+        _textBoxNoBorderReadOnlyLabel.AutoSize = true;
+        _textBoxNoBorderReadOnlyLabel.Margin = new Padding(3, 6, 3, 3);
+        _textBoxNoBorderReadOnlyLabel.Name = "_textBoxNoBorderReadOnlyLabel";
+        _textBoxNoBorderReadOnlyLabel.TabIndex = 6;
+        _textBoxNoBorderReadOnlyLabel.Text = "No border + ReadOnly";
         //
         // _textBoxNoBorderReadOnly
         //
@@ -207,13 +207,13 @@ partial class TextBoxScenariosView
         _richTextBoxTableLayoutPanel.ColumnCount = 2;
         _richTextBoxTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _richTextBoxTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxDefaultCheckBox, 0, 0);
+        _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxDefaultLabel, 0, 0);
         _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxDefault, 1, 0);
-        _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxFixedSingleCheckBox, 0, 1);
+        _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxFixedSingleLabel, 0, 1);
         _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxFixedSingle, 1, 1);
-        _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxNoWordWrapCheckBox, 0, 2);
+        _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxNoWordWrapLabel, 0, 2);
         _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxNoWordWrap, 1, 2);
-        _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxReadOnlyCheckBox, 0, 3);
+        _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxReadOnlyLabel, 0, 3);
         _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxReadOnly, 1, 3);
         _richTextBoxTableLayoutPanel.Dock = DockStyle.Fill;
         _richTextBoxTableLayoutPanel.Location = new Point(8, 23);
@@ -225,14 +225,14 @@ partial class TextBoxScenariosView
         _richTextBoxTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _richTextBoxTableLayoutPanel.TabIndex = 0;
         //
-        // _richTextBoxDefaultCheckBox
+        // _richTextBoxDefaultLabel
         //
-        _richTextBoxDefaultCheckBox.Anchor = AnchorStyles.Left;
-        _richTextBoxDefaultCheckBox.AutoSize = true;
-        _richTextBoxDefaultCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _richTextBoxDefaultCheckBox.Name = "_richTextBoxDefaultCheckBox";
-        _richTextBoxDefaultCheckBox.TabIndex = 0;
-        _richTextBoxDefaultCheckBox.Text = "Default";
+        _richTextBoxDefaultLabel.Anchor = AnchorStyles.Left;
+        _richTextBoxDefaultLabel.AutoSize = true;
+        _richTextBoxDefaultLabel.Margin = new Padding(3, 6, 3, 3);
+        _richTextBoxDefaultLabel.Name = "_richTextBoxDefaultLabel";
+        _richTextBoxDefaultLabel.TabIndex = 0;
+        _richTextBoxDefaultLabel.Text = "Default";
         //
         // _richTextBoxDefault
         //
@@ -243,14 +243,14 @@ partial class TextBoxScenariosView
         _richTextBoxDefault.TabIndex = 1;
         _richTextBoxDefault.Text = "Hover over me";
         //
-        // _richTextBoxFixedSingleCheckBox
+        // _richTextBoxFixedSingleLabel
         //
-        _richTextBoxFixedSingleCheckBox.Anchor = AnchorStyles.Left;
-        _richTextBoxFixedSingleCheckBox.AutoSize = true;
-        _richTextBoxFixedSingleCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _richTextBoxFixedSingleCheckBox.Name = "_richTextBoxFixedSingleCheckBox";
-        _richTextBoxFixedSingleCheckBox.TabIndex = 2;
-        _richTextBoxFixedSingleCheckBox.Text = "FixedSingle border";
+        _richTextBoxFixedSingleLabel.Anchor = AnchorStyles.Left;
+        _richTextBoxFixedSingleLabel.AutoSize = true;
+        _richTextBoxFixedSingleLabel.Margin = new Padding(3, 6, 3, 3);
+        _richTextBoxFixedSingleLabel.Name = "_richTextBoxFixedSingleLabel";
+        _richTextBoxFixedSingleLabel.TabIndex = 2;
+        _richTextBoxFixedSingleLabel.Text = "FixedSingle border";
         //
         // _richTextBoxFixedSingle
         //
@@ -262,14 +262,14 @@ partial class TextBoxScenariosView
         _richTextBoxFixedSingle.TabIndex = 3;
         _richTextBoxFixedSingle.Text = "Hover over me";
         //
-        // _richTextBoxNoWordWrapCheckBox
+        // _richTextBoxNoWordWrapLabel
         //
-        _richTextBoxNoWordWrapCheckBox.Anchor = AnchorStyles.Left;
-        _richTextBoxNoWordWrapCheckBox.AutoSize = true;
-        _richTextBoxNoWordWrapCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _richTextBoxNoWordWrapCheckBox.Name = "_richTextBoxNoWordWrapCheckBox";
-        _richTextBoxNoWordWrapCheckBox.TabIndex = 4;
-        _richTextBoxNoWordWrapCheckBox.Text = "WordWrap = false";
+        _richTextBoxNoWordWrapLabel.Anchor = AnchorStyles.Left;
+        _richTextBoxNoWordWrapLabel.AutoSize = true;
+        _richTextBoxNoWordWrapLabel.Margin = new Padding(3, 6, 3, 3);
+        _richTextBoxNoWordWrapLabel.Name = "_richTextBoxNoWordWrapLabel";
+        _richTextBoxNoWordWrapLabel.TabIndex = 4;
+        _richTextBoxNoWordWrapLabel.Text = "WordWrap = false";
         //
         // _richTextBoxNoWordWrap
         //
@@ -281,14 +281,14 @@ partial class TextBoxScenariosView
         _richTextBoxNoWordWrap.Text = "Hover over me, this is a long line that would normally wrap.";
         _richTextBoxNoWordWrap.WordWrap = false;
         //
-        // _richTextBoxReadOnlyCheckBox
+        // _richTextBoxReadOnlyLabel
         //
-        _richTextBoxReadOnlyCheckBox.Anchor = AnchorStyles.Left;
-        _richTextBoxReadOnlyCheckBox.AutoSize = true;
-        _richTextBoxReadOnlyCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _richTextBoxReadOnlyCheckBox.Name = "_richTextBoxReadOnlyCheckBox";
-        _richTextBoxReadOnlyCheckBox.TabIndex = 6;
-        _richTextBoxReadOnlyCheckBox.Text = "ReadOnly";
+        _richTextBoxReadOnlyLabel.Anchor = AnchorStyles.Left;
+        _richTextBoxReadOnlyLabel.AutoSize = true;
+        _richTextBoxReadOnlyLabel.Margin = new Padding(3, 6, 3, 3);
+        _richTextBoxReadOnlyLabel.Name = "_richTextBoxReadOnlyLabel";
+        _richTextBoxReadOnlyLabel.TabIndex = 6;
+        _richTextBoxReadOnlyLabel.Text = "ReadOnly";
         //
         // _richTextBoxReadOnly
         //
@@ -326,22 +326,22 @@ partial class TextBoxScenariosView
     private TableLayoutPanel _rootTableLayoutPanel;
     private GroupBox _textBoxGroupBox;
     private TableLayoutPanel _textBoxTableLayoutPanel;
-    private CheckBox _textBoxDefaultCheckBox;
+    private Label _textBoxDefaultLabel;
     private TextBox _textBoxDefault;
-    private CheckBox _textBoxFixedSingleCheckBox;
+    private Label _textBoxFixedSingleLabel;
     private TextBox _textBoxFixedSingle;
-    private CheckBox _textBoxMultilineCheckBox;
+    private Label _textBoxMultilineLabel;
     private TextBox _textBoxMultiline;
-    private CheckBox _textBoxNoBorderReadOnlyCheckBox;
+    private Label _textBoxNoBorderReadOnlyLabel;
     private TextBox _textBoxNoBorderReadOnly;
     private GroupBox _richTextBoxGroupBox;
     private TableLayoutPanel _richTextBoxTableLayoutPanel;
-    private CheckBox _richTextBoxDefaultCheckBox;
+    private Label _richTextBoxDefaultLabel;
     private RichTextBox _richTextBoxDefault;
-    private CheckBox _richTextBoxFixedSingleCheckBox;
+    private Label _richTextBoxFixedSingleLabel;
     private RichTextBox _richTextBoxFixedSingle;
-    private CheckBox _richTextBoxNoWordWrapCheckBox;
+    private Label _richTextBoxNoWordWrapLabel;
     private RichTextBox _richTextBoxNoWordWrap;
-    private CheckBox _richTextBoxReadOnlyCheckBox;
+    private Label _richTextBoxReadOnlyLabel;
     private RichTextBox _richTextBoxReadOnly;
 }

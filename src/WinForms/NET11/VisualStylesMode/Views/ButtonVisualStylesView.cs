@@ -9,12 +9,13 @@ namespace VisualStylesModeDemo.Views;
 ///  Visual/functional matrix for plain <see cref="Button"/> controls: FlatStyle variations, the new
 ///  .NET 11 per-control <see cref="Control.VisualStylesMode"/>, Enabled/Disabled, Command/CommandParameter
 ///  binding (see <see cref="RelayCommand"/>), and BackgroundImage/BackgroundImageLayout combinations.
-///  Every button has a companion CheckBox so any combination of buttons can be pushed into the
-///  shared PropertyGrid at once.
+///  Each button is wrapped in a <see cref="SelectablePanel"/> so any combination of buttons can be
+///  double-clicked into the shared PropertyGrid at once (the leading <see cref="Label"/> in each row
+///  just describes the scenario).
 /// </summary>
 public partial class ButtonVisualStylesView : UserControl, IScenarioView
 {
-    private readonly CheckBox[] _checkBoxes;
+    private readonly SelectionController _selection = new();
     private readonly RelayCommand _sharedCommand;
     private bool _commandCanExecute = true;
 
@@ -22,48 +23,28 @@ public partial class ButtonVisualStylesView : UserControl, IScenarioView
     {
         InitializeComponent();
 
-        _checkBoxes =
-        [
-            _flatStyleStandardCheckBox,
-            _flatStylePopupCheckBox,
-            _flatStyleFlatCheckBox,
-            _flatStyleSystemCheckBox,
-            _visualStylesClassicCheckBox,
-            _visualStylesNet11CheckBox,
-            _visualStylesLatestCheckBox,
-            _enabledButtonCheckBox,
-            _disabledButtonCheckBox,
-            _commandAlphaCheckBox,
-            _commandBetaCheckBox,
-            _commandToggleEnabledCheckBox,
-            _backgroundImageTileCheckBox,
-            _backgroundImageStretchCheckBox,
-            _backgroundImageZoomCheckBox,
-            _backgroundImageCenterCheckBox,
-        ];
+        _selection.SelectionChanged += (_, _) => SelectionChanged?.Invoke(this, EventArgs.Empty);
 
-        foreach ((CheckBox checkBox, Control target) in new (CheckBox, Control)[]
-        {
-            (_flatStyleStandardCheckBox, _flatStyleStandardButton),
-            (_flatStylePopupCheckBox, _flatStylePopupButton),
-            (_flatStyleFlatCheckBox, _flatStyleFlatButton),
-            (_flatStyleSystemCheckBox, _flatStyleSystemButton),
-            (_visualStylesClassicCheckBox, _visualStylesClassicButton),
-            (_visualStylesNet11CheckBox, _visualStylesNet11Button),
-            (_visualStylesLatestCheckBox, _visualStylesLatestButton),
-            (_enabledButtonCheckBox, _enabledButton),
-            (_disabledButtonCheckBox, _disabledButton),
-            (_commandAlphaCheckBox, _commandAlphaButton),
-            (_commandBetaCheckBox, _commandBetaButton),
-            (_commandToggleEnabledCheckBox, _commandToggleEnabledButton),
-            (_backgroundImageTileCheckBox, _backgroundImageTileButton),
-            (_backgroundImageStretchCheckBox, _backgroundImageStretchButton),
-            (_backgroundImageZoomCheckBox, _backgroundImageZoomButton),
-            (_backgroundImageCenterCheckBox, _backgroundImageCenterButton),
-        })
-        {
-            ScenarioSelectionHelper.Bind(checkBox, target, CheckBox_CheckedChanged);
-        }
+        // Wrap every demo button in a SelectablePanel in place; double-clicking any of them toggles
+        // its membership in the shared PropertyGrid selection. The command result label and the
+        // scenario description labels are intentionally not selectable.
+        _selection.WrapAndRegister(
+            _flatStyleStandardButton,
+            _flatStylePopupButton,
+            _flatStyleFlatButton,
+            _flatStyleSystemButton,
+            _visualStylesClassicButton,
+            _visualStylesNet11Button,
+            _visualStylesLatestButton,
+            _enabledButton,
+            _disabledButton,
+            _commandAlphaButton,
+            _commandBetaButton,
+            _commandToggleEnabledButton,
+            _backgroundImageTileButton,
+            _backgroundImageStretchButton,
+            _backgroundImageZoomButton,
+            _backgroundImageCenterButton);
 
         // A single shared ICommand bound to two buttons with different CommandParameter values,
         // exercising Button.Command / Button.CommandParameter (see RelayCommand.cs).
@@ -85,26 +66,13 @@ public partial class ButtonVisualStylesView : UserControl, IScenarioView
 
     public string DisplayName => "Button Visual Styles";
 
-    public IReadOnlyList<Control> GetSelectedControls() => ScenarioSelectionHelper.GetChecked(_checkBoxes);
+    public IReadOnlyList<Control> GetSelectedControls() => _selection.GetSelectedControls();
 
-    public void SelectAll()
-    {
-        foreach (CheckBox checkBox in _checkBoxes)
-        {
-            checkBox.Checked = true;
-        }
-    }
+    public void SelectAll() => _selection.SelectAll();
 
-    public void ClearSelection()
-    {
-        foreach (CheckBox checkBox in _checkBoxes)
-        {
-            checkBox.Checked = false;
-        }
-    }
+    public void ClearSelection() => _selection.ClearSelection();
 
-    private void CheckBox_CheckedChanged(object? sender, EventArgs e) =>
-        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    public void SetSelectionMargin(int gap) => _selection.SetSelectionGap(gap);
 
     private void OnCommandExecuted(object? parameter) =>
         _commandResultLabel.Text = $"Last command result: executed with parameter '{parameter}'";

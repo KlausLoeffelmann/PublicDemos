@@ -34,43 +34,43 @@ partial class ButtonVisualStylesView
         _rootTableLayoutPanel = new TableLayoutPanel();
         _flatStyleGroupBox = new GroupBox();
         _flatStyleTableLayoutPanel = new TableLayoutPanel();
-        _flatStyleStandardCheckBox = new CheckBox();
+        _flatStyleStandardLabel = new Label();
         _flatStyleStandardButton = new Button();
-        _flatStylePopupCheckBox = new CheckBox();
+        _flatStylePopupLabel = new Label();
         _flatStylePopupButton = new Button();
-        _flatStyleFlatCheckBox = new CheckBox();
+        _flatStyleFlatLabel = new Label();
         _flatStyleFlatButton = new Button();
-        _flatStyleSystemCheckBox = new CheckBox();
+        _flatStyleSystemLabel = new Label();
         _flatStyleSystemButton = new Button();
         _visualStylesGroupBox = new GroupBox();
         _visualStylesTableLayoutPanel = new TableLayoutPanel();
-        _visualStylesClassicCheckBox = new CheckBox();
+        _visualStylesClassicLabel = new Label();
         _visualStylesClassicButton = new Button();
-        _visualStylesNet11CheckBox = new CheckBox();
+        _visualStylesNet11Label = new Label();
         _visualStylesNet11Button = new Button();
-        _visualStylesLatestCheckBox = new CheckBox();
+        _visualStylesLatestLabel = new Label();
         _visualStylesLatestButton = new Button();
         _enabledStateGroupBox = new GroupBox();
         _enabledStateTableLayoutPanel = new TableLayoutPanel();
-        _enabledButtonCheckBox = new CheckBox();
+        _enabledButtonLabel = new Label();
         _enabledButton = new Button();
-        _disabledButtonCheckBox = new CheckBox();
+        _disabledButtonLabel = new Label();
         _disabledButton = new Button();
         _commandGroupBox = new GroupBox();
         _commandTableLayoutPanel = new TableLayoutPanel();
-        _commandAlphaCheckBox = new CheckBox();
+        _commandAlphaLabel = new Label();
         _commandAlphaButton = new Button();
-        _commandBetaCheckBox = new CheckBox();
+        _commandBetaLabel = new Label();
         _commandBetaButton = new Button();
-        _commandToggleEnabledCheckBox = new CheckBox();
+        _commandToggleEnabledLabel = new Label();
         _commandToggleEnabledButton = new Button();
         _commandResultLabel = new Label();
         _backgroundImageGroupBox = new GroupBox();
         _backgroundImageTableLayoutPanel = new TableLayoutPanel();
-        _backgroundImageTileCheckBox = new CheckBox();
-        _backgroundImageStretchCheckBox = new CheckBox();
-        _backgroundImageZoomCheckBox = new CheckBox();
-        _backgroundImageCenterCheckBox = new CheckBox();
+        _backgroundImageTileLabel = new Label();
+        _backgroundImageStretchLabel = new Label();
+        _backgroundImageZoomLabel = new Label();
+        _backgroundImageCenterLabel = new Label();
         _backgroundImageTileButton = new Button();
         _backgroundImageStretchButton = new Button();
         _backgroundImageZoomButton = new Button();
@@ -108,7 +108,7 @@ partial class ButtonVisualStylesView
         _rootTableLayoutPanel.RowStyles.Add(new RowStyle());
         _rootTableLayoutPanel.RowStyles.Add(new RowStyle());
         _rootTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _rootTableLayoutPanel.Size = new Size(922, 610);
+        _rootTableLayoutPanel.Size = new Size(922, 613);
         _rootTableLayoutPanel.TabIndex = 0;
         // 
         // _flatStyleGroupBox
@@ -119,7 +119,7 @@ partial class ButtonVisualStylesView
         _flatStyleGroupBox.Location = new Point(3, 3);
         _flatStyleGroupBox.Name = "_flatStyleGroupBox";
         _flatStyleGroupBox.Padding = new Padding(8);
-        _flatStyleGroupBox.Size = new Size(520, 229);
+        _flatStyleGroupBox.Size = new Size(520, 232);
         _flatStyleGroupBox.TabIndex = 0;
         _flatStyleGroupBox.TabStop = false;
         _flatStyleGroupBox.Text = "FlatStyle variations";
@@ -131,13 +131,13 @@ partial class ButtonVisualStylesView
         _flatStyleTableLayoutPanel.ColumnCount = 2;
         _flatStyleTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
         _flatStyleTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
-        _flatStyleTableLayoutPanel.Controls.Add(_flatStyleStandardCheckBox, 0, 0);
+        _flatStyleTableLayoutPanel.Controls.Add(_flatStyleStandardLabel, 0, 0);
         _flatStyleTableLayoutPanel.Controls.Add(_flatStyleStandardButton, 1, 0);
-        _flatStyleTableLayoutPanel.Controls.Add(_flatStylePopupCheckBox, 0, 1);
+        _flatStyleTableLayoutPanel.Controls.Add(_flatStylePopupLabel, 0, 1);
         _flatStyleTableLayoutPanel.Controls.Add(_flatStylePopupButton, 1, 1);
-        _flatStyleTableLayoutPanel.Controls.Add(_flatStyleFlatCheckBox, 0, 2);
+        _flatStyleTableLayoutPanel.Controls.Add(_flatStyleFlatLabel, 0, 2);
         _flatStyleTableLayoutPanel.Controls.Add(_flatStyleFlatButton, 1, 2);
-        _flatStyleTableLayoutPanel.Controls.Add(_flatStyleSystemCheckBox, 0, 3);
+        _flatStyleTableLayoutPanel.Controls.Add(_flatStyleSystemLabel, 0, 3);
         _flatStyleTableLayoutPanel.Controls.Add(_flatStyleSystemButton, 1, 3);
         _flatStyleTableLayoutPanel.Dock = DockStyle.Fill;
         _flatStyleTableLayoutPanel.Location = new Point(8, 38);
@@ -147,19 +147,19 @@ partial class ButtonVisualStylesView
         _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle());
         _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle());
         _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _flatStyleTableLayoutPanel.Size = new Size(504, 183);
+        _flatStyleTableLayoutPanel.Size = new Size(504, 186);
         _flatStyleTableLayoutPanel.TabIndex = 0;
         // 
-        // _flatStyleStandardCheckBox
+        // _flatStyleStandardLabel
         // 
-        _flatStyleStandardCheckBox.Anchor = AnchorStyles.Left;
-        _flatStyleStandardCheckBox.AutoSize = true;
-        _flatStyleStandardCheckBox.Location = new Point(3, 7);
-        _flatStyleStandardCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _flatStyleStandardCheckBox.Name = "_flatStyleStandardCheckBox";
-        _flatStyleStandardCheckBox.Size = new Size(125, 34);
-        _flatStyleStandardCheckBox.TabIndex = 0;
-        _flatStyleStandardCheckBox.Text = "Standard";
+        _flatStyleStandardLabel.Anchor = AnchorStyles.Left;
+        _flatStyleStandardLabel.AutoSize = true;
+        _flatStyleStandardLabel.Location = new Point(3, 7);
+        _flatStyleStandardLabel.Margin = new Padding(3, 6, 3, 3);
+        _flatStyleStandardLabel.Name = "_flatStyleStandardLabel";
+        _flatStyleStandardLabel.Size = new Size(133, 34);
+        _flatStyleStandardLabel.TabIndex = 0;
+        _flatStyleStandardLabel.Text = "Standard";
         // 
         // _flatStyleStandardButton
         // 
@@ -167,23 +167,23 @@ partial class ButtonVisualStylesView
         _flatStyleStandardButton.AutoSize = true;
         _flatStyleStandardButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flatStyleStandardButton.DialogResult = DialogResult.OK;
-        _flatStyleStandardButton.Location = new Point(134, 3);
+        _flatStyleStandardButton.Location = new Point(142, 3);
         _flatStyleStandardButton.Name = "_flatStyleStandardButton";
         _flatStyleStandardButton.Size = new Size(109, 40);
         _flatStyleStandardButton.TabIndex = 1;
         _flatStyleStandardButton.Text = "Standard";
         _flatStyleStandardButton.VisualStylesMode = VisualStylesMode.Latest;
         // 
-        // _flatStylePopupCheckBox
+        // _flatStylePopupLabel
         // 
-        _flatStylePopupCheckBox.Anchor = AnchorStyles.Left;
-        _flatStylePopupCheckBox.AutoSize = true;
-        _flatStylePopupCheckBox.Location = new Point(3, 53);
-        _flatStylePopupCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _flatStylePopupCheckBox.Name = "_flatStylePopupCheckBox";
-        _flatStylePopupCheckBox.Size = new Size(101, 34);
-        _flatStylePopupCheckBox.TabIndex = 2;
-        _flatStylePopupCheckBox.Text = "Popup";
+        _flatStylePopupLabel.Anchor = AnchorStyles.Left;
+        _flatStylePopupLabel.AutoSize = true;
+        _flatStylePopupLabel.Location = new Point(3, 53);
+        _flatStylePopupLabel.Margin = new Padding(3, 6, 3, 3);
+        _flatStylePopupLabel.Name = "_flatStylePopupLabel";
+        _flatStylePopupLabel.Size = new Size(109, 34);
+        _flatStylePopupLabel.TabIndex = 2;
+        _flatStylePopupLabel.Text = "Popup";
         // 
         // _flatStylePopupButton
         // 
@@ -191,23 +191,23 @@ partial class ButtonVisualStylesView
         _flatStylePopupButton.AutoSize = true;
         _flatStylePopupButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flatStylePopupButton.FlatStyle = FlatStyle.Popup;
-        _flatStylePopupButton.Location = new Point(134, 49);
+        _flatStylePopupButton.Location = new Point(142, 49);
         _flatStylePopupButton.Name = "_flatStylePopupButton";
         _flatStylePopupButton.Size = new Size(85, 40);
         _flatStylePopupButton.TabIndex = 3;
         _flatStylePopupButton.Text = "Popup";
         _flatStylePopupButton.VisualStylesMode = VisualStylesMode.Latest;
         // 
-        // _flatStyleFlatCheckBox
+        // _flatStyleFlatLabel
         // 
-        _flatStyleFlatCheckBox.Anchor = AnchorStyles.Left;
-        _flatStyleFlatCheckBox.AutoSize = true;
-        _flatStyleFlatCheckBox.Location = new Point(3, 99);
-        _flatStyleFlatCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _flatStyleFlatCheckBox.Name = "_flatStyleFlatCheckBox";
-        _flatStyleFlatCheckBox.Size = new Size(73, 34);
-        _flatStyleFlatCheckBox.TabIndex = 4;
-        _flatStyleFlatCheckBox.Text = "Flat";
+        _flatStyleFlatLabel.Anchor = AnchorStyles.Left;
+        _flatStyleFlatLabel.AutoSize = true;
+        _flatStyleFlatLabel.Location = new Point(3, 98);
+        _flatStyleFlatLabel.Margin = new Padding(3, 6, 3, 3);
+        _flatStyleFlatLabel.Name = "_flatStyleFlatLabel";
+        _flatStyleFlatLabel.Size = new Size(57, 34);
+        _flatStyleFlatLabel.TabIndex = 4;
+        _flatStyleFlatLabel.Text = "Flat";
         // 
         // _flatStyleFlatButton
         // 
@@ -215,23 +215,23 @@ partial class ButtonVisualStylesView
         _flatStyleFlatButton.AutoSize = true;
         _flatStyleFlatButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flatStyleFlatButton.FlatStyle = FlatStyle.Flat;
-        _flatStyleFlatButton.Location = new Point(134, 95);
+        _flatStyleFlatButton.Location = new Point(142, 96);
         _flatStyleFlatButton.Name = "_flatStyleFlatButton";
         _flatStyleFlatButton.Size = new Size(57, 40);
         _flatStyleFlatButton.TabIndex = 5;
         _flatStyleFlatButton.Text = "Flat";
         _flatStyleFlatButton.VisualStylesMode = VisualStylesMode.Latest;
         // 
-        // _flatStyleSystemCheckBox
+        // _flatStyleSystemLabel
         // 
-        _flatStyleSystemCheckBox.Anchor = AnchorStyles.Left;
-        _flatStyleSystemCheckBox.AutoSize = true;
-        _flatStyleSystemCheckBox.Location = new Point(3, 145);
-        _flatStyleSystemCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _flatStyleSystemCheckBox.Name = "_flatStyleSystemCheckBox";
-        _flatStyleSystemCheckBox.Size = new Size(108, 34);
-        _flatStyleSystemCheckBox.TabIndex = 6;
-        _flatStyleSystemCheckBox.Text = "System";
+        _flatStyleSystemLabel.Anchor = AnchorStyles.Left;
+        _flatStyleSystemLabel.AutoSize = true;
+        _flatStyleSystemLabel.Location = new Point(3, 148);
+        _flatStyleSystemLabel.Margin = new Padding(3, 6, 3, 3);
+        _flatStyleSystemLabel.Name = "_flatStyleSystemLabel";
+        _flatStyleSystemLabel.Size = new Size(108, 34);
+        _flatStyleSystemLabel.TabIndex = 6;
+        _flatStyleSystemLabel.Text = "System";
         // 
         // _flatStyleSystemButton
         // 
@@ -239,7 +239,7 @@ partial class ButtonVisualStylesView
         _flatStyleSystemButton.AutoSize = true;
         _flatStyleSystemButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flatStyleSystemButton.FlatStyle = FlatStyle.System;
-        _flatStyleSystemButton.Location = new Point(134, 141);
+        _flatStyleSystemButton.Location = new Point(142, 144);
         _flatStyleSystemButton.Name = "_flatStyleSystemButton";
         _flatStyleSystemButton.Size = new Size(96, 39);
         _flatStyleSystemButton.TabIndex = 7;
@@ -254,7 +254,7 @@ partial class ButtonVisualStylesView
         _visualStylesGroupBox.Location = new Point(529, 3);
         _visualStylesGroupBox.Name = "_visualStylesGroupBox";
         _visualStylesGroupBox.Padding = new Padding(8);
-        _visualStylesGroupBox.Size = new Size(390, 229);
+        _visualStylesGroupBox.Size = new Size(390, 232);
         _visualStylesGroupBox.TabIndex = 1;
         _visualStylesGroupBox.TabStop = false;
         _visualStylesGroupBox.Text = "Per-control VisualStylesMode";
@@ -266,11 +266,11 @@ partial class ButtonVisualStylesView
         _visualStylesTableLayoutPanel.ColumnCount = 2;
         _visualStylesTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
         _visualStylesTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _visualStylesTableLayoutPanel.Controls.Add(_visualStylesClassicCheckBox, 0, 0);
+        _visualStylesTableLayoutPanel.Controls.Add(_visualStylesClassicLabel, 0, 0);
         _visualStylesTableLayoutPanel.Controls.Add(_visualStylesClassicButton, 1, 0);
-        _visualStylesTableLayoutPanel.Controls.Add(_visualStylesNet11CheckBox, 0, 1);
+        _visualStylesTableLayoutPanel.Controls.Add(_visualStylesNet11Label, 0, 1);
         _visualStylesTableLayoutPanel.Controls.Add(_visualStylesNet11Button, 1, 1);
-        _visualStylesTableLayoutPanel.Controls.Add(_visualStylesLatestCheckBox, 0, 2);
+        _visualStylesTableLayoutPanel.Controls.Add(_visualStylesLatestLabel, 0, 2);
         _visualStylesTableLayoutPanel.Controls.Add(_visualStylesLatestButton, 1, 2);
         _visualStylesTableLayoutPanel.Dock = DockStyle.Fill;
         _visualStylesTableLayoutPanel.Location = new Point(8, 38);
@@ -279,19 +279,19 @@ partial class ButtonVisualStylesView
         _visualStylesTableLayoutPanel.RowStyles.Add(new RowStyle());
         _visualStylesTableLayoutPanel.RowStyles.Add(new RowStyle());
         _visualStylesTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _visualStylesTableLayoutPanel.Size = new Size(374, 183);
+        _visualStylesTableLayoutPanel.Size = new Size(374, 186);
         _visualStylesTableLayoutPanel.TabIndex = 0;
         // 
-        // _visualStylesClassicCheckBox
+        // _visualStylesClassicLabel
         // 
-        _visualStylesClassicCheckBox.Anchor = AnchorStyles.Left;
-        _visualStylesClassicCheckBox.AutoSize = true;
-        _visualStylesClassicCheckBox.Location = new Point(3, 7);
-        _visualStylesClassicCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _visualStylesClassicCheckBox.Name = "_visualStylesClassicCheckBox";
-        _visualStylesClassicCheckBox.Size = new Size(102, 34);
-        _visualStylesClassicCheckBox.TabIndex = 0;
-        _visualStylesClassicCheckBox.Text = "Classic";
+        _visualStylesClassicLabel.Anchor = AnchorStyles.Left;
+        _visualStylesClassicLabel.AutoSize = true;
+        _visualStylesClassicLabel.Location = new Point(3, 7);
+        _visualStylesClassicLabel.Margin = new Padding(3, 6, 3, 3);
+        _visualStylesClassicLabel.Name = "_visualStylesClassicLabel";
+        _visualStylesClassicLabel.Size = new Size(102, 34);
+        _visualStylesClassicLabel.TabIndex = 0;
+        _visualStylesClassicLabel.Text = "Classic";
         // 
         // _visualStylesClassicButton
         // 
@@ -304,16 +304,16 @@ partial class ButtonVisualStylesView
         _visualStylesClassicButton.Text = "VisualStylesMode.Classic";
         _visualStylesClassicButton.VisualStylesMode = VisualStylesMode.Classic;
         // 
-        // _visualStylesNet11CheckBox
+        // _visualStylesNet11Label
         // 
-        _visualStylesNet11CheckBox.Anchor = AnchorStyles.Left;
-        _visualStylesNet11CheckBox.AutoSize = true;
-        _visualStylesNet11CheckBox.Location = new Point(3, 53);
-        _visualStylesNet11CheckBox.Margin = new Padding(3, 6, 3, 3);
-        _visualStylesNet11CheckBox.Name = "_visualStylesNet11CheckBox";
-        _visualStylesNet11CheckBox.Size = new Size(98, 34);
-        _visualStylesNet11CheckBox.TabIndex = 2;
-        _visualStylesNet11CheckBox.Text = "Net11";
+        _visualStylesNet11Label.Anchor = AnchorStyles.Left;
+        _visualStylesNet11Label.AutoSize = true;
+        _visualStylesNet11Label.Location = new Point(3, 53);
+        _visualStylesNet11Label.Margin = new Padding(3, 6, 3, 3);
+        _visualStylesNet11Label.Name = "_visualStylesNet11Label";
+        _visualStylesNet11Label.Size = new Size(98, 34);
+        _visualStylesNet11Label.TabIndex = 2;
+        _visualStylesNet11Label.Text = "Net11";
         // 
         // _visualStylesNet11Button
         // 
@@ -326,22 +326,22 @@ partial class ButtonVisualStylesView
         _visualStylesNet11Button.Text = "VisualStylesMode.Net11";
         _visualStylesNet11Button.VisualStylesMode = VisualStylesMode.Net11;
         // 
-        // _visualStylesLatestCheckBox
+        // _visualStylesLatestLabel
         // 
-        _visualStylesLatestCheckBox.Anchor = AnchorStyles.Left;
-        _visualStylesLatestCheckBox.AutoSize = true;
-        _visualStylesLatestCheckBox.Location = new Point(3, 122);
-        _visualStylesLatestCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _visualStylesLatestCheckBox.Name = "_visualStylesLatestCheckBox";
-        _visualStylesLatestCheckBox.Size = new Size(95, 34);
-        _visualStylesLatestCheckBox.TabIndex = 4;
-        _visualStylesLatestCheckBox.Text = "Latest";
+        _visualStylesLatestLabel.Anchor = AnchorStyles.Left;
+        _visualStylesLatestLabel.AutoSize = true;
+        _visualStylesLatestLabel.Location = new Point(3, 123);
+        _visualStylesLatestLabel.Margin = new Padding(3, 6, 3, 3);
+        _visualStylesLatestLabel.Name = "_visualStylesLatestLabel";
+        _visualStylesLatestLabel.Size = new Size(95, 34);
+        _visualStylesLatestLabel.TabIndex = 4;
+        _visualStylesLatestLabel.Text = "Latest";
         // 
         // _visualStylesLatestButton
         // 
         _visualStylesLatestButton.Anchor = AnchorStyles.Left;
         _visualStylesLatestButton.AutoSize = true;
-        _visualStylesLatestButton.Location = new Point(111, 117);
+        _visualStylesLatestButton.Location = new Point(111, 119);
         _visualStylesLatestButton.Name = "_visualStylesLatestButton";
         _visualStylesLatestButton.Size = new Size(253, 40);
         _visualStylesLatestButton.TabIndex = 5;
@@ -353,7 +353,7 @@ partial class ButtonVisualStylesView
         _enabledStateGroupBox.AutoSize = true;
         _enabledStateGroupBox.Controls.Add(_enabledStateTableLayoutPanel);
         _enabledStateGroupBox.Dock = DockStyle.Fill;
-        _enabledStateGroupBox.Location = new Point(3, 238);
+        _enabledStateGroupBox.Location = new Point(3, 241);
         _enabledStateGroupBox.Name = "_enabledStateGroupBox";
         _enabledStateGroupBox.Padding = new Padding(8);
         _enabledStateGroupBox.Size = new Size(520, 214);
@@ -368,9 +368,9 @@ partial class ButtonVisualStylesView
         _enabledStateTableLayoutPanel.ColumnCount = 2;
         _enabledStateTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
         _enabledStateTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _enabledStateTableLayoutPanel.Controls.Add(_enabledButtonCheckBox, 0, 0);
+        _enabledStateTableLayoutPanel.Controls.Add(_enabledButtonLabel, 0, 0);
         _enabledStateTableLayoutPanel.Controls.Add(_enabledButton, 1, 0);
-        _enabledStateTableLayoutPanel.Controls.Add(_disabledButtonCheckBox, 0, 1);
+        _enabledStateTableLayoutPanel.Controls.Add(_disabledButtonLabel, 0, 1);
         _enabledStateTableLayoutPanel.Controls.Add(_disabledButton, 1, 1);
         _enabledStateTableLayoutPanel.Dock = DockStyle.Fill;
         _enabledStateTableLayoutPanel.Location = new Point(8, 38);
@@ -381,16 +381,16 @@ partial class ButtonVisualStylesView
         _enabledStateTableLayoutPanel.Size = new Size(504, 168);
         _enabledStateTableLayoutPanel.TabIndex = 0;
         // 
-        // _enabledButtonCheckBox
+        // _enabledButtonLabel
         // 
-        _enabledButtonCheckBox.Anchor = AnchorStyles.Left;
-        _enabledButtonCheckBox.AutoSize = true;
-        _enabledButtonCheckBox.Location = new Point(3, 6);
-        _enabledButtonCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _enabledButtonCheckBox.Name = "_enabledButtonCheckBox";
-        _enabledButtonCheckBox.Size = new Size(116, 34);
-        _enabledButtonCheckBox.TabIndex = 0;
-        _enabledButtonCheckBox.Text = "Enabled";
+        _enabledButtonLabel.Anchor = AnchorStyles.Left;
+        _enabledButtonLabel.AutoSize = true;
+        _enabledButtonLabel.Location = new Point(3, 6);
+        _enabledButtonLabel.Margin = new Padding(3, 6, 3, 3);
+        _enabledButtonLabel.Name = "_enabledButtonLabel";
+        _enabledButtonLabel.Size = new Size(116, 34);
+        _enabledButtonLabel.TabIndex = 0;
+        _enabledButtonLabel.Text = "Enabled";
         // 
         // _enabledButton
         // 
@@ -401,16 +401,16 @@ partial class ButtonVisualStylesView
         _enabledButton.TabIndex = 1;
         _enabledButton.Text = "Enabled button";
         // 
-        // _disabledButtonCheckBox
+        // _disabledButtonLabel
         // 
-        _disabledButtonCheckBox.Anchor = AnchorStyles.Left;
-        _disabledButtonCheckBox.AutoSize = true;
-        _disabledButtonCheckBox.Location = new Point(3, 90);
-        _disabledButtonCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _disabledButtonCheckBox.Name = "_disabledButtonCheckBox";
-        _disabledButtonCheckBox.Size = new Size(122, 34);
-        _disabledButtonCheckBox.TabIndex = 2;
-        _disabledButtonCheckBox.Text = "Disabled";
+        _disabledButtonLabel.Anchor = AnchorStyles.Left;
+        _disabledButtonLabel.AutoSize = true;
+        _disabledButtonLabel.Location = new Point(3, 90);
+        _disabledButtonLabel.Margin = new Padding(3, 6, 3, 3);
+        _disabledButtonLabel.Name = "_disabledButtonLabel";
+        _disabledButtonLabel.Size = new Size(122, 34);
+        _disabledButtonLabel.TabIndex = 2;
+        _disabledButtonLabel.Text = "Disabled";
         // 
         // _disabledButton
         // 
@@ -427,7 +427,7 @@ partial class ButtonVisualStylesView
         _commandGroupBox.AutoSize = true;
         _commandGroupBox.Controls.Add(_commandTableLayoutPanel);
         _commandGroupBox.Dock = DockStyle.Fill;
-        _commandGroupBox.Location = new Point(529, 238);
+        _commandGroupBox.Location = new Point(529, 241);
         _commandGroupBox.Name = "_commandGroupBox";
         _commandGroupBox.Padding = new Padding(8);
         _commandGroupBox.Size = new Size(390, 214);
@@ -442,11 +442,11 @@ partial class ButtonVisualStylesView
         _commandTableLayoutPanel.ColumnCount = 2;
         _commandTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
         _commandTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _commandTableLayoutPanel.Controls.Add(_commandAlphaCheckBox, 0, 0);
+        _commandTableLayoutPanel.Controls.Add(_commandAlphaLabel, 0, 0);
         _commandTableLayoutPanel.Controls.Add(_commandAlphaButton, 1, 0);
-        _commandTableLayoutPanel.Controls.Add(_commandBetaCheckBox, 0, 1);
+        _commandTableLayoutPanel.Controls.Add(_commandBetaLabel, 0, 1);
         _commandTableLayoutPanel.Controls.Add(_commandBetaButton, 1, 1);
-        _commandTableLayoutPanel.Controls.Add(_commandToggleEnabledCheckBox, 0, 2);
+        _commandTableLayoutPanel.Controls.Add(_commandToggleEnabledLabel, 0, 2);
         _commandTableLayoutPanel.Controls.Add(_commandToggleEnabledButton, 1, 2);
         _commandTableLayoutPanel.Controls.Add(_commandResultLabel, 0, 3);
         _commandTableLayoutPanel.Dock = DockStyle.Fill;
@@ -460,16 +460,16 @@ partial class ButtonVisualStylesView
         _commandTableLayoutPanel.Size = new Size(374, 168);
         _commandTableLayoutPanel.TabIndex = 0;
         // 
-        // _commandAlphaCheckBox
+        // _commandAlphaLabel
         // 
-        _commandAlphaCheckBox.Anchor = AnchorStyles.Left;
-        _commandAlphaCheckBox.AutoSize = true;
-        _commandAlphaCheckBox.Location = new Point(3, 6);
-        _commandAlphaCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _commandAlphaCheckBox.Name = "_commandAlphaCheckBox";
-        _commandAlphaCheckBox.Size = new Size(94, 34);
-        _commandAlphaCheckBox.TabIndex = 0;
-        _commandAlphaCheckBox.Text = "Alpha";
+        _commandAlphaLabel.Anchor = AnchorStyles.Left;
+        _commandAlphaLabel.AutoSize = true;
+        _commandAlphaLabel.Location = new Point(3, 6);
+        _commandAlphaLabel.Margin = new Padding(3, 6, 3, 3);
+        _commandAlphaLabel.Name = "_commandAlphaLabel";
+        _commandAlphaLabel.Size = new Size(94, 34);
+        _commandAlphaLabel.TabIndex = 0;
+        _commandAlphaLabel.Text = "Alpha";
         // 
         // _commandAlphaButton
         // 
@@ -480,16 +480,16 @@ partial class ButtonVisualStylesView
         _commandAlphaButton.TabIndex = 1;
         _commandAlphaButton.Text = "Run Command (Alpha)";
         // 
-        // _commandBetaCheckBox
+        // _commandBetaLabel
         // 
-        _commandBetaCheckBox.Anchor = AnchorStyles.Left;
-        _commandBetaCheckBox.AutoSize = true;
-        _commandBetaCheckBox.Location = new Point(3, 49);
-        _commandBetaCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _commandBetaCheckBox.Name = "_commandBetaCheckBox";
-        _commandBetaCheckBox.Size = new Size(82, 34);
-        _commandBetaCheckBox.TabIndex = 2;
-        _commandBetaCheckBox.Text = "Beta";
+        _commandBetaLabel.Anchor = AnchorStyles.Left;
+        _commandBetaLabel.AutoSize = true;
+        _commandBetaLabel.Location = new Point(3, 49);
+        _commandBetaLabel.Margin = new Padding(3, 6, 3, 3);
+        _commandBetaLabel.Name = "_commandBetaLabel";
+        _commandBetaLabel.Size = new Size(82, 34);
+        _commandBetaLabel.TabIndex = 2;
+        _commandBetaLabel.Text = "Beta";
         // 
         // _commandBetaButton
         // 
@@ -500,16 +500,16 @@ partial class ButtonVisualStylesView
         _commandBetaButton.TabIndex = 3;
         _commandBetaButton.Text = "Run Command (Beta)";
         // 
-        // _commandToggleEnabledCheckBox
+        // _commandToggleEnabledLabel
         // 
-        _commandToggleEnabledCheckBox.Anchor = AnchorStyles.Left;
-        _commandToggleEnabledCheckBox.AutoSize = true;
-        _commandToggleEnabledCheckBox.Location = new Point(3, 92);
-        _commandToggleEnabledCheckBox.Margin = new Padding(3, 6, 3, 3);
-        _commandToggleEnabledCheckBox.Name = "_commandToggleEnabledCheckBox";
-        _commandToggleEnabledCheckBox.Size = new Size(170, 34);
-        _commandToggleEnabledCheckBox.TabIndex = 4;
-        _commandToggleEnabledCheckBox.Text = "Toggle switch";
+        _commandToggleEnabledLabel.Anchor = AnchorStyles.Left;
+        _commandToggleEnabledLabel.AutoSize = true;
+        _commandToggleEnabledLabel.Location = new Point(3, 92);
+        _commandToggleEnabledLabel.Margin = new Padding(3, 6, 3, 3);
+        _commandToggleEnabledLabel.Name = "_commandToggleEnabledLabel";
+        _commandToggleEnabledLabel.Size = new Size(170, 34);
+        _commandToggleEnabledLabel.TabIndex = 4;
+        _commandToggleEnabledLabel.Text = "Toggle switch";
         // 
         // _commandToggleEnabledButton
         // 
@@ -537,7 +537,7 @@ partial class ButtonVisualStylesView
         _backgroundImageGroupBox.AutoSize = true;
         _backgroundImageGroupBox.Controls.Add(_backgroundImageTableLayoutPanel);
         _backgroundImageGroupBox.Dock = DockStyle.Fill;
-        _backgroundImageGroupBox.Location = new Point(3, 458);
+        _backgroundImageGroupBox.Location = new Point(3, 461);
         _backgroundImageGroupBox.Name = "_backgroundImageGroupBox";
         _backgroundImageGroupBox.Padding = new Padding(8);
         _backgroundImageGroupBox.Size = new Size(520, 149);
@@ -554,10 +554,10 @@ partial class ButtonVisualStylesView
         _backgroundImageTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
         _backgroundImageTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
         _backgroundImageTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
-        _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageTileCheckBox, 0, 0);
-        _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageStretchCheckBox, 1, 0);
-        _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageZoomCheckBox, 2, 0);
-        _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageCenterCheckBox, 3, 0);
+        _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageTileLabel, 0, 0);
+        _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageStretchLabel, 1, 0);
+        _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageZoomLabel, 2, 0);
+        _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageCenterLabel, 3, 0);
         _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageTileButton, 0, 1);
         _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageStretchButton, 1, 1);
         _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageZoomButton, 2, 1);
@@ -571,49 +571,49 @@ partial class ButtonVisualStylesView
         _backgroundImageTableLayoutPanel.Size = new Size(504, 103);
         _backgroundImageTableLayoutPanel.TabIndex = 0;
         // 
-        // _backgroundImageTileCheckBox
+        // _backgroundImageTileLabel
         // 
-        _backgroundImageTileCheckBox.Anchor = AnchorStyles.Left;
-        _backgroundImageTileCheckBox.AutoSize = true;
-        _backgroundImageTileCheckBox.Location = new Point(3, 3);
-        _backgroundImageTileCheckBox.Margin = new Padding(3, 3, 3, 0);
-        _backgroundImageTileCheckBox.Name = "_backgroundImageTileCheckBox";
-        _backgroundImageTileCheckBox.Size = new Size(73, 34);
-        _backgroundImageTileCheckBox.TabIndex = 0;
-        _backgroundImageTileCheckBox.Text = "Tile";
+        _backgroundImageTileLabel.Anchor = AnchorStyles.Left;
+        _backgroundImageTileLabel.AutoSize = true;
+        _backgroundImageTileLabel.Location = new Point(3, 3);
+        _backgroundImageTileLabel.Margin = new Padding(3, 3, 3, 0);
+        _backgroundImageTileLabel.Name = "_backgroundImageTileLabel";
+        _backgroundImageTileLabel.Size = new Size(73, 34);
+        _backgroundImageTileLabel.TabIndex = 0;
+        _backgroundImageTileLabel.Text = "Tile";
         // 
-        // _backgroundImageStretchCheckBox
+        // _backgroundImageStretchLabel
         // 
-        _backgroundImageStretchCheckBox.Anchor = AnchorStyles.Left;
-        _backgroundImageStretchCheckBox.AutoSize = true;
-        _backgroundImageStretchCheckBox.Location = new Point(129, 3);
-        _backgroundImageStretchCheckBox.Margin = new Padding(3, 3, 3, 0);
-        _backgroundImageStretchCheckBox.Name = "_backgroundImageStretchCheckBox";
-        _backgroundImageStretchCheckBox.Size = new Size(106, 34);
-        _backgroundImageStretchCheckBox.TabIndex = 1;
-        _backgroundImageStretchCheckBox.Text = "Stretch";
+        _backgroundImageStretchLabel.Anchor = AnchorStyles.Left;
+        _backgroundImageStretchLabel.AutoSize = true;
+        _backgroundImageStretchLabel.Location = new Point(129, 3);
+        _backgroundImageStretchLabel.Margin = new Padding(3, 3, 3, 0);
+        _backgroundImageStretchLabel.Name = "_backgroundImageStretchLabel";
+        _backgroundImageStretchLabel.Size = new Size(106, 34);
+        _backgroundImageStretchLabel.TabIndex = 1;
+        _backgroundImageStretchLabel.Text = "Stretch";
         // 
-        // _backgroundImageZoomCheckBox
+        // _backgroundImageZoomLabel
         // 
-        _backgroundImageZoomCheckBox.Anchor = AnchorStyles.Left;
-        _backgroundImageZoomCheckBox.AutoSize = true;
-        _backgroundImageZoomCheckBox.Location = new Point(255, 3);
-        _backgroundImageZoomCheckBox.Margin = new Padding(3, 3, 3, 0);
-        _backgroundImageZoomCheckBox.Name = "_backgroundImageZoomCheckBox";
-        _backgroundImageZoomCheckBox.Size = new Size(97, 34);
-        _backgroundImageZoomCheckBox.TabIndex = 2;
-        _backgroundImageZoomCheckBox.Text = "Zoom";
+        _backgroundImageZoomLabel.Anchor = AnchorStyles.Left;
+        _backgroundImageZoomLabel.AutoSize = true;
+        _backgroundImageZoomLabel.Location = new Point(255, 3);
+        _backgroundImageZoomLabel.Margin = new Padding(3, 3, 3, 0);
+        _backgroundImageZoomLabel.Name = "_backgroundImageZoomLabel";
+        _backgroundImageZoomLabel.Size = new Size(97, 34);
+        _backgroundImageZoomLabel.TabIndex = 2;
+        _backgroundImageZoomLabel.Text = "Zoom";
         // 
-        // _backgroundImageCenterCheckBox
+        // _backgroundImageCenterLabel
         // 
-        _backgroundImageCenterCheckBox.Anchor = AnchorStyles.Left;
-        _backgroundImageCenterCheckBox.AutoSize = true;
-        _backgroundImageCenterCheckBox.Location = new Point(381, 3);
-        _backgroundImageCenterCheckBox.Margin = new Padding(3, 3, 3, 0);
-        _backgroundImageCenterCheckBox.Name = "_backgroundImageCenterCheckBox";
-        _backgroundImageCenterCheckBox.Size = new Size(104, 34);
-        _backgroundImageCenterCheckBox.TabIndex = 3;
-        _backgroundImageCenterCheckBox.Text = "Center";
+        _backgroundImageCenterLabel.Anchor = AnchorStyles.Left;
+        _backgroundImageCenterLabel.AutoSize = true;
+        _backgroundImageCenterLabel.Location = new Point(381, 3);
+        _backgroundImageCenterLabel.Margin = new Padding(3, 3, 3, 0);
+        _backgroundImageCenterLabel.Name = "_backgroundImageCenterLabel";
+        _backgroundImageCenterLabel.Size = new Size(104, 34);
+        _backgroundImageCenterLabel.TabIndex = 3;
+        _backgroundImageCenterLabel.Text = "Center";
         // 
         // _backgroundImageTileButton
         // 
@@ -668,13 +668,12 @@ partial class ButtonVisualStylesView
         // 
         // ButtonVisualStylesView
         // 
-        AutoScaleDimensions = new SizeF(10F, 25F);
         AutoScaleMode = AutoScaleMode.Inherit;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         Controls.Add(_rootTableLayoutPanel);
         Name = "ButtonVisualStylesView";
-        Size = new Size(922, 610);
+        Size = new Size(922, 613);
         _rootTableLayoutPanel.ResumeLayout(false);
         _rootTableLayoutPanel.PerformLayout();
         _flatStyleGroupBox.ResumeLayout(false);
@@ -706,45 +705,45 @@ partial class ButtonVisualStylesView
     private TableLayoutPanel _rootTableLayoutPanel;
     private GroupBox _flatStyleGroupBox;
     private TableLayoutPanel _flatStyleTableLayoutPanel;
-    private CheckBox _flatStyleStandardCheckBox;
+    private Label _flatStyleStandardLabel;
     private Button _flatStyleStandardButton;
-    private CheckBox _flatStylePopupCheckBox;
+    private Label _flatStylePopupLabel;
     private Button _flatStylePopupButton;
-    private CheckBox _flatStyleFlatCheckBox;
+    private Label _flatStyleFlatLabel;
     private Button _flatStyleFlatButton;
-    private CheckBox _flatStyleSystemCheckBox;
+    private Label _flatStyleSystemLabel;
     private Button _flatStyleSystemButton;
     private GroupBox _visualStylesGroupBox;
     private TableLayoutPanel _visualStylesTableLayoutPanel;
-    private CheckBox _visualStylesClassicCheckBox;
+    private Label _visualStylesClassicLabel;
     private Button _visualStylesClassicButton;
-    private CheckBox _visualStylesNet11CheckBox;
+    private Label _visualStylesNet11Label;
     private Button _visualStylesNet11Button;
-    private CheckBox _visualStylesLatestCheckBox;
+    private Label _visualStylesLatestLabel;
     private Button _visualStylesLatestButton;
     private GroupBox _enabledStateGroupBox;
     private TableLayoutPanel _enabledStateTableLayoutPanel;
-    private CheckBox _enabledButtonCheckBox;
+    private Label _enabledButtonLabel;
     private Button _enabledButton;
-    private CheckBox _disabledButtonCheckBox;
+    private Label _disabledButtonLabel;
     private Button _disabledButton;
     private GroupBox _commandGroupBox;
     private TableLayoutPanel _commandTableLayoutPanel;
-    private CheckBox _commandAlphaCheckBox;
+    private Label _commandAlphaLabel;
     private Button _commandAlphaButton;
-    private CheckBox _commandBetaCheckBox;
+    private Label _commandBetaLabel;
     private Button _commandBetaButton;
-    private CheckBox _commandToggleEnabledCheckBox;
+    private Label _commandToggleEnabledLabel;
     private Button _commandToggleEnabledButton;
     private Label _commandResultLabel;
     private GroupBox _backgroundImageGroupBox;
     private TableLayoutPanel _backgroundImageTableLayoutPanel;
-    private CheckBox _backgroundImageTileCheckBox;
+    private Label _backgroundImageTileLabel;
+    private Label _backgroundImageStretchLabel;
+    private Label _backgroundImageZoomLabel;
+    private Label _backgroundImageCenterLabel;
     private Button _backgroundImageTileButton;
-    private CheckBox _backgroundImageStretchCheckBox;
     private Button _backgroundImageStretchButton;
-    private CheckBox _backgroundImageZoomCheckBox;
     private Button _backgroundImageZoomButton;
-    private CheckBox _backgroundImageCenterCheckBox;
     private Button _backgroundImageCenterButton;
 }

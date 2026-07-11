@@ -37,8 +37,9 @@ partial class MainForm
         _loadSettingsToolStripMenuItem = new ToolStripMenuItem();
         _editToolStripMenuItem = new ToolStripMenuItem();
         _selectAllToolStripMenuItem = new ToolStripMenuItem();
-        _resetSelectionToolStripMenuItem = new ToolStripMenuItem();
+        _clearSelectionToolStripMenuItem = new ToolStripMenuItem();
         _viewToolStripMenuItem = new ToolStripMenuItem();
+        _selectionMarginToolStripMenuItem = new ToolStripMenuItem();
         _statusStrip = new StatusStrip();
         _formSizeStatusLabel = new ToolStripStatusLabel();
         _formClientSizeStatusLabel = new ToolStripStatusLabel();
@@ -86,7 +87,7 @@ partial class MainForm
         // 
         // _editToolStripMenuItem
         // 
-        _editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _selectAllToolStripMenuItem, _resetSelectionToolStripMenuItem });
+        _editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _selectAllToolStripMenuItem, _clearSelectionToolStripMenuItem });
         _editToolStripMenuItem.Name = "_editToolStripMenuItem";
         _editToolStripMenuItem.Size = new Size(65, 34);
         _editToolStripMenuItem.Text = "&Edit";
@@ -99,18 +100,24 @@ partial class MainForm
         _selectAllToolStripMenuItem.Text = "Select &All";
         _selectAllToolStripMenuItem.Click += SelectAllToolStripMenuItem_Click;
         // 
-        // _resetSelectionToolStripMenuItem
+        // _clearSelectionToolStripMenuItem
         // 
-        _resetSelectionToolStripMenuItem.Name = "_resetSelectionToolStripMenuItem";
-        _resetSelectionToolStripMenuItem.Size = new Size(280, 38);
-        _resetSelectionToolStripMenuItem.Text = "&Reset Selection";
-        _resetSelectionToolStripMenuItem.Click += ResetSelectionToolStripMenuItem_Click;
+        _clearSelectionToolStripMenuItem.Name = "_clearSelectionToolStripMenuItem";
+        _clearSelectionToolStripMenuItem.Size = new Size(280, 38);
+        _clearSelectionToolStripMenuItem.Text = "&Clear Selection";
+        _clearSelectionToolStripMenuItem.Click += ClearSelectionToolStripMenuItem_Click;
         // 
         // _viewToolStripMenuItem
         // 
         _viewToolStripMenuItem.Name = "_viewToolStripMenuItem";
         _viewToolStripMenuItem.Size = new Size(76, 34);
         _viewToolStripMenuItem.Text = "&View";
+        // 
+        // _selectionMarginToolStripMenuItem
+        // 
+        _selectionMarginToolStripMenuItem.Name = "_selectionMarginToolStripMenuItem";
+        _selectionMarginToolStripMenuItem.Size = new Size(280, 38);
+        _selectionMarginToolStripMenuItem.Text = "Selection &Margin";
         // 
         // _statusStrip
         // 
@@ -208,8 +215,9 @@ partial class MainForm
     private ToolStripMenuItem _loadSettingsToolStripMenuItem;
     private ToolStripMenuItem _editToolStripMenuItem;
     private ToolStripMenuItem _selectAllToolStripMenuItem;
-    private ToolStripMenuItem _resetSelectionToolStripMenuItem;
+    private ToolStripMenuItem _clearSelectionToolStripMenuItem;
     private ToolStripMenuItem _viewToolStripMenuItem;
+    private ToolStripMenuItem _selectionMarginToolStripMenuItem;
     private StatusStrip _statusStrip;
     private ToolStripStatusLabel _formSizeStatusLabel;
     private ToolStripStatusLabel _formClientSizeStatusLabel;
