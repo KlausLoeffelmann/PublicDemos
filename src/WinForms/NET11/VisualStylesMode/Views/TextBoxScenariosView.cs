@@ -43,4 +43,9 @@ public partial class TextBoxScenariosView : UserControl, IScenarioView
     public void ClearSelection() => _selection.ClearSelection();
 
     public void SetSelectionMargin(int gap) => _selection.SetSelectionGap(gap);
+
+    private void _richTextBoxNoWordWrap_TextChanged(object sender, EventArgs e)
+    {
+
+    }
 }
