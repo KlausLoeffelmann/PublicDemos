@@ -79,6 +79,7 @@ public partial class MainForm : Form
             Text = scenario.DisplayName,
             CheckOnClick = false,
         };
+
         menuItem.Click += (_, _) => SwitchToView(scenario);
 
         _viewToolStripMenuItem.DropDownItems.Add(menuItem);
@@ -107,7 +108,7 @@ public partial class MainForm : Form
         _activeView.SelectionChanged += ActiveView_SelectionChanged;
 
         Control viewControl = (Control)scenario;
-        viewControl.Dock = DockStyle.Top;
+        viewControl.Dock = DockStyle.Fill;
         _splitContainer.Panel1.Controls.Add(viewControl);
         viewControl.Visible = true;
 

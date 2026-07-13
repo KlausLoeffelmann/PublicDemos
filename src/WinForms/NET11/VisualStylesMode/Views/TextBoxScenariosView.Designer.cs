@@ -42,6 +42,8 @@ partial class TextBoxScenariosView
         _textBoxMultiline = new TextBox();
         _textBoxNoBorderReadOnlyLabel = new Label();
         _textBoxNoBorderReadOnly = new TextBox();
+        numericUpDown1 = new NumericUpDown();
+        label1 = new Label();
         _richTextBoxGroupBox = new GroupBox();
         _richTextBoxTableLayoutPanel = new TableLayoutPanel();
         _richTextBoxDefaultLabel = new Label();
@@ -55,43 +57,43 @@ partial class TextBoxScenariosView
         _rootTableLayoutPanel.SuspendLayout();
         _textBoxGroupBox.SuspendLayout();
         _textBoxTableLayoutPanel.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
         _richTextBoxGroupBox.SuspendLayout();
         _richTextBoxTableLayoutPanel.SuspendLayout();
         SuspendLayout();
         // 
         // _rootTableLayoutPanel
         // 
+        _rootTableLayoutPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _rootTableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _rootTableLayoutPanel.ColumnCount = 2;
         _rootTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
         _rootTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
         _rootTableLayoutPanel.Controls.Add(_textBoxGroupBox, 0, 0);
         _rootTableLayoutPanel.Controls.Add(_richTextBoxGroupBox, 1, 0);
-        _rootTableLayoutPanel.Dock = DockStyle.Fill;
-        _rootTableLayoutPanel.Location = new Point(0, 0);
+        _rootTableLayoutPanel.Location = new Point(16, 17);
         _rootTableLayoutPanel.Name = "_rootTableLayoutPanel";
         _rootTableLayoutPanel.Padding = new Padding(10);
         _rootTableLayoutPanel.RowCount = 1;
-        _rootTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _rootTableLayoutPanel.Size = new Size(970, 494);
+        _rootTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        _rootTableLayoutPanel.Size = new Size(1204, 821);
         _rootTableLayoutPanel.TabIndex = 0;
         // 
         // _textBoxGroupBox
         // 
-        _textBoxGroupBox.AutoSize = true;
         _textBoxGroupBox.Controls.Add(_textBoxTableLayoutPanel);
         _textBoxGroupBox.Dock = DockStyle.Fill;
         _textBoxGroupBox.Location = new Point(13, 13);
         _textBoxGroupBox.Name = "_textBoxGroupBox";
         _textBoxGroupBox.Padding = new Padding(8);
-        _textBoxGroupBox.Size = new Size(469, 493);
+        _textBoxGroupBox.Size = new Size(586, 795);
         _textBoxGroupBox.TabIndex = 0;
         _textBoxGroupBox.TabStop = false;
         _textBoxGroupBox.Text = "TextBox scenarios (NC-paint / hover repro)";
         // 
         // _textBoxTableLayoutPanel
         // 
-        _textBoxTableLayoutPanel.AutoSize = true;
+        _textBoxTableLayoutPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _textBoxTableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _textBoxTableLayoutPanel.ColumnCount = 2;
         _textBoxTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
@@ -104,22 +106,24 @@ partial class TextBoxScenariosView
         _textBoxTableLayoutPanel.Controls.Add(_textBoxMultiline, 1, 2);
         _textBoxTableLayoutPanel.Controls.Add(_textBoxNoBorderReadOnlyLabel, 0, 3);
         _textBoxTableLayoutPanel.Controls.Add(_textBoxNoBorderReadOnly, 1, 3);
-        _textBoxTableLayoutPanel.Dock = DockStyle.Fill;
+        _textBoxTableLayoutPanel.Controls.Add(numericUpDown1, 1, 4);
+        _textBoxTableLayoutPanel.Controls.Add(label1, 0, 4);
         _textBoxTableLayoutPanel.Location = new Point(8, 32);
         _textBoxTableLayoutPanel.Name = "_textBoxTableLayoutPanel";
-        _textBoxTableLayoutPanel.RowCount = 4;
+        _textBoxTableLayoutPanel.RowCount = 5;
         _textBoxTableLayoutPanel.RowStyles.Add(new RowStyle());
         _textBoxTableLayoutPanel.RowStyles.Add(new RowStyle());
         _textBoxTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         _textBoxTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _textBoxTableLayoutPanel.Size = new Size(453, 453);
+        _textBoxTableLayoutPanel.RowStyles.Add(new RowStyle());
+        _textBoxTableLayoutPanel.Size = new Size(567, 763);
         _textBoxTableLayoutPanel.TabIndex = 0;
         // 
         // _textBoxDefaultLabel
         // 
         _textBoxDefaultLabel.Anchor = AnchorStyles.Left;
         _textBoxDefaultLabel.AutoSize = true;
-        _textBoxDefaultLabel.Location = new Point(3, 14);
+        _textBoxDefaultLabel.Location = new Point(3, 23);
         _textBoxDefaultLabel.Margin = new Padding(3, 6, 3, 3);
         _textBoxDefaultLabel.Name = "_textBoxDefaultLabel";
         _textBoxDefaultLabel.Size = new Size(148, 25);
@@ -128,19 +132,19 @@ partial class TextBoxScenariosView
         // 
         // _textBoxDefault
         // 
-        _textBoxDefault.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _textBoxDefault.Location = new Point(202, 3);
+        _textBoxDefault.Anchor = AnchorStyles.Left;
+        _textBoxDefault.Location = new Point(209, 10);
+        _textBoxDefault.Margin = new Padding(10);
         _textBoxDefault.Name = "_textBoxDefault";
-        _textBoxDefault.Size = new Size(248, 44);
+        _textBoxDefault.Size = new Size(348, 48);
         _textBoxDefault.TabIndex = 1;
         _textBoxDefault.Text = "Hover over me";
-        _textBoxDefault.VisualStylesMode = VisualStylesMode.Net11;
         // 
         // _textBoxFixedSingleLabel
         // 
         _textBoxFixedSingleLabel.Anchor = AnchorStyles.Left;
         _textBoxFixedSingleLabel.AutoSize = true;
-        _textBoxFixedSingleLabel.Location = new Point(3, 62);
+        _textBoxFixedSingleLabel.Location = new Point(3, 87);
         _textBoxFixedSingleLabel.Margin = new Padding(3, 6, 3, 3);
         _textBoxFixedSingleLabel.Name = "_textBoxFixedSingleLabel";
         _textBoxFixedSingleLabel.Size = new Size(160, 25);
@@ -149,20 +153,20 @@ partial class TextBoxScenariosView
         // 
         // _textBoxFixedSingle
         // 
-        _textBoxFixedSingle.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _textBoxFixedSingle.Anchor = AnchorStyles.Left;
         _textBoxFixedSingle.BorderStyle = BorderStyle.FixedSingle;
-        _textBoxFixedSingle.Location = new Point(202, 53);
+        _textBoxFixedSingle.Location = new Point(209, 78);
+        _textBoxFixedSingle.Margin = new Padding(10);
         _textBoxFixedSingle.Name = "_textBoxFixedSingle";
-        _textBoxFixedSingle.Size = new Size(248, 40);
+        _textBoxFixedSingle.Size = new Size(348, 40);
         _textBoxFixedSingle.TabIndex = 3;
         _textBoxFixedSingle.Text = "Hover over me";
-        _textBoxFixedSingle.VisualStylesMode = VisualStylesMode.Net11;
         // 
         // _textBoxMultilineLabel
         // 
         _textBoxMultilineLabel.Anchor = AnchorStyles.Left;
         _textBoxMultilineLabel.AutoSize = true;
-        _textBoxMultilineLabel.Location = new Point(3, 243);
+        _textBoxMultilineLabel.Location = new Point(3, 372);
         _textBoxMultilineLabel.Margin = new Padding(3, 6, 3, 3);
         _textBoxMultilineLabel.Name = "_textBoxMultilineLabel";
         _textBoxMultilineLabel.Size = new Size(190, 25);
@@ -173,19 +177,19 @@ partial class TextBoxScenariosView
         // 
         _textBoxMultiline.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _textBoxMultiline.BorderStyle = BorderStyle.FixedSingle;
-        _textBoxMultiline.Location = new Point(202, 99);
+        _textBoxMultiline.Location = new Point(209, 138);
+        _textBoxMultiline.Margin = new Padding(10);
         _textBoxMultiline.Multiline = true;
         _textBoxMultiline.Name = "_textBoxMultiline";
-        _textBoxMultiline.Size = new Size(248, 311);
+        _textBoxMultiline.Size = new Size(348, 491);
         _textBoxMultiline.TabIndex = 5;
         _textBoxMultiline.Text = "Hover over me\r\nMultiline text";
-        _textBoxMultiline.VisualStylesMode = VisualStylesMode.Net11;
         // 
         // _textBoxNoBorderReadOnlyLabel
         // 
         _textBoxNoBorderReadOnlyLabel.Anchor = AnchorStyles.Left;
         _textBoxNoBorderReadOnlyLabel.AutoSize = true;
-        _textBoxNoBorderReadOnlyLabel.Location = new Point(3, 422);
+        _textBoxNoBorderReadOnlyLabel.Location = new Point(3, 656);
         _textBoxNoBorderReadOnlyLabel.Margin = new Padding(3, 6, 3, 3);
         _textBoxNoBorderReadOnlyLabel.Name = "_textBoxNoBorderReadOnlyLabel";
         _textBoxNoBorderReadOnlyLabel.Size = new Size(193, 25);
@@ -194,32 +198,53 @@ partial class TextBoxScenariosView
         // 
         // _textBoxNoBorderReadOnly
         // 
-        _textBoxNoBorderReadOnly.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _textBoxNoBorderReadOnly.Anchor = AnchorStyles.Left;
         _textBoxNoBorderReadOnly.BorderStyle = BorderStyle.None;
-        _textBoxNoBorderReadOnly.Location = new Point(202, 416);
+        _textBoxNoBorderReadOnly.Location = new Point(209, 649);
+        _textBoxNoBorderReadOnly.Margin = new Padding(10);
         _textBoxNoBorderReadOnly.Name = "_textBoxNoBorderReadOnly";
         _textBoxNoBorderReadOnly.ReadOnly = true;
-        _textBoxNoBorderReadOnly.Size = new Size(248, 34);
+        _textBoxNoBorderReadOnly.Size = new Size(348, 36);
         _textBoxNoBorderReadOnly.TabIndex = 7;
         _textBoxNoBorderReadOnly.Text = "Hover over me";
-        _textBoxNoBorderReadOnly.VisualStylesMode = VisualStylesMode.Net11;
+        // 
+        // numericUpDown1
+        // 
+        numericUpDown1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        numericUpDown1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        numericUpDown1.Location = new Point(209, 705);
+        numericUpDown1.Margin = new Padding(10);
+        numericUpDown1.Maximum = new decimal(new int[] { -1530494977, 232830, 0, 0 });
+        numericUpDown1.Name = "numericUpDown1";
+        numericUpDown1.Size = new Size(348, 48);
+        numericUpDown1.TabIndex = 8;
+        // 
+        // label1
+        // 
+        label1.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        label1.AutoSize = true;
+        label1.Location = new Point(3, 716);
+        label1.Name = "label1";
+        label1.Size = new Size(193, 25);
+        label1.TabIndex = 9;
+        label1.Text = "Numeric UpDown";
         // 
         // _richTextBoxGroupBox
         // 
-        _richTextBoxGroupBox.AutoSize = true;
+        _richTextBoxGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        _richTextBoxGroupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _richTextBoxGroupBox.Controls.Add(_richTextBoxTableLayoutPanel);
-        _richTextBoxGroupBox.Dock = DockStyle.Fill;
-        _richTextBoxGroupBox.Location = new Point(488, 13);
+        _richTextBoxGroupBox.Location = new Point(605, 13);
         _richTextBoxGroupBox.Name = "_richTextBoxGroupBox";
         _richTextBoxGroupBox.Padding = new Padding(8);
-        _richTextBoxGroupBox.Size = new Size(469, 493);
+        _richTextBoxGroupBox.Size = new Size(586, 795);
         _richTextBoxGroupBox.TabIndex = 1;
         _richTextBoxGroupBox.TabStop = false;
         _richTextBoxGroupBox.Text = "RichTextBox scenarios";
         // 
         // _richTextBoxTableLayoutPanel
         // 
-        _richTextBoxTableLayoutPanel.AutoSize = true;
+        _richTextBoxTableLayoutPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _richTextBoxTableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _richTextBoxTableLayoutPanel.ColumnCount = 2;
         _richTextBoxTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
@@ -232,22 +257,21 @@ partial class TextBoxScenariosView
         _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxNoWordWrap, 1, 2);
         _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxReadOnlyLabel, 0, 3);
         _richTextBoxTableLayoutPanel.Controls.Add(_richTextBoxReadOnly, 1, 3);
-        _richTextBoxTableLayoutPanel.Dock = DockStyle.Fill;
-        _richTextBoxTableLayoutPanel.Location = new Point(8, 32);
+        _richTextBoxTableLayoutPanel.Location = new Point(11, 32);
         _richTextBoxTableLayoutPanel.Name = "_richTextBoxTableLayoutPanel";
         _richTextBoxTableLayoutPanel.RowCount = 4;
         _richTextBoxTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
         _richTextBoxTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
         _richTextBoxTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
         _richTextBoxTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-        _richTextBoxTableLayoutPanel.Size = new Size(453, 453);
+        _richTextBoxTableLayoutPanel.Size = new Size(564, 753);
         _richTextBoxTableLayoutPanel.TabIndex = 0;
         // 
         // _richTextBoxDefaultLabel
         // 
         _richTextBoxDefaultLabel.Anchor = AnchorStyles.Left;
         _richTextBoxDefaultLabel.AutoSize = true;
-        _richTextBoxDefaultLabel.Location = new Point(3, 45);
+        _richTextBoxDefaultLabel.Location = new Point(3, 83);
         _richTextBoxDefaultLabel.Margin = new Padding(3, 6, 3, 3);
         _richTextBoxDefaultLabel.Name = "_richTextBoxDefaultLabel";
         _richTextBoxDefaultLabel.Size = new Size(69, 25);
@@ -257,18 +281,18 @@ partial class TextBoxScenariosView
         // _richTextBoxDefault
         // 
         _richTextBoxDefault.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        _richTextBoxDefault.Location = new Point(169, 3);
+        _richTextBoxDefault.Location = new Point(176, 10);
+        _richTextBoxDefault.Margin = new Padding(10);
         _richTextBoxDefault.Name = "_richTextBoxDefault";
-        _richTextBoxDefault.Size = new Size(281, 107);
+        _richTextBoxDefault.Size = new Size(378, 168);
         _richTextBoxDefault.TabIndex = 1;
         _richTextBoxDefault.Text = "Hover over me";
-        _richTextBoxDefault.VisualStylesMode = VisualStylesMode.Latest;
         // 
         // _richTextBoxFixedSingleLabel
         // 
         _richTextBoxFixedSingleLabel.Anchor = AnchorStyles.Left;
         _richTextBoxFixedSingleLabel.AutoSize = true;
-        _richTextBoxFixedSingleLabel.Location = new Point(3, 158);
+        _richTextBoxFixedSingleLabel.Location = new Point(3, 271);
         _richTextBoxFixedSingleLabel.Margin = new Padding(3, 6, 3, 3);
         _richTextBoxFixedSingleLabel.Name = "_richTextBoxFixedSingleLabel";
         _richTextBoxFixedSingleLabel.Size = new Size(160, 25);
@@ -279,19 +303,19 @@ partial class TextBoxScenariosView
         // 
         _richTextBoxFixedSingle.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _richTextBoxFixedSingle.BorderStyle = BorderStyle.FixedSingle;
-        _richTextBoxFixedSingle.Location = new Point(169, 116);
+        _richTextBoxFixedSingle.Location = new Point(176, 198);
+        _richTextBoxFixedSingle.Margin = new Padding(10);
         _richTextBoxFixedSingle.Name = "_richTextBoxFixedSingle";
         _richTextBoxFixedSingle.Padding = new Padding(1);
-        _richTextBoxFixedSingle.Size = new Size(281, 107);
+        _richTextBoxFixedSingle.Size = new Size(378, 168);
         _richTextBoxFixedSingle.TabIndex = 3;
         _richTextBoxFixedSingle.Text = "Hover over me";
-        _richTextBoxFixedSingle.VisualStylesMode = VisualStylesMode.Latest;
         // 
         // _richTextBoxNoWordWrapLabel
         // 
         _richTextBoxNoWordWrapLabel.Anchor = AnchorStyles.Left;
         _richTextBoxNoWordWrapLabel.AutoSize = true;
-        _richTextBoxNoWordWrapLabel.Location = new Point(3, 271);
+        _richTextBoxNoWordWrapLabel.Location = new Point(3, 459);
         _richTextBoxNoWordWrapLabel.Margin = new Padding(3, 6, 3, 3);
         _richTextBoxNoWordWrapLabel.Name = "_richTextBoxNoWordWrapLabel";
         _richTextBoxNoWordWrapLabel.Size = new Size(157, 25);
@@ -301,12 +325,12 @@ partial class TextBoxScenariosView
         // _richTextBoxNoWordWrap
         // 
         _richTextBoxNoWordWrap.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        _richTextBoxNoWordWrap.Location = new Point(169, 229);
+        _richTextBoxNoWordWrap.Location = new Point(176, 386);
+        _richTextBoxNoWordWrap.Margin = new Padding(10);
         _richTextBoxNoWordWrap.Name = "_richTextBoxNoWordWrap";
-        _richTextBoxNoWordWrap.Size = new Size(281, 107);
+        _richTextBoxNoWordWrap.Size = new Size(378, 168);
         _richTextBoxNoWordWrap.TabIndex = 5;
         _richTextBoxNoWordWrap.Text = "Hover over me, this is a long line that would normally wrap.";
-        _richTextBoxNoWordWrap.VisualStylesMode = VisualStylesMode.Latest;
         _richTextBoxNoWordWrap.WordWrap = false;
         _richTextBoxNoWordWrap.TextChanged += _richTextBoxNoWordWrap_TextChanged;
         // 
@@ -314,7 +338,7 @@ partial class TextBoxScenariosView
         // 
         _richTextBoxReadOnlyLabel.Anchor = AnchorStyles.Left;
         _richTextBoxReadOnlyLabel.AutoSize = true;
-        _richTextBoxReadOnlyLabel.Location = new Point(3, 385);
+        _richTextBoxReadOnlyLabel.Location = new Point(3, 647);
         _richTextBoxReadOnlyLabel.Margin = new Padding(3, 6, 3, 3);
         _richTextBoxReadOnlyLabel.Name = "_richTextBoxReadOnlyLabel";
         _richTextBoxReadOnlyLabel.Size = new Size(88, 25);
@@ -324,13 +348,13 @@ partial class TextBoxScenariosView
         // _richTextBoxReadOnly
         // 
         _richTextBoxReadOnly.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        _richTextBoxReadOnly.Location = new Point(169, 342);
+        _richTextBoxReadOnly.Location = new Point(176, 574);
+        _richTextBoxReadOnly.Margin = new Padding(10);
         _richTextBoxReadOnly.Name = "_richTextBoxReadOnly";
         _richTextBoxReadOnly.ReadOnly = true;
-        _richTextBoxReadOnly.Size = new Size(281, 108);
+        _richTextBoxReadOnly.Size = new Size(378, 169);
         _richTextBoxReadOnly.TabIndex = 7;
         _richTextBoxReadOnly.Text = "Hover over me";
-        _richTextBoxReadOnly.VisualStylesMode = VisualStylesMode.Latest;
         // 
         // TextBoxScenariosView
         // 
@@ -339,15 +363,14 @@ partial class TextBoxScenariosView
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         Controls.Add(_rootTableLayoutPanel);
         Name = "TextBoxScenariosView";
-        Size = new Size(970, 494);
+        Size = new Size(1239, 854);
+        VisualStylesMode = VisualStylesMode.Net11;
         _rootTableLayoutPanel.ResumeLayout(false);
-        _rootTableLayoutPanel.PerformLayout();
         _textBoxGroupBox.ResumeLayout(false);
-        _textBoxGroupBox.PerformLayout();
         _textBoxTableLayoutPanel.ResumeLayout(false);
         _textBoxTableLayoutPanel.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
         _richTextBoxGroupBox.ResumeLayout(false);
-        _richTextBoxGroupBox.PerformLayout();
         _richTextBoxTableLayoutPanel.ResumeLayout(false);
         _richTextBoxTableLayoutPanel.PerformLayout();
         ResumeLayout(false);
@@ -376,4 +399,6 @@ partial class TextBoxScenariosView
     private RichTextBox _richTextBoxNoWordWrap;
     private Label _richTextBoxReadOnlyLabel;
     private RichTextBox _richTextBoxReadOnly;
+    private NumericUpDown numericUpDown1;
+    private Label label1;
 }
