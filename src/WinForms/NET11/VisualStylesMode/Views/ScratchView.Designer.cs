@@ -93,7 +93,7 @@
             // textBox2
             // 
             textBox2.Font = new Font("Segoe UI", 20F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            textBox2.Location = new Point(301, 259);
+            textBox2.Location = new Point(262, 175);
             textBox2.Name = "textBox2";
             textBox2.Size = new Size(437, 74);
             textBox2.TabIndex = 5;
@@ -131,7 +131,7 @@
             // button3
             // 
             button3.DialogResult = DialogResult.OK;
-            button3.Location = new Point(472, 207);
+            button3.Location = new Point(36, 376);
             button3.Name = "button3";
             button3.Size = new Size(286, 60);
             button3.TabIndex = 9;
@@ -142,7 +142,7 @@
             // 
             button4.DialogResult = DialogResult.OK;
             button4.FlatStyle = FlatStyle.Popup;
-            button4.Location = new Point(681, 302);
+            button4.Location = new Point(651, 111);
             button4.Name = "button4";
             button4.Size = new Size(132, 97);
             button4.TabIndex = 10;
@@ -175,6 +175,7 @@
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(textBox2);
             Controls.Add(button4);
             Controls.Add(button6);
             Controls.Add(button5);
@@ -182,7 +183,6 @@
             Controls.Add(button2);
             Controls.Add(button1);
             Controls.Add(textBox3);
-            Controls.Add(textBox2);
             Controls.Add(richTextBox2);
             Controls.Add(radioButton1);
             Controls.Add(richTextBox1);
