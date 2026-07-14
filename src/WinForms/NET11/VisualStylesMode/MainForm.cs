@@ -3,7 +3,9 @@
 
 using System.ComponentModel;
 using System.Text.Json;
+using VisualStylesModeDemo.Components;
 using VisualStylesModeDemo.Views;
+using Windows.UI.ViewManagement;
 
 namespace VisualStylesModeDemo;
 
@@ -11,45 +13,49 @@ namespace VisualStylesModeDemo;
 ///  Host shell for a growing set of exploratory .NET 11 WinForms scenarios (tracked in
 ///  https://github.com/dotnet/winforms/issues/14694). Panel1 of the SplitContainer swaps between
 ///  registered <see cref="IScenarioView"/> UserControls via the View menu; Panel2 always hosts the
-///  same PropertyGrid, which is driven by whichever controls the user has double-clicked (selected)
-///  in the active view.
+///  same PropertyGrid, which is driven by the shell's transparent Edit-mode adorner.
 /// </summary>
 /// <remarks>
 ///  <para>
 ///   To add another exploratory view (e.g. TreeView.NodeLeading, Application.SystemTextSize
-///   live-update), create a new UserControl implementing
-///   <see cref="IScenarioView"/> under Views\ and add one line to <see cref="CreateViews"/> below -
-///   everything else (menu item, switching, selection wiring, disposal) is handled generically.
+///   live-update), create a new UserControl implementing <see cref="IScenarioView"/> under Views\
+///   and add one line to <see cref="CreateViews"/> below.
 ///  </para>
 /// </remarks>
 public partial class MainForm : Form
 {
-    private readonly List<(IScenarioView Scenario, ToolStripMenuItem MenuItem)> _views = [];
-    private IScenarioView? _activeView;
+    private const float BaseUiFontSize = 11F;
 
-    // The selectable-margin (10..30px in 5px steps) shown in View > Selection Margin. Defaults to the
-    // panel's own default gap and is persisted alongside the window position in window.json.
-    private static readonly int[] s_selectionMarginSteps = [10, 15, 20, 25, 30];
-    private readonly List<ToolStripMenuItem> _marginMenuItems = [];
-    private int _selectionMargin = SelectablePanel.DefaultSelectionGap;
+    private readonly List<(IScenarioView Scenario, ToolStripMenuItem MenuItem)> _views = [];
+    private readonly ControlSelectionAdornerForm _selectionAdorner;
+    private readonly UISettings _uiSettings = new();
+    private IScenarioView? _activeView;
+    private Font? _scaledUiFont;
+    private bool _editModeEnabled;
+    private Color _accentColor = SystemColors.Highlight;
+    private VisualStylesMode _selectedVisualStylesMode = VisualStylesMode.Net11;
+    private FlatStyle _selectedFlatStyle = FlatStyle.Standard;
 
     public MainForm()
     {
         InitializeComponent();
 
-        // We will need the components container also for other means,
-        // so, make sure, it got actually initialzed:
-        components ??= new Container();
+        _selectionAdorner = new ControlSelectionAdornerForm();
+        _selectionAdorner.SelectionChanged += SelectionAdorner_SelectionChanged;
+        components!.Add(_selectionAdorner);
 
         CreateViews();
-        BuildSelectionMarginMenu();
 
         if (_views.Count > 0)
         {
             SwitchToView(_views[0].Scenario);
         }
 
+        ApplySystemTextSize();
+        UpdateSystemAppearance();
         UpdateFormSizeStatusLabels();
+        UpdateSelectionUi();
+        _systemAppearanceTimer.Start();
     }
 
     /// <summary>
@@ -61,6 +67,7 @@ public partial class MainForm : Form
         RegisterView(new TextBoxScenariosView());
         RegisterView(new ButtonVisualStylesView());
         RegisterView(new CheckBoxRadioButtonVisualStylesView());
+        RegisterView(new CashRegisterView());
 
         // Future views, following the exact same pattern:
         //   RegisterView(new TreeViewNodeLeadingScenariosView());
@@ -82,7 +89,7 @@ public partial class MainForm : Form
 
         menuItem.Click += (_, _) => SwitchToView(scenario);
 
-        _viewToolStripMenuItem.DropDownItems.Add(menuItem);
+        _viewToolStripMenuItem.DropDownItems.Insert(_views.Count, menuItem);
         _views.Add((scenario, menuItem));
 
         // Let the shared IContainer own disposal of every view, whether active or not, so GDI
@@ -99,141 +106,217 @@ public partial class MainForm : Form
 
         if (_activeView is not null)
         {
-            _activeView.SelectionChanged -= ActiveView_SelectionChanged;
             ((Control)_activeView).Visible = false;
             _splitContainer.Panel1.Controls.Remove((Control)_activeView);
         }
 
         _activeView = scenario;
-        _activeView.SelectionChanged += ActiveView_SelectionChanged;
 
         Control viewControl = (Control)scenario;
         viewControl.Dock = DockStyle.Fill;
+        if (_scaledUiFont is not null)
+        {
+            viewControl.Font = _scaledUiFont;
+        }
+
         _splitContainer.Panel1.Controls.Add(viewControl);
         viewControl.Visible = true;
+        ApplyVisualStylesModeRecursively(viewControl, _selectedVisualStylesMode);
+
+        if (scenario is IFlatStyleScenarioView flatStyleScenario)
+        {
+            flatStyleScenario.ApplyFlatStyle(_selectedFlatStyle);
+        }
 
         foreach ((IScenarioView candidate, ToolStripMenuItem menuItem) in _views)
         {
             menuItem.Checked = ReferenceEquals(candidate, scenario);
         }
 
-        RefreshPropertyGridSelection();
+        if (_editModeEnabled)
+        {
+            _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
+        }
+        else
+        {
+            _selectionAdorner.ClearSelection();
+        }
+
+        UpdateViewAppearanceMenu();
+        UpdateSelectionUi();
     }
 
-    private void ActiveView_SelectionChanged(object? sender, EventArgs e) => RefreshPropertyGridSelection();
+    private void ClassicVisualStylesToolStripMenuItem_Click(object sender, EventArgs e) =>
+        SetVisualStylesMode(VisualStylesMode.Classic);
 
-    private void RefreshPropertyGridSelection()
+    private void Net11VisualStylesToolStripMenuItem_Click(object sender, EventArgs e) =>
+        SetVisualStylesMode(VisualStylesMode.Net11);
+
+    private void StandardFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) =>
+        SetFlatStyle(FlatStyle.Standard);
+
+    private void FlatFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) =>
+        SetFlatStyle(FlatStyle.Flat);
+
+    private void PopupFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) =>
+        SetFlatStyle(FlatStyle.Popup);
+
+    private void SystemFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) =>
+        SetFlatStyle(FlatStyle.System);
+
+    private void SetVisualStylesMode(VisualStylesMode visualStylesMode)
     {
-        Control[] selected = _activeView?.GetSelectedControls().ToArray() ?? [];
+        _selectedVisualStylesMode = visualStylesMode;
+        if (_activeView is Control activeView)
+        {
+            ApplyVisualStylesModeRecursively(activeView, visualStylesMode);
+        }
+
+        if (_activeView is IFlatStyleScenarioView flatStyleScenario)
+        {
+            flatStyleScenario.ApplyFlatStyle(_selectedFlatStyle);
+        }
+
+        UpdateViewAppearanceMenu();
+        _selectionAdorner.SynchronizeBoundsAndRender();
+    }
+
+    private void SetFlatStyle(FlatStyle flatStyle)
+    {
+        _selectedFlatStyle = flatStyle;
+        if (_activeView is IFlatStyleScenarioView flatStyleScenario)
+        {
+            flatStyleScenario.ApplyFlatStyle(flatStyle);
+        }
+
+        UpdateViewAppearanceMenu();
+        _selectionAdorner.SynchronizeBoundsAndRender();
+    }
+
+    private static void ApplyVisualStylesModeRecursively(Control control, VisualStylesMode visualStylesMode)
+    {
+        control.VisualStylesMode = visualStylesMode;
+        foreach (Control child in control.Controls)
+        {
+            ApplyVisualStylesModeRecursively(child, visualStylesMode);
+        }
+    }
+
+    private void UpdateViewAppearanceMenu()
+    {
+        _classicVisualStylesToolStripMenuItem.Checked = _selectedVisualStylesMode == VisualStylesMode.Classic;
+        _net11VisualStylesToolStripMenuItem.Checked = _selectedVisualStylesMode == VisualStylesMode.Net11;
+
+        bool supportsFlatStyle = _activeView is IFlatStyleScenarioView;
+        _standardFlatStyleToolStripMenuItem.Enabled = supportsFlatStyle;
+        _flatFlatStyleToolStripMenuItem.Enabled = supportsFlatStyle;
+        _popupFlatStyleToolStripMenuItem.Enabled = supportsFlatStyle;
+        _systemFlatStyleToolStripMenuItem.Enabled = supportsFlatStyle;
+
+        _standardFlatStyleToolStripMenuItem.Checked = _selectedFlatStyle == FlatStyle.Standard;
+        _flatFlatStyleToolStripMenuItem.Checked = _selectedFlatStyle == FlatStyle.Flat;
+        _popupFlatStyleToolStripMenuItem.Checked = _selectedFlatStyle == FlatStyle.Popup;
+        _systemFlatStyleToolStripMenuItem.Checked = _selectedFlatStyle == FlatStyle.System;
+    }
+
+    private void SelectionAdorner_SelectionChanged(object? sender, EventArgs e) => UpdateSelectionUi();
+
+    private void EditModeToolStripMenuItem_Click(object sender, EventArgs e) =>
+        SetEditMode(!_editModeEnabled);
+
+    private void SelectAllToolStripMenuItem_Click(object sender, EventArgs e) =>
+        _selectionAdorner.SelectAll();
+
+    private void DeselectAllToolStripMenuItem_Click(object sender, EventArgs e) =>
+        _selectionAdorner.ClearSelection();
+
+    private void SetEditMode(bool enabled)
+    {
+        if (_editModeEnabled == enabled)
+        {
+            return;
+        }
+
+        _editModeEnabled = enabled;
+        if (enabled && _activeView is Control viewControl)
+        {
+            _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
+        }
+        else
+        {
+            _selectionAdorner.DeactivateAndClear();
+        }
+
+        UpdateSelectionUi();
+    }
+
+    private void UpdateSelectionUi()
+    {
+        Control[] selected = _selectionAdorner.SelectedControls.ToArray();
         _propertyGrid.SelectedObjects = selected;
 
-        _selectedControlStatusLabel.Text = selected.Length switch
-        {
-            0 => $"{_activeView?.DisplayName}: no controls selected",
-            1 => $"{_activeView?.DisplayName}: {((Control)selected[0]).Name} selected",
-            _ => $"{_activeView?.DisplayName}: {selected.Length} controls selected",
-        };
-    }
-
-    private void SelectAllToolStripMenuItem_Click(object sender, EventArgs e) => _activeView?.SelectAll();
-
-    private void ClearSelectionToolStripMenuItem_Click(object sender, EventArgs e) => _activeView?.ClearSelection();
-
-    /// <summary>
-    ///  Builds the "Selection Margin" submenu under View. The scenario view items were just added by
-    ///  <see cref="CreateViews"/>, so we append a separator and then the submenu with one checkable
-    ///  item per 5px step (10..30). The items behave like a radio group via <see cref="ApplySelectionMargin"/>.
-    /// </summary>
-    private void BuildSelectionMarginMenu()
-    {
-        _viewToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
-        _viewToolStripMenuItem.DropDownItems.Add(_selectionMarginToolStripMenuItem);
-
-        foreach (int step in s_selectionMarginSteps)
-        {
-            ToolStripMenuItem item = new()
+        _selectedControlStatusLabel.Text = !_editModeEnabled
+            ? $"{_activeView?.DisplayName}: Edit mode off"
+            : selected.Length switch
             {
-                Text = $"{step} px",
-                Tag = step,
-                Checked = step == _selectionMargin,
+                0 => $"{_activeView?.DisplayName}: no controls selected",
+                1 => $"{_activeView?.DisplayName}: {GetControlDisplayName(selected[0])} selected",
+                _ => $"{_activeView?.DisplayName}: {selected.Length} controls selected",
             };
-            item.Click += SelectionMarginMenuItem_Click;
 
-            _selectionMarginToolStripMenuItem.DropDownItems.Add(item);
-            _marginMenuItems.Add(item);
-        }
+        bool hasActiveView = _activeView is not null;
+        bool hasSelection = selected.Length > 0;
+
+        _editModeToolStripMenuItem.Checked = _editModeEnabled;
+        _editModeToolStripButton.Checked = _editModeEnabled;
+        _selectAllToolStripMenuItem.Enabled = _editModeEnabled && hasActiveView;
+        _selectAllToolStripButton.Enabled = _editModeEnabled && hasActiveView;
+        _deselectAllToolStripMenuItem.Enabled = _editModeEnabled && hasSelection;
+        _deselectAllToolStripButton.Enabled = _editModeEnabled && hasSelection;
+        _saveSettingsToolStripMenuItem.Enabled = hasSelection;
+        _saveSettingsToolStripButton.Enabled = hasSelection;
     }
 
-    private void SelectionMarginMenuItem_Click(object? sender, EventArgs e)
+    private static string GetControlDisplayName(Control control) =>
+        string.IsNullOrEmpty(control.Name) ? control.GetType().Name : control.Name;
+
+    private void ApplyToolStripImages()
     {
-        if (sender is ToolStripMenuItem { Tag: int step })
-        {
-            ApplySelectionMargin(step);
-        }
+        Color iconColor = SystemColors.ControlText;
+        _iconFactoryComponent.SetImage(_saveSettingsToolStripButton, SymbolGlyph.Save, 36, DeviceDpi, iconColor);
+        _iconFactoryComponent.SetImage(_loadSettingsToolStripButton, SymbolGlyph.OpenFile, 36, DeviceDpi, iconColor);
+        _iconFactoryComponent.SetImage(_editModeToolStripButton, SymbolGlyph.Edit, 36, DeviceDpi, iconColor);
+        _iconFactoryComponent.SetImage(_selectAllToolStripButton, SymbolGlyph.SelectAll, 36, DeviceDpi, iconColor);
+        _iconFactoryComponent.SetImage(_deselectAllToolStripButton, SymbolGlyph.ClearSelection, 36, DeviceDpi, iconColor);
     }
 
-    /// <summary>
-    ///  Applies the selection margin (gap between a control's chrome and its selection frame) to every
-    ///  registered view - all views are constructed up front, so switching views keeps a consistent
-    ///  margin - and updates the submenu's radio-style check marks.
-    /// </summary>
-    private void ApplySelectionMargin(int gap)
+    private void PropertyGrid_PropertyValueChanged(object? sender, PropertyValueChangedEventArgs e)
     {
-        _selectionMargin = gap;
-
-        foreach ((IScenarioView scenario, _) in _views)
-        {
-            scenario.SetSelectionMargin(gap);
-        }
-
-        foreach (ToolStripMenuItem item in _marginMenuItems)
-        {
-            item.Checked = item.Tag is int step && step == gap;
-        }
-    }
-
-    /// <summary>Snaps an arbitrary (e.g. hand-edited) value to the closest supported 5px step.</summary>
-    private static int NormalizeMargin(int value)
-    {
-        int closest = s_selectionMarginSteps[0];
-        foreach (int step in s_selectionMarginSteps)
-        {
-            if (Math.Abs(step - value) < Math.Abs(closest - value))
-            {
-                closest = step;
-            }
-        }
-
-        return closest;
-    }
-
-    private void PropertyGrid_PropertyValueChanged(object? sender, PropertyValueChangedEventArgs e) =>
         _splitContainer.Panel1.Refresh();
+        _selectionAdorner.SynchronizeBoundsAndRender();
+    }
 
     protected override void OnResize(EventArgs e)
     {
         base.OnResize(e);
         UpdateFormSizeStatusLabels();
+        UpdateScaleStatusLabels();
     }
 
     /// <summary>
-    ///  Restores the persisted window position/size/state and selection margin. This runs in
-    ///  <see cref="OnLoad"/> - after <c>base.OnLoad</c> - deliberately: by then the Font-based
-    ///  AutoScale (DPI) layout pass has already sized the form, so our restored bounds are the final
-    ///  word and won't be undone by a later scaling pass.
+    ///  Restores the persisted window position/size/state. This runs in <see cref="OnLoad"/> after
+    ///  <c>base.OnLoad</c> so the restored bounds are not replaced by a later AutoScale layout pass.
     /// </summary>
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
+        ApplyToolStripImages();
 
         WindowSettings? settings = TryLoadSettings();
         if (settings is null)
         {
             return;
         }
-
-        // Restore the selection margin, snapped to a supported step in case window.json was edited.
-        ApplySelectionMargin(NormalizeMargin(settings.SelectionMargin));
 
         Rectangle bounds = new(settings.X, settings.Y, settings.Width, settings.Height);
         if (IsOnScreen(bounds))
@@ -248,11 +331,20 @@ public partial class MainForm : Form
         }
     }
 
-    /// <summary>Persists the window position/size/state and selection margin as the form closes.</summary>
+    /// <summary>Persists the window position, size, and state as the form closes.</summary>
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        _systemAppearanceTimer.Stop();
+        _selectionAdorner.DeactivateAndClear();
         SaveSettings();
         base.OnFormClosing(e);
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        base.OnFormClosed(e);
+        _scaledUiFont?.Dispose();
+        _scaledUiFont = null;
     }
 
     /// <summary>The auto-managed settings file: <c>%APPDATA%\VisualStylesModeDemo\window.json</c>.</summary>
@@ -294,7 +386,6 @@ public partial class MainForm : Form
             Width = bounds.Width,
             Height = bounds.Height,
             Maximized = WindowState == FormWindowState.Maximized,
-            SelectionMargin = _selectionMargin,
         };
 
         try
@@ -332,7 +423,7 @@ public partial class MainForm : Form
         return false;
     }
 
-    /// <summary>Small JSON-serialized snapshot of the window's restore state and selection margin.</summary>
+    /// <summary>Small JSON-serialized snapshot of the window's restore state.</summary>
     private sealed record WindowSettings
     {
         public int X { get; init; }
@@ -340,7 +431,6 @@ public partial class MainForm : Form
         public int Width { get; init; }
         public int Height { get; init; }
         public bool Maximized { get; init; }
-        public int SelectionMargin { get; init; }
     }
 
     private void UpdateFormSizeStatusLabels()
@@ -355,10 +445,13 @@ public partial class MainForm : Form
     /// </summary>
     private void SaveSettingsToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        Control[] selected = _activeView?.GetSelectedControls().ToArray() ?? [];
+        Control[] selected = _selectionAdorner.SelectedControls.ToArray();
         if (selected.Length == 0)
         {
-            MessageBox.Show(this, "Double-click at least one control to select it before saving its property settings.", Text);
+            MessageBox.Show(
+                this,
+                "Enable Edit mode and double-click at least one control before saving its property settings.",
+                Text);
             return;
         }
 
@@ -419,7 +512,9 @@ public partial class MainForm : Form
         Control viewControl = (Control)_activeView;
         foreach ((string controlName, Dictionary<string, string> properties) in data)
         {
-            Control[] matches = viewControl.Controls.Find(controlName, searchAllChildren: true);
+            Control[] matches = string.Equals(viewControl.Name, controlName, StringComparison.Ordinal)
+                ? [viewControl]
+                : viewControl.Controls.Find(controlName, searchAllChildren: true);
             if (matches.Length == 0)
             {
                 continue;
@@ -430,6 +525,7 @@ public partial class MainForm : Form
 
         _splitContainer.Panel1.Refresh();
         _propertyGrid.Refresh();
+        _selectionAdorner.SynchronizeBoundsAndRender();
     }
 
     /// <summary>
@@ -491,5 +587,58 @@ public partial class MainForm : Form
                 // control type); this is a scratch/testing tool, not production settings storage.
             }
         }
+    }
+
+    private void MainForm_SystemTextSizeChanged(object sender, EventArgs e)
+    {
+        ApplySystemTextSize();
+        UpdateScaleStatusLabels();
+        _selectionAdorner.SynchronizeBoundsAndRender();
+    }
+
+    private void MainForm_DpiChanged(object sender, DpiChangedEventArgs e)
+    {
+        ApplyToolStripImages();
+        UpdateScaleStatusLabels();
+        _selectionAdorner.SynchronizeBoundsAndRender();
+    }
+
+    private void SystemAppearanceTimer_Tick(object sender, EventArgs e) => UpdateSystemAppearance();
+
+    private void ApplySystemTextSize()
+    {
+        float scaledSize = BaseUiFontSize * (float)Application.SystemTextSize;
+        Font newFont = new("Segoe UI", scaledSize, FontStyle.Regular, GraphicsUnit.Point);
+        Font? oldFont = _scaledUiFont;
+        _scaledUiFont = newFont;
+
+        _menuStrip.Font = newFont;
+        _statusStrip.Font = newFont;
+        foreach ((IScenarioView scenario, _) in _views)
+        {
+            ((Control)scenario).Font = newFont;
+        }
+
+        oldFont?.Dispose();
+    }
+
+    private void UpdateSystemAppearance()
+    {
+        Windows.UI.Color accent = _uiSettings.GetColorValue(UIColorType.Accent);
+        _accentColor = Color.FromArgb(accent.A, accent.R, accent.G, accent.B);
+        _accentColorStatusLabel.Text = $"Accent: #{_accentColor.ToArgb():X8}";
+        _accentColorSwatchStatusLabel.BackColor = _accentColor;
+        _accentColorSwatchStatusLabel.ToolTipText = $"Windows accent color #{_accentColor.ToArgb():X8}";
+        _selectionAdorner.AccentColor = _accentColor;
+
+        UpdateScaleStatusLabels();
+    }
+
+    private void UpdateScaleStatusLabels()
+    {
+        int displayPercent = (int)Math.Round(DeviceDpi / 96D * 100D);
+        int textPercent = (int)Math.Round(Application.SystemTextSize * 100D);
+        _displayScaleStatusLabel.Text = $"Display: {displayPercent}% ({DeviceDpi} DPI)";
+        _textScaleStatusLabel.Text = $"Text: {textPercent}%";
     }
 }

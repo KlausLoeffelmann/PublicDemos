@@ -46,7 +46,6 @@ partial class CheckBoxRadioButtonVisualStylesView
         _rootTableLayoutPanel.Controls.Add(_introLabel, 0, 0);
         _rootTableLayoutPanel.Controls.Add(_matrixTableLayoutPanel, 0, 1);
         _rootTableLayoutPanel.Dock = DockStyle.Top;
-        _rootTableLayoutPanel.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
         _rootTableLayoutPanel.Location = new Point(0, 0);
         _rootTableLayoutPanel.Name = "_rootTableLayoutPanel";
         _rootTableLayoutPanel.RowCount = 2;
@@ -62,13 +61,13 @@ partial class CheckBoxRadioButtonVisualStylesView
         _introLabel.Name = "_introLabel";
         _introLabel.Size = new Size(400, 30);
         _introLabel.TabIndex = 0;
-        _introLabel.Text = "Double-click a control to (de)select it for the PropertyGrid. Shift + double-click selects a range.";
+        _introLabel.Text = "Enable Edit mode, then double-click a control to select it. Hold Ctrl to add or remove controls.";
         // 
         // _matrixTableLayoutPanel
         // 
         // Seven columns (row-header + six appearance/flat-style variants) and five rows
         // (column-header + four control/VisualStylesMode combinations) are declared here; the
-        // header labels and the 24 SelectablePanel cells are populated in BuildMatrix() so the
+        // header labels and the 24 scenario controls are populated in BuildMatrix() so the
         // repetitive matrix stays in one readable, well-commented place.
         _matrixTableLayoutPanel.AutoSize = true;
         _matrixTableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;

@@ -13,9 +13,7 @@ namespace VisualStylesModeDemo.Views;
 ///  <para>
 ///   The four rows are: CheckBox·Net11, CheckBox·Classic, RadioButton·Net11, RadioButton·Classic.
 ///   The six columns are: Normal, ToggleSwitch, Button+Standard, Button+Popup, Button+Flat,
-///   Button+System. That yields 24 demo controls, each wrapped in a <see cref="SelectablePanel"/> so
-///   they can be double-clicked into the shared <see cref="PropertyGrid"/> (see
-///   <see cref="SelectionController"/>).
+///   Button+System. That yields 24 demo controls.
 ///  </para>
 ///  <para>
 ///   Because the matrix is so regular, the 24 cells (plus the row/column header labels) are built in
@@ -26,33 +24,19 @@ namespace VisualStylesModeDemo.Views;
 /// </remarks>
 public partial class CheckBoxRadioButtonVisualStylesView : UserControl, IScenarioView
 {
-    private readonly SelectionController _selection = new();
+    private readonly List<Label> _boldHeaderLabels = [];
 
     public CheckBoxRadioButtonVisualStylesView()
     {
         InitializeComponent();
-
-        // Bubble the controller's selection changes up as the view's own IScenarioView event.
-        _selection.SelectionChanged += (_, _) => SelectionChanged?.Invoke(this, EventArgs.Empty);
-
         BuildMatrix();
     }
 
-    public event EventHandler? SelectionChanged;
-
     public string DisplayName => "CheckBox / RadioButton Visual Styles";
 
-    public IReadOnlyList<Control> GetSelectedControls() => _selection.GetSelectedControls();
-
-    public void SelectAll() => _selection.SelectAll();
-
-    public void ClearSelection() => _selection.ClearSelection();
-
-    public void SetSelectionMargin(int gap) => _selection.SetSelectionGap(gap);
-
     /// <summary>
-    ///  Populates the 7x5 matrix grid: row 0 / column 0 hold non-selectable header labels, and the
-    ///  inner 6x4 cells each host one CheckBox/RadioButton (wrapped in a <see cref="SelectablePanel"/>).
+    ///  Populates the 7x5 matrix grid: row 0 / column 0 hold header labels, and the inner 6x4 cells
+    ///  each host one CheckBox/RadioButton.
     /// </summary>
     private void BuildMatrix()
     {
@@ -87,7 +71,6 @@ public partial class CheckBoxRadioButtonVisualStylesView : UserControl, IScenari
             _matrixTableLayoutPanel.Controls.Add(CreateHeaderLabel(columns[column].Header, bold: true), column + 1, 0);
         }
 
-        List<SelectablePanel> panels = new(rows.Length * columns.Length);
         for (int row = 0; row < rows.Length; row++)
         {
             _matrixTableLayoutPanel.Controls.Add(CreateHeaderLabel(rows[row].Header, bold: false), 0, row + 1);
@@ -114,42 +97,57 @@ public partial class CheckBoxRadioButtonVisualStylesView : UserControl, IScenari
                         break;
                 }
 
-                panels.Add(AddCell(control, column + 1, row + 1));
+                AddCell(control, column + 1, row + 1);
             }
         }
-
-        // Register all 24 panels at once so Shift-range selection can see the whole grid.
-        _selection.Register([.. panels]);
 
         _matrixTableLayoutPanel.ResumeLayout(true);
     }
 
     /// <summary>
-    ///  Wraps <paramref name="control"/> in a <see cref="SelectablePanel"/> and drops it into the given
-    ///  matrix cell. The control sits at the panel's padding offset so the selection frame surrounds it.
+    ///  Drops <paramref name="control"/> directly into the given matrix cell, preserving the matrix's
+    ///  intended runtime layout.
     /// </summary>
-    private SelectablePanel AddCell(Control control, int columnIndex, int rowIndex)
+    private void AddCell(Control control, int columnIndex, int rowIndex)
     {
-        SelectablePanel panel = new()
-        {
-            Name = $"{control.Name}Panel",
-            Margin = new Padding(4),
-        };
-
-        control.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-        panel.Controls.Add(control);
-        control.Location = new Point(panel.Padding.Left, panel.Padding.Top);
-
-        _matrixTableLayoutPanel.Controls.Add(panel, columnIndex, rowIndex);
-        return panel;
+        control.Anchor = AnchorStyles.Left;
+        control.Margin = new Padding(4);
+        _matrixTableLayoutPanel.Controls.Add(control, columnIndex, rowIndex);
     }
 
-    private static Label CreateHeaderLabel(string text, bool bold) => new()
+    private Label CreateHeaderLabel(string text, bool bold)
     {
-        AutoSize = true,
-        Anchor = AnchorStyles.Left,
-        Margin = new Padding(6, 3, 12, 3),
-        Text = text,
-        Font = bold ? new Font("Segoe UI", 11F, FontStyle.Bold) : new Font("Segoe UI", 11F, FontStyle.Regular),
-    };
+        Label label = new()
+        {
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            Margin = new Padding(6, 3, 12, 3),
+            Text = text,
+        };
+
+        if (bold)
+        {
+            label.Font = new Font(Font, FontStyle.Bold);
+            _boldHeaderLabels.Add(label);
+        }
+
+        return label;
+    }
+
+    protected override void OnFontChanged(EventArgs e)
+    {
+        base.OnFontChanged(e);
+
+        if (_boldHeaderLabels is null)
+        {
+            return;
+        }
+
+        foreach (Label label in _boldHeaderLabels)
+        {
+            Font oldFont = label.Font;
+            label.Font = new Font(Font, FontStyle.Bold);
+            oldFont.Dispose();
+        }
+    }
 }

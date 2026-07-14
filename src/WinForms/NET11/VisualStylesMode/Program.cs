@@ -11,8 +11,11 @@ internal static class Program
     public static void Main()
     {
         Application.EnableVisualStyles();
-        Application.SetDefaultVisualStylesMode(VisualStylesMode.Latest);
+        Application.SetDefaultVisualStylesMode(VisualStylesMode.Net11);
+        Application.SetCompatibleTextRenderingDefault(false);
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+        Application.SetSystemTextSizeAwareness(SystemTextSizeAwareness.Notify);
+        Application.SetColorMode(SystemColorMode.System);
         MainForm form = new();
         Application.Run(form);
     }
