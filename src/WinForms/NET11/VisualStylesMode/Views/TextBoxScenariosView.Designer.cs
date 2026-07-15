@@ -337,7 +337,6 @@ partial class TextBoxScenariosView
         _richTextBoxNoWordWrap.TabIndex = 5;
         _richTextBoxNoWordWrap.Text = "Hover over me, this is a long line that would normally wrap.";
         _richTextBoxNoWordWrap.WordWrap = false;
-        _richTextBoxNoWordWrap.TextChanged += _richTextBoxNoWordWrap_TextChanged;
         // 
         // _richTextBoxReadOnlyLabel
         // 

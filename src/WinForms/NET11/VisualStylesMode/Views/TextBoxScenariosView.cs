@@ -15,9 +15,4 @@ public partial class TextBoxScenariosView : UserControl, IScenarioView
     }
 
     public string DisplayName => "TextBox / RichTextBox Scenarios";
-
-    private void _richTextBoxNoWordWrap_TextChanged(object sender, EventArgs e)
-    {
-
-    }
 }
