@@ -14,5 +14,10 @@ public partial class TextBoxScenariosView : UserControl, IScenarioView
         InitializeComponent();
     }
 
+    protected override void CreateHandle()
+    {
+        base.CreateHandle();
+    }
+
     public string DisplayName => "TextBox / RichTextBox Scenarios";
 }

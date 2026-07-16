@@ -22,6 +22,7 @@ public partial class CashRegisterView : UserControl, IScenarioView, IFlatStyleSc
     public CashRegisterView()
     {
         InitializeComponent();
+
         _ownedReceiptFont = _receiptTextBox.Font;
         Disposed += CashRegisterView_Disposed;
 
@@ -55,8 +56,6 @@ public partial class CashRegisterView : UserControl, IScenarioView, IFlatStyleSc
             _department16Button,
             _department17Button,
             _department18Button,
-            _department19Button,
-            _department20Button,
         ];
 
         _allRegisterButtons =
@@ -95,7 +94,8 @@ public partial class CashRegisterView : UserControl, IScenarioView, IFlatStyleSc
 
     public void ApplyFlatStyle(FlatStyle flatStyle)
     {
-        CurrentFlatStyle = flatStyle;
+        var scope = this.SuspendPainting();
+        SuspendLayout();
 
         foreach (Button button in _allRegisterButtons)
         {
@@ -103,6 +103,9 @@ public partial class CashRegisterView : UserControl, IScenarioView, IFlatStyleSc
         }
 
         ApplyPalette();
+        scope.Dispose();
+        ResumeLayout(true);
+        Invalidate(true);
     }
 
     private void DenominationButton_Click(object? sender, EventArgs e)
@@ -259,16 +262,6 @@ public partial class CashRegisterView : UserControl, IScenarioView, IFlatStyleSc
         _ownedReceiptFont = receiptFont;
         _receiptTextBox.Font = receiptFont;
         oldReceiptFont.Dispose();
-
-        // The 120% text-size layout is the compact design baseline. Above that point, grow the
-        // scrollable register surface so accessibility text remains unclipped rather than squeezing
-        // fixed key cells.
-        float layoutScale = Math.Max(1F, textScale / 1.2F);
-        Size contentSize = new(
-            (int)Math.Ceiling(1200 * layoutScale),
-            (int)Math.Ceiling(820 * layoutScale));
-        _rootLayout.Size = contentSize;
-        AutoScrollMinSize = contentSize;
     }
 
     private void CashRegisterView_Disposed(object? sender, EventArgs e)

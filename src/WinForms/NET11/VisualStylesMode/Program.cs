@@ -14,7 +14,6 @@ internal static class Program
         Application.SetDefaultVisualStylesMode(VisualStylesMode.Net11);
         Application.SetCompatibleTextRenderingDefault(false);
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-        Application.SetSystemTextSizeAwareness(SystemTextSizeAwareness.Notify);
         Application.SetColorMode(SystemColorMode.System);
         MainForm form = new();
         Application.Run(form);

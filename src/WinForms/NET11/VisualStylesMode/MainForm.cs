@@ -44,6 +44,10 @@ public partial class MainForm : Form
         _selectionAdorner.SelectionChanged += SelectionAdorner_SelectionChanged;
         components!.Add(_selectionAdorner);
 
+        ApplySystemTextSize();
+        UpdateFormSizeStatusLabels();
+        UpdateSystemAppearance();
+
         CreateViews();
 
         if (_views.Count > 0)
@@ -51,9 +55,6 @@ public partial class MainForm : Form
             SwitchToView(_views[0].Scenario);
         }
 
-        ApplySystemTextSize();
-        UpdateSystemAppearance();
-        UpdateFormSizeStatusLabels();
         UpdateSelectionUi();
         _systemAppearanceTimer.Start();
     }
@@ -99,47 +100,51 @@ public partial class MainForm : Form
 
     private void SwitchToView(IScenarioView scenario)
     {
-        if (ReferenceEquals(_activeView, scenario))
+        try
         {
-            return;
+            if (ReferenceEquals(_activeView, scenario))
+            {
+                return;
+            }
+
+            if (_activeView is not null)
+            {
+                ((Control)_activeView).Visible = false;
+                _splitContainer.Panel1.Controls.Remove((Control)_activeView);
+            }
+
+            _activeView = scenario;
+
+            _splitContainer.Panel1.SuspendLayout();
+            Control viewControl = (Control)scenario;
+            _activeView.SuspendLayout();
+
+            // Set AutoScaleMode to Inherited, if we're dealing with a container control
+            // so we're not running the DPI layout logic twice.
+            if (viewControl is ContainerControl viewAsContainer)
+            {
+                viewAsContainer.AutoScaleMode = AutoScaleMode.Inherit;
+            }
+
+            if (_scaledUiFont is not null)
+            {
+                viewControl.Font = _scaledUiFont;
+            }
+
+            foreach ((IScenarioView candidate, ToolStripMenuItem menuItem) in _views)
+            {
+                menuItem.Checked = ReferenceEquals(candidate, scenario);
+            }
+
+            viewControl.Dock = DockStyle.Fill;
+            _splitContainer.Panel1.Controls.Add(viewControl);
+            viewControl.Visible = true;
+
         }
-
-        if (_activeView is not null)
+        finally
         {
-            ((Control)_activeView).Visible = false;
-            _splitContainer.Panel1.Controls.Remove((Control)_activeView);
-        }
-
-        _activeView = scenario;
-
-        Control viewControl = (Control)scenario;
-        viewControl.Dock = DockStyle.Fill;
-        if (_scaledUiFont is not null)
-        {
-            viewControl.Font = _scaledUiFont;
-        }
-
-        _splitContainer.Panel1.Controls.Add(viewControl);
-        viewControl.Visible = true;
-        ApplyVisualStylesModeRecursively(viewControl, _selectedVisualStylesMode);
-
-        if (scenario is IFlatStyleScenarioView flatStyleScenario)
-        {
-            flatStyleScenario.ApplyFlatStyle(_selectedFlatStyle);
-        }
-
-        foreach ((IScenarioView candidate, ToolStripMenuItem menuItem) in _views)
-        {
-            menuItem.Checked = ReferenceEquals(candidate, scenario);
-        }
-
-        if (_editModeEnabled)
-        {
-            _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
-        }
-        else
-        {
-            _selectionAdorner.ClearSelection();
+            _splitContainer.Panel1.ResumeLayout(true);
+            _activeView?.ResumeLayout();
         }
 
         UpdateViewAppearanceMenu();
@@ -184,6 +189,7 @@ public partial class MainForm : Form
     private void SetFlatStyle(FlatStyle flatStyle)
     {
         _selectedFlatStyle = flatStyle;
+
         if (_activeView is IFlatStyleScenarioView flatStyleScenario)
         {
             flatStyleScenario.ApplyFlatStyle(flatStyle);
@@ -219,16 +225,17 @@ public partial class MainForm : Form
         _systemFlatStyleToolStripMenuItem.Checked = _selectedFlatStyle == FlatStyle.System;
     }
 
-    private void SelectionAdorner_SelectionChanged(object? sender, EventArgs e) => UpdateSelectionUi();
+    private void SelectionAdorner_SelectionChanged(object? sender, EventArgs e) 
+        => UpdateSelectionUi();
 
-    private void EditModeToolStripMenuItem_Click(object sender, EventArgs e) =>
-        SetEditMode(!_editModeEnabled);
+    private void EditModeToolStripMenuItem_Click(object sender, EventArgs e) 
+        => SetEditMode(!_editModeEnabled);
 
-    private void SelectAllToolStripMenuItem_Click(object sender, EventArgs e) =>
-        _selectionAdorner.SelectAll();
+    private void SelectAllToolStripMenuItem_Click(object sender, EventArgs e) 
+        => _selectionAdorner.SelectAll();
 
-    private void DeselectAllToolStripMenuItem_Click(object sender, EventArgs e) =>
-        _selectionAdorner.ClearSelection();
+    private void DeselectAllToolStripMenuItem_Click(object sender, EventArgs e)
+        => _selectionAdorner.ClearSelection();
 
     private void SetEditMode(bool enabled)
     {
@@ -238,6 +245,7 @@ public partial class MainForm : Form
         }
 
         _editModeEnabled = enabled;
+
         if (enabled && _activeView is Control viewControl)
         {
             _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
@@ -252,7 +260,7 @@ public partial class MainForm : Form
 
     private void UpdateSelectionUi()
     {
-        Control[] selected = _selectionAdorner.SelectedControls.ToArray();
+        Control[] selected = [.. _selectionAdorner.SelectedControls];
         _propertyGrid.SelectedObjects = selected;
 
         _selectedControlStatusLabel.Text = !_editModeEnabled
@@ -277,8 +285,10 @@ public partial class MainForm : Form
         _saveSettingsToolStripButton.Enabled = hasSelection;
     }
 
-    private static string GetControlDisplayName(Control control) =>
-        string.IsNullOrEmpty(control.Name) ? control.GetType().Name : control.Name;
+    private static string GetControlDisplayName(Control control) 
+        => string.IsNullOrEmpty(control.Name) 
+            ? control.GetType().Name 
+            : control.Name;
 
     private void ApplyToolStripImages()
     {
@@ -313,12 +323,14 @@ public partial class MainForm : Form
         ApplyToolStripImages();
 
         WindowSettings? settings = TryLoadSettings();
+
         if (settings is null)
         {
             return;
         }
 
         Rectangle bounds = new(settings.X, settings.Y, settings.Width, settings.Height);
+
         if (IsOnScreen(bounds))
         {
             StartPosition = FormStartPosition.Manual;
@@ -359,6 +371,7 @@ public partial class MainForm : Form
         try
         {
             string path = GetSettingsFilePath();
+
             if (!File.Exists(path))
             {
                 return null;
@@ -414,6 +427,7 @@ public partial class MainForm : Form
         foreach (Screen screen in Screen.AllScreens)
         {
             Rectangle overlap = Rectangle.Intersect(screen.WorkingArea, bounds);
+
             if (overlap.Width >= 100 && overlap.Height >= 50)
             {
                 return true;
@@ -467,6 +481,7 @@ public partial class MainForm : Form
         }
 
         Dictionary<string, Dictionary<string, string>> data = [];
+
         foreach (Control control in selected)
         {
             if (string.IsNullOrEmpty(control.Name))
@@ -510,11 +525,13 @@ public partial class MainForm : Form
         }
 
         Control viewControl = (Control)_activeView;
+
         foreach ((string controlName, Dictionary<string, string> properties) in data)
         {
             Control[] matches = string.Equals(viewControl.Name, controlName, StringComparison.Ordinal)
                 ? [viewControl]
                 : viewControl.Controls.Find(controlName, searchAllChildren: true);
+
             if (matches.Length == 0)
             {
                 continue;
@@ -563,6 +580,7 @@ public partial class MainForm : Form
     private static void ApplyPropertyValues(Control control, Dictionary<string, string> values)
     {
         PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(control);
+
         foreach ((string propertyName, string text) in values)
         {
             PropertyDescriptor? property = properties[propertyName];
@@ -614,6 +632,7 @@ public partial class MainForm : Form
 
         _menuStrip.Font = newFont;
         _statusStrip.Font = newFont;
+
         foreach ((IScenarioView scenario, _) in _views)
         {
             ((Control)scenario).Font = newFont;
