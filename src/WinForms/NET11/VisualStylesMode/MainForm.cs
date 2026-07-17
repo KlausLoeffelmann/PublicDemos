@@ -69,6 +69,8 @@ public partial class MainForm : Form
         RegisterView(new ButtonVisualStylesView());
         RegisterView(new CheckBoxRadioButtonVisualStylesView());
         RegisterView(new CashRegisterView());
+        RegisterView(new CustomerEntryView());
+        RegisterView(new ParallelAnimationView());
 
         // Future views, following the exact same pattern:
         //   RegisterView(new TreeViewNodeLeadingScenariosView());
@@ -109,6 +111,11 @@ public partial class MainForm : Form
 
             if (_activeView is not null)
             {
+                if (_editModeEnabled)
+                {
+                    _selectionAdorner.DeactivateAndClear();
+                }
+
                 ((Control)_activeView).Visible = false;
                 _splitContainer.Panel1.Controls.Remove((Control)_activeView);
             }
@@ -137,9 +144,20 @@ public partial class MainForm : Form
             }
 
             viewControl.Dock = DockStyle.Fill;
+            ApplyVisualStylesModeRecursively(viewControl, _selectedVisualStylesMode);
+
+            if (scenario is IFlatStyleScenarioView flatStyleScenario)
+            {
+                flatStyleScenario.ApplyFlatStyle(_selectedFlatStyle);
+            }
+
             _splitContainer.Panel1.Controls.Add(viewControl);
             viewControl.Visible = true;
 
+            if (_editModeEnabled)
+            {
+                _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
+            }
         }
         finally
         {
@@ -246,13 +264,20 @@ public partial class MainForm : Form
 
         _editModeEnabled = enabled;
 
-        if (enabled && _activeView is Control viewControl)
+        if (enabled)
         {
-            _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
+            _splitContainer.Panel2Collapsed = false;
+
+            if (_activeView is Control viewControl)
+            {
+                _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
+            }
         }
         else
         {
             _selectionAdorner.DeactivateAndClear();
+            _propertyGrid.SelectedObjects = [];
+            _splitContainer.Panel2Collapsed = true;
         }
 
         UpdateSelectionUi();

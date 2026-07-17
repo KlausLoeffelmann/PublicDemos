@@ -352,6 +352,7 @@ partial class MainForm
         // _splitContainer.Panel2
         // 
         _splitContainer.Panel2.Controls.Add(_propertyGrid);
+        _splitContainer.Panel2Collapsed = true;
         _splitContainer.Size = new Size(1712, 1065);
         _splitContainer.SplitterDistance = 1162;
         _splitContainer.SplitterWidth = 5;

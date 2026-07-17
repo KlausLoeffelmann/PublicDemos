@@ -1,0 +1,1183 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using VisualStylesModeDemo.Components;
+using VisualStylesModeDemo.Controls;
+
+namespace VisualStylesModeDemo.Views;
+
+partial class CustomerEntryView
+{
+    /// <summary>
+    ///  Required designer variable.
+    /// </summary>
+    private System.ComponentModel.IContainer components = null;
+
+    /// <summary>
+    ///  Clean up any resources being used.
+    /// </summary>
+    /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && (components != null))
+        {
+            components.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
+    #region Component Designer generated code
+
+    /// <summary>
+    ///  Required method for Designer support - do not modify
+    ///  the contents of this method with the code editor.
+    /// </summary>
+    private void InitializeComponent()
+    {
+        components = new System.ComponentModel.Container();
+        _scrollPanel = new Panel();
+        _contentLayoutPanel = new TableLayoutPanel();
+        _identityGroupBox = new GroupBoxEx();
+        _identityLayoutPanel = new TableLayoutPanel();
+        _customerNumberLabel = new Label();
+        _customerNumberTextBox = new TextBox();
+        _titleLabel = new Label();
+        _titleComboBox = new ComboBox();
+        _firstNameLabel = new Label();
+        _firstNameTextBox = new TextBox();
+        _middleNameLabel = new Label();
+        _middleNameTextBox = new TextBox();
+        _lastNameLabel = new Label();
+        _lastNameTextBox = new TextBox();
+        _birthDateLabel = new Label();
+        _birthDatePicker = new DateTimePicker();
+        _customerSinceLabel = new Label();
+        _customerSincePicker = new DateTimePicker();
+        _activeCustomerLabel = new Label();
+        _activeCustomerCheckBox = new CheckBox();
+        _contactGroupBox = new GroupBoxEx();
+        _contactLayoutPanel = new TableLayoutPanel();
+        _emailLabel = new Label();
+        _emailTextBox = new TextBox();
+        _phoneLabel = new Label();
+        _phoneMaskedTextBox = new MaskedTextBox();
+        _mobileLabel = new Label();
+        _mobileMaskedTextBox = new MaskedTextBox();
+        _preferredContactLabel = new Label();
+        _preferredContactComboBox = new ComboBox();
+        _contactPermissionsLabel = new Label();
+        _contactPermissionsFlowPanel = new FlowLayoutPanel();
+        _emailPermissionCheckBox = new CheckBox();
+        _smsPermissionCheckBox = new CheckBox();
+        _addressGroupBox = new GroupBoxEx();
+        _addressLayoutPanel = new TableLayoutPanel();
+        _addressLine1Label = new Label();
+        _addressLine1TextBox = new TextBox();
+        _addressLine2Label = new Label();
+        _addressLine2TextBox = new TextBox();
+        _streetLabel = new Label();
+        _streetTextBox = new TextBox();
+        _cityZipStateLabel = new Label();
+        _cityZipStateLayoutPanel = new TableLayoutPanel();
+        _cityTextBox = new TextBox();
+        _zipMaskedTextBox = new MaskedTextBox();
+        _stateTextBox = new TextBox();
+        _countryLabel = new Label();
+        _countryComboBox = new ComboBox();
+        _preferencesGroupBox = new GroupBoxEx();
+        _preferencesLayoutPanel = new TableLayoutPanel();
+        _customerTypeLabel = new Label();
+        _customerTypeComboBox = new ComboBox();
+        _accountStatusLabel = new Label();
+        _accountStatusComboBox = new ComboBox();
+        _creditLimitLabel = new Label();
+        _creditLimitNumericUpDown = new NumericUpDown();
+        _discountLabel = new Label();
+        _discountNumericUpDown = new NumericUpDown();
+        _languageLabel = new Label();
+        _languageComboBox = new ComboBox();
+        _timeZoneLabel = new Label();
+        _timeZoneComboBox = new ComboBox();
+        _accountOptionsLabel = new Label();
+        _accountOptionsFlowPanel = new FlowLayoutPanel();
+        _paperlessCheckBox = new CheckBox();
+        _priorityCheckBox = new CheckBox();
+        _notesGroupBox = new GroupBoxEx();
+        _notesRichTextBox = new RichTextBox();
+        _notesToolStrip = new ToolStrip();
+        _cutToolStripButton = new ToolStripButton();
+        _copyToolStripButton = new ToolStripButton();
+        _pasteToolStripButton = new ToolStripButton();
+        _clipboardToolStripSeparator = new ToolStripSeparator();
+        _boldToolStripButton = new ToolStripButton();
+        _italicToolStripButton = new ToolStripButton();
+        _underlineToolStripButton = new ToolStripButton();
+        _iconFactoryComponent = new IconFactoryComponent(components);
+        _scrollPanel.SuspendLayout();
+        _contentLayoutPanel.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_identityGroupBox).BeginInit();
+        _identityGroupBox.SuspendLayout();
+        _identityLayoutPanel.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_contactGroupBox).BeginInit();
+        _contactGroupBox.SuspendLayout();
+        _contactLayoutPanel.SuspendLayout();
+        _contactPermissionsFlowPanel.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_addressGroupBox).BeginInit();
+        _addressGroupBox.SuspendLayout();
+        _addressLayoutPanel.SuspendLayout();
+        _cityZipStateLayoutPanel.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_preferencesGroupBox).BeginInit();
+        _preferencesGroupBox.SuspendLayout();
+        _preferencesLayoutPanel.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_creditLimitNumericUpDown).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)_discountNumericUpDown).BeginInit();
+        _accountOptionsFlowPanel.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_notesGroupBox).BeginInit();
+        _notesGroupBox.SuspendLayout();
+        _notesRichTextBox.SuspendLayout();
+        _notesToolStrip.SuspendLayout();
+        SuspendLayout();
+        // 
+        // _scrollPanel
+        // 
+        _scrollPanel.AutoScroll = true;
+        _scrollPanel.Controls.Add(_contentLayoutPanel);
+        _scrollPanel.Dock = DockStyle.Fill;
+        _scrollPanel.Location = new Point(0, 0);
+        _scrollPanel.Name = "_scrollPanel";
+        _scrollPanel.Padding = new Padding(8);
+        _scrollPanel.Size = new Size(1200, 900);
+        _scrollPanel.TabIndex = 0;
+        // 
+        // _contentLayoutPanel
+        // 
+        _contentLayoutPanel.AutoSize = true;
+        _contentLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        _contentLayoutPanel.ColumnCount = 2;
+        _contentLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        _contentLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        _contentLayoutPanel.Controls.Add(_identityGroupBox, 0, 0);
+        _contentLayoutPanel.Controls.Add(_contactGroupBox, 1, 0);
+        _contentLayoutPanel.Controls.Add(_addressGroupBox, 0, 1);
+        _contentLayoutPanel.Controls.Add(_preferencesGroupBox, 1, 1);
+        _contentLayoutPanel.Controls.Add(_notesGroupBox, 0, 2);
+        _contentLayoutPanel.Dock = DockStyle.Top;
+        _contentLayoutPanel.Location = new Point(8, 8);
+        _contentLayoutPanel.Name = "_contentLayoutPanel";
+        _contentLayoutPanel.RowCount = 3;
+        _contentLayoutPanel.RowStyles.Add(new RowStyle());
+        _contentLayoutPanel.RowStyles.Add(new RowStyle());
+        _contentLayoutPanel.RowStyles.Add(new RowStyle());
+        _contentLayoutPanel.Size = new Size(1184, 876);
+        _contentLayoutPanel.TabIndex = 0;
+        _contentLayoutPanel.SetColumnSpan(_notesGroupBox, 2);
+        // 
+        // _identityGroupBox
+        // 
+        _identityGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        _identityGroupBox.Controls.Add(_identityLayoutPanel);
+        _identityGroupBox.Location = new Point(4, 4);
+        _identityGroupBox.Margin = new Padding(4);
+        _identityGroupBox.Name = "_identityGroupBox";
+        _identityGroupBox.Padding = new Padding(8);
+        _identityGroupBox.Size = new Size(584, 250);
+        _identityGroupBox.TabIndex = 0;
+        _identityGroupBox.TabStop = false;
+        _identityGroupBox.Text = "Customer identity";
+        // 
+        // _identityLayoutPanel
+        // 
+        _identityLayoutPanel.ColumnCount = 4;
+        _identityLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _identityLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        _identityLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _identityLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        _identityLayoutPanel.Controls.Add(_customerNumberLabel, 0, 0);
+        _identityLayoutPanel.Controls.Add(_customerNumberTextBox, 1, 0);
+        _identityLayoutPanel.Controls.Add(_titleLabel, 2, 0);
+        _identityLayoutPanel.Controls.Add(_titleComboBox, 3, 0);
+        _identityLayoutPanel.Controls.Add(_firstNameLabel, 0, 1);
+        _identityLayoutPanel.Controls.Add(_firstNameTextBox, 1, 1);
+        _identityLayoutPanel.Controls.Add(_middleNameLabel, 2, 1);
+        _identityLayoutPanel.Controls.Add(_middleNameTextBox, 3, 1);
+        _identityLayoutPanel.Controls.Add(_lastNameLabel, 0, 2);
+        _identityLayoutPanel.Controls.Add(_lastNameTextBox, 1, 2);
+        _identityLayoutPanel.Controls.Add(_birthDateLabel, 2, 2);
+        _identityLayoutPanel.Controls.Add(_birthDatePicker, 3, 2);
+        _identityLayoutPanel.Controls.Add(_customerSinceLabel, 0, 3);
+        _identityLayoutPanel.Controls.Add(_customerSincePicker, 1, 3);
+        _identityLayoutPanel.Controls.Add(_activeCustomerLabel, 2, 3);
+        _identityLayoutPanel.Controls.Add(_activeCustomerCheckBox, 3, 3);
+        _identityLayoutPanel.Dock = DockStyle.Fill;
+        _identityLayoutPanel.Location = new Point(8, 39);
+        _identityLayoutPanel.Name = "_identityLayoutPanel";
+        _identityLayoutPanel.RowCount = 4;
+        _identityLayoutPanel.RowStyles.Add(new RowStyle());
+        _identityLayoutPanel.RowStyles.Add(new RowStyle());
+        _identityLayoutPanel.RowStyles.Add(new RowStyle());
+        _identityLayoutPanel.RowStyles.Add(new RowStyle());
+        _identityLayoutPanel.Size = new Size(568, 203);
+        _identityLayoutPanel.TabIndex = 0;
+        // 
+        // _customerNumberLabel
+        // 
+        _customerNumberLabel.Anchor = AnchorStyles.Left;
+        _customerNumberLabel.AutoSize = true;
+        _customerNumberLabel.Location = new Point(3, 8);
+        _customerNumberLabel.Name = "_customerNumberLabel";
+        _customerNumberLabel.Size = new Size(107, 20);
+        _customerNumberLabel.TabIndex = 0;
+        _customerNumberLabel.Text = "Customer &No.:";
+        // 
+        // _customerNumberTextBox
+        // 
+        _customerNumberTextBox.AccessibleName = "Customer number";
+        _customerNumberTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _customerNumberTextBox.Location = new Point(116, 3);
+        _customerNumberTextBox.Name = "_customerNumberTextBox";
+        _customerNumberTextBox.Size = new Size(143, 27);
+        _customerNumberTextBox.TabIndex = 1;
+        _customerNumberTextBox.Text = "C-10427";
+        // 
+        // _titleLabel
+        // 
+        _titleLabel.Anchor = AnchorStyles.Left;
+        _titleLabel.AutoSize = true;
+        _titleLabel.Location = new Point(265, 8);
+        _titleLabel.Name = "_titleLabel";
+        _titleLabel.Size = new Size(39, 20);
+        _titleLabel.TabIndex = 2;
+        _titleLabel.Text = "&Title:";
+        // 
+        // _titleComboBox
+        // 
+        _titleComboBox.AccessibleName = "Title";
+        _titleComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _titleComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _titleComboBox.FormattingEnabled = true;
+        _titleComboBox.Location = new Point(344, 3);
+        _titleComboBox.Name = "_titleComboBox";
+        _titleComboBox.Size = new Size(221, 28);
+        _titleComboBox.TabIndex = 3;
+        // 
+        // _firstNameLabel
+        // 
+        _firstNameLabel.Anchor = AnchorStyles.Left;
+        _firstNameLabel.AutoSize = true;
+        _firstNameLabel.Location = new Point(3, 42);
+        _firstNameLabel.Name = "_firstNameLabel";
+        _firstNameLabel.Size = new Size(80, 20);
+        _firstNameLabel.TabIndex = 4;
+        _firstNameLabel.Text = "&First name:";
+        // 
+        // _firstNameTextBox
+        // 
+        _firstNameTextBox.AccessibleName = "First name";
+        _firstNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _firstNameTextBox.Location = new Point(116, 37);
+        _firstNameTextBox.Name = "_firstNameTextBox";
+        _firstNameTextBox.Size = new Size(143, 27);
+        _firstNameTextBox.TabIndex = 5;
+        _firstNameTextBox.Text = "Alex";
+        // 
+        // _middleNameLabel
+        // 
+        _middleNameLabel.Anchor = AnchorStyles.Left;
+        _middleNameLabel.AutoSize = true;
+        _middleNameLabel.Location = new Point(265, 42);
+        _middleNameLabel.Name = "_middleNameLabel";
+        _middleNameLabel.Size = new Size(60, 20);
+        _middleNameLabel.TabIndex = 6;
+        _middleNameLabel.Text = "&Middle:";
+        // 
+        // _middleNameTextBox
+        // 
+        _middleNameTextBox.AccessibleName = "Middle name";
+        _middleNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _middleNameTextBox.Location = new Point(344, 37);
+        _middleNameTextBox.Name = "_middleNameTextBox";
+        _middleNameTextBox.Size = new Size(221, 27);
+        _middleNameTextBox.TabIndex = 7;
+        // 
+        // _lastNameLabel
+        // 
+        _lastNameLabel.Anchor = AnchorStyles.Left;
+        _lastNameLabel.AutoSize = true;
+        _lastNameLabel.Location = new Point(3, 76);
+        _lastNameLabel.Name = "_lastNameLabel";
+        _lastNameLabel.Size = new Size(79, 20);
+        _lastNameLabel.TabIndex = 8;
+        _lastNameLabel.Text = "&Last name:";
+        // 
+        // _lastNameTextBox
+        // 
+        _lastNameTextBox.AccessibleName = "Last name";
+        _lastNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _lastNameTextBox.Location = new Point(116, 71);
+        _lastNameTextBox.Name = "_lastNameTextBox";
+        _lastNameTextBox.Size = new Size(143, 27);
+        _lastNameTextBox.TabIndex = 9;
+        _lastNameTextBox.Text = "Morgan";
+        // 
+        // _birthDateLabel
+        // 
+        _birthDateLabel.Anchor = AnchorStyles.Left;
+        _birthDateLabel.AutoSize = true;
+        _birthDateLabel.Location = new Point(265, 76);
+        _birthDateLabel.Name = "_birthDateLabel";
+        _birthDateLabel.Size = new Size(73, 20);
+        _birthDateLabel.TabIndex = 10;
+        _birthDateLabel.Text = "&Birth date:";
+        // 
+        // _birthDatePicker
+        // 
+        _birthDatePicker.AccessibleName = "Birth date";
+        _birthDatePicker.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _birthDatePicker.Format = DateTimePickerFormat.Short;
+        _birthDatePicker.Location = new Point(344, 71);
+        _birthDatePicker.Name = "_birthDatePicker";
+        _birthDatePicker.Size = new Size(221, 27);
+        _birthDatePicker.TabIndex = 11;
+        _birthDatePicker.Value = new DateTime(1987, 6, 15, 0, 0, 0, 0);
+        // 
+        // _customerSinceLabel
+        // 
+        _customerSinceLabel.Anchor = AnchorStyles.Left;
+        _customerSinceLabel.AutoSize = true;
+        _customerSinceLabel.Location = new Point(3, 110);
+        _customerSinceLabel.Name = "_customerSinceLabel";
+        _customerSinceLabel.Size = new Size(107, 20);
+        _customerSinceLabel.TabIndex = 12;
+        _customerSinceLabel.Text = "Customer &since:";
+        // 
+        // _customerSincePicker
+        // 
+        _customerSincePicker.AccessibleName = "Customer since";
+        _customerSincePicker.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _customerSincePicker.Format = DateTimePickerFormat.Short;
+        _customerSincePicker.Location = new Point(116, 105);
+        _customerSincePicker.Name = "_customerSincePicker";
+        _customerSincePicker.Size = new Size(143, 27);
+        _customerSincePicker.TabIndex = 13;
+        // 
+        // _activeCustomerLabel
+        // 
+        _activeCustomerLabel.Anchor = AnchorStyles.Left;
+        _activeCustomerLabel.AutoSize = true;
+        _activeCustomerLabel.Location = new Point(265, 110);
+        _activeCustomerLabel.Name = "_activeCustomerLabel";
+        _activeCustomerLabel.Size = new Size(52, 20);
+        _activeCustomerLabel.TabIndex = 14;
+        _activeCustomerLabel.Text = "Status:";
+        // 
+        // _activeCustomerCheckBox
+        // 
+        _activeCustomerCheckBox.AccessibleName = "Active customer";
+        _activeCustomerCheckBox.Anchor = AnchorStyles.Left;
+        _activeCustomerCheckBox.AutoSize = true;
+        _activeCustomerCheckBox.Checked = true;
+        _activeCustomerCheckBox.CheckState = CheckState.Checked;
+        _activeCustomerCheckBox.Location = new Point(344, 108);
+        _activeCustomerCheckBox.Name = "_activeCustomerCheckBox";
+        _activeCustomerCheckBox.Size = new Size(74, 24);
+        _activeCustomerCheckBox.TabIndex = 15;
+        _activeCustomerCheckBox.Text = "&Active";
+        _activeCustomerCheckBox.UseVisualStyleBackColor = true;
+        // 
+        // _contactGroupBox
+        // 
+        _contactGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        _contactGroupBox.Controls.Add(_contactLayoutPanel);
+        _contactGroupBox.Location = new Point(596, 4);
+        _contactGroupBox.Margin = new Padding(4);
+        _contactGroupBox.Name = "_contactGroupBox";
+        _contactGroupBox.Padding = new Padding(8);
+        _contactGroupBox.Size = new Size(584, 250);
+        _contactGroupBox.TabIndex = 1;
+        _contactGroupBox.TabStop = false;
+        _contactGroupBox.Text = "Contact details";
+        // 
+        // _contactLayoutPanel
+        // 
+        _contactLayoutPanel.ColumnCount = 2;
+        _contactLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _contactLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _contactLayoutPanel.Controls.Add(_emailLabel, 0, 0);
+        _contactLayoutPanel.Controls.Add(_emailTextBox, 1, 0);
+        _contactLayoutPanel.Controls.Add(_phoneLabel, 0, 1);
+        _contactLayoutPanel.Controls.Add(_phoneMaskedTextBox, 1, 1);
+        _contactLayoutPanel.Controls.Add(_mobileLabel, 0, 2);
+        _contactLayoutPanel.Controls.Add(_mobileMaskedTextBox, 1, 2);
+        _contactLayoutPanel.Controls.Add(_preferredContactLabel, 0, 3);
+        _contactLayoutPanel.Controls.Add(_preferredContactComboBox, 1, 3);
+        _contactLayoutPanel.Controls.Add(_contactPermissionsLabel, 0, 4);
+        _contactLayoutPanel.Controls.Add(_contactPermissionsFlowPanel, 1, 4);
+        _contactLayoutPanel.Dock = DockStyle.Fill;
+        _contactLayoutPanel.Location = new Point(8, 39);
+        _contactLayoutPanel.Name = "_contactLayoutPanel";
+        _contactLayoutPanel.RowCount = 5;
+        _contactLayoutPanel.RowStyles.Add(new RowStyle());
+        _contactLayoutPanel.RowStyles.Add(new RowStyle());
+        _contactLayoutPanel.RowStyles.Add(new RowStyle());
+        _contactLayoutPanel.RowStyles.Add(new RowStyle());
+        _contactLayoutPanel.RowStyles.Add(new RowStyle());
+        _contactLayoutPanel.Size = new Size(568, 203);
+        _contactLayoutPanel.TabIndex = 0;
+        // 
+        // _emailLabel
+        // 
+        _emailLabel.Anchor = AnchorStyles.Left;
+        _emailLabel.AutoSize = true;
+        _emailLabel.Location = new Point(3, 7);
+        _emailLabel.Name = "_emailLabel";
+        _emailLabel.Size = new Size(49, 20);
+        _emailLabel.TabIndex = 0;
+        _emailLabel.Text = "&Email:";
+        // 
+        // _emailTextBox
+        // 
+        _emailTextBox.AccessibleName = "Email address";
+        _emailTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _emailTextBox.Location = new Point(132, 3);
+        _emailTextBox.Name = "_emailTextBox";
+        _emailTextBox.Size = new Size(433, 27);
+        _emailTextBox.TabIndex = 1;
+        _emailTextBox.Text = "alex.morgan@example.com";
+        // 
+        // _phoneLabel
+        // 
+        _phoneLabel.Anchor = AnchorStyles.Left;
+        _phoneLabel.AutoSize = true;
+        _phoneLabel.Location = new Point(3, 40);
+        _phoneLabel.Name = "_phoneLabel";
+        _phoneLabel.Size = new Size(53, 20);
+        _phoneLabel.TabIndex = 2;
+        _phoneLabel.Text = "&Phone:";
+        // 
+        // _phoneMaskedTextBox
+        // 
+        _phoneMaskedTextBox.AccessibleName = "Phone number";
+        _phoneMaskedTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _phoneMaskedTextBox.Location = new Point(132, 36);
+        _phoneMaskedTextBox.Mask = "(999) 000-0000";
+        _phoneMaskedTextBox.Name = "_phoneMaskedTextBox";
+        _phoneMaskedTextBox.Size = new Size(433, 27);
+        _phoneMaskedTextBox.TabIndex = 3;
+        _phoneMaskedTextBox.Text = "2065550142";
+        // 
+        // _mobileLabel
+        // 
+        _mobileLabel.Anchor = AnchorStyles.Left;
+        _mobileLabel.AutoSize = true;
+        _mobileLabel.Location = new Point(3, 73);
+        _mobileLabel.Name = "_mobileLabel";
+        _mobileLabel.Size = new Size(57, 20);
+        _mobileLabel.TabIndex = 4;
+        _mobileLabel.Text = "&Mobile:";
+        // 
+        // _mobileMaskedTextBox
+        // 
+        _mobileMaskedTextBox.AccessibleName = "Mobile phone number";
+        _mobileMaskedTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _mobileMaskedTextBox.Location = new Point(132, 69);
+        _mobileMaskedTextBox.Mask = "(999) 000-0000";
+        _mobileMaskedTextBox.Name = "_mobileMaskedTextBox";
+        _mobileMaskedTextBox.Size = new Size(433, 27);
+        _mobileMaskedTextBox.TabIndex = 5;
+        _mobileMaskedTextBox.Text = "2065550188";
+        // 
+        // _preferredContactLabel
+        // 
+        _preferredContactLabel.Anchor = AnchorStyles.Left;
+        _preferredContactLabel.AutoSize = true;
+        _preferredContactLabel.Location = new Point(3, 106);
+        _preferredContactLabel.Name = "_preferredContactLabel";
+        _preferredContactLabel.Size = new Size(123, 20);
+        _preferredContactLabel.TabIndex = 6;
+        _preferredContactLabel.Text = "Preferred &contact:";
+        // 
+        // _preferredContactComboBox
+        // 
+        _preferredContactComboBox.AccessibleName = "Preferred contact method";
+        _preferredContactComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _preferredContactComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _preferredContactComboBox.FormattingEnabled = true;
+        _preferredContactComboBox.Location = new Point(132, 102);
+        _preferredContactComboBox.Name = "_preferredContactComboBox";
+        _preferredContactComboBox.Size = new Size(433, 28);
+        _preferredContactComboBox.TabIndex = 7;
+        // 
+        // _contactPermissionsLabel
+        // 
+        _contactPermissionsLabel.Anchor = AnchorStyles.Left;
+        _contactPermissionsLabel.AutoSize = true;
+        _contactPermissionsLabel.Location = new Point(3, 139);
+        _contactPermissionsLabel.Name = "_contactPermissionsLabel";
+        _contactPermissionsLabel.Size = new Size(90, 20);
+        _contactPermissionsLabel.TabIndex = 8;
+        _contactPermissionsLabel.Text = "Permissions:";
+        // 
+        // _contactPermissionsFlowPanel
+        // 
+        _contactPermissionsFlowPanel.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _contactPermissionsFlowPanel.AutoSize = true;
+        _contactPermissionsFlowPanel.Controls.Add(_emailPermissionCheckBox);
+        _contactPermissionsFlowPanel.Controls.Add(_smsPermissionCheckBox);
+        _contactPermissionsFlowPanel.Location = new Point(132, 135);
+        _contactPermissionsFlowPanel.Name = "_contactPermissionsFlowPanel";
+        _contactPermissionsFlowPanel.Size = new Size(433, 29);
+        _contactPermissionsFlowPanel.TabIndex = 9;
+        _contactPermissionsFlowPanel.WrapContents = false;
+        // 
+        // _emailPermissionCheckBox
+        // 
+        _emailPermissionCheckBox.AutoSize = true;
+        _emailPermissionCheckBox.Checked = true;
+        _emailPermissionCheckBox.CheckState = CheckState.Checked;
+        _emailPermissionCheckBox.Location = new Point(3, 3);
+        _emailPermissionCheckBox.Name = "_emailPermissionCheckBox";
+        _emailPermissionCheckBox.Size = new Size(119, 24);
+        _emailPermissionCheckBox.TabIndex = 0;
+        _emailPermissionCheckBox.Text = "Allow &email";
+        _emailPermissionCheckBox.UseVisualStyleBackColor = true;
+        // 
+        // _smsPermissionCheckBox
+        // 
+        _smsPermissionCheckBox.AutoSize = true;
+        _smsPermissionCheckBox.Location = new Point(128, 3);
+        _smsPermissionCheckBox.Name = "_smsPermissionCheckBox";
+        _smsPermissionCheckBox.Size = new Size(101, 24);
+        _smsPermissionCheckBox.TabIndex = 1;
+        _smsPermissionCheckBox.Text = "Allow &SMS";
+        _smsPermissionCheckBox.UseVisualStyleBackColor = true;
+        // 
+        // _addressGroupBox
+        // 
+        _addressGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        _addressGroupBox.Controls.Add(_addressLayoutPanel);
+        _addressGroupBox.Location = new Point(4, 262);
+        _addressGroupBox.Margin = new Padding(4);
+        _addressGroupBox.MinimumSize = new Size(0, 300);
+        _addressGroupBox.Name = "_addressGroupBox";
+        _addressGroupBox.Padding = new Padding(8);
+        _addressGroupBox.Size = new Size(584, 300);
+        _addressGroupBox.TabIndex = 2;
+        _addressGroupBox.TabStop = false;
+        _addressGroupBox.Text = "Address";
+        // 
+        // _addressLayoutPanel
+        // 
+        _addressLayoutPanel.ColumnCount = 2;
+        _addressLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _addressLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _addressLayoutPanel.Controls.Add(_addressLine1Label, 0, 0);
+        _addressLayoutPanel.Controls.Add(_addressLine1TextBox, 1, 0);
+        _addressLayoutPanel.Controls.Add(_addressLine2Label, 0, 1);
+        _addressLayoutPanel.Controls.Add(_addressLine2TextBox, 1, 1);
+        _addressLayoutPanel.Controls.Add(_streetLabel, 0, 2);
+        _addressLayoutPanel.Controls.Add(_streetTextBox, 1, 2);
+        _addressLayoutPanel.Controls.Add(_cityZipStateLabel, 0, 3);
+        _addressLayoutPanel.Controls.Add(_cityZipStateLayoutPanel, 1, 3);
+        _addressLayoutPanel.Controls.Add(_countryLabel, 0, 4);
+        _addressLayoutPanel.Controls.Add(_countryComboBox, 1, 4);
+        _addressLayoutPanel.Dock = DockStyle.Fill;
+        _addressLayoutPanel.Location = new Point(8, 39);
+        _addressLayoutPanel.Name = "_addressLayoutPanel";
+        _addressLayoutPanel.RowCount = 5;
+        _addressLayoutPanel.RowStyles.Add(new RowStyle());
+        _addressLayoutPanel.RowStyles.Add(new RowStyle());
+        _addressLayoutPanel.RowStyles.Add(new RowStyle());
+        _addressLayoutPanel.RowStyles.Add(new RowStyle());
+        _addressLayoutPanel.RowStyles.Add(new RowStyle());
+        _addressLayoutPanel.Size = new Size(568, 225);
+        _addressLayoutPanel.TabIndex = 0;
+        // 
+        // _addressLine1Label
+        // 
+        _addressLine1Label.Anchor = AnchorStyles.Left;
+        _addressLine1Label.AutoSize = true;
+        _addressLine1Label.Location = new Point(3, 7);
+        _addressLine1Label.Name = "_addressLine1Label";
+        _addressLine1Label.Size = new Size(105, 20);
+        _addressLine1Label.TabIndex = 0;
+        _addressLine1Label.Text = "Address Line &1:";
+        // 
+        // _addressLine1TextBox
+        // 
+        _addressLine1TextBox.AccessibleName = "Address line 1";
+        _addressLine1TextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _addressLine1TextBox.Location = new Point(136, 3);
+        _addressLine1TextBox.Name = "_addressLine1TextBox";
+        _addressLine1TextBox.Size = new Size(429, 27);
+        _addressLine1TextBox.TabIndex = 1;
+        _addressLine1TextBox.Text = "Suite 420";
+        // 
+        // _addressLine2Label
+        // 
+        _addressLine2Label.Anchor = AnchorStyles.Left;
+        _addressLine2Label.AutoSize = true;
+        _addressLine2Label.Location = new Point(3, 40);
+        _addressLine2Label.Name = "_addressLine2Label";
+        _addressLine2Label.Size = new Size(105, 20);
+        _addressLine2Label.TabIndex = 2;
+        _addressLine2Label.Text = "Address Line &2:";
+        // 
+        // _addressLine2TextBox
+        // 
+        _addressLine2TextBox.AccessibleName = "Address line 2";
+        _addressLine2TextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _addressLine2TextBox.Location = new Point(136, 36);
+        _addressLine2TextBox.Name = "_addressLine2TextBox";
+        _addressLine2TextBox.Size = new Size(429, 27);
+        _addressLine2TextBox.TabIndex = 3;
+        _addressLine2TextBox.Text = "North Building";
+        // 
+        // _streetLabel
+        // 
+        _streetLabel.Anchor = AnchorStyles.Left;
+        _streetLabel.AutoSize = true;
+        _streetLabel.Location = new Point(3, 73);
+        _streetLabel.Name = "_streetLabel";
+        _streetLabel.Size = new Size(49, 20);
+        _streetLabel.TabIndex = 4;
+        _streetLabel.Text = "&Street:";
+        // 
+        // _streetTextBox
+        // 
+        _streetTextBox.AccessibleName = "Street";
+        _streetTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _streetTextBox.Location = new Point(136, 69);
+        _streetTextBox.Name = "_streetTextBox";
+        _streetTextBox.Size = new Size(429, 27);
+        _streetTextBox.TabIndex = 5;
+        _streetTextBox.Text = "1234 Market Street";
+        // 
+        // _cityZipStateLabel
+        // 
+        _cityZipStateLabel.Anchor = AnchorStyles.Left;
+        _cityZipStateLabel.AutoSize = true;
+        _cityZipStateLabel.Location = new Point(3, 109);
+        _cityZipStateLabel.Name = "_cityZipStateLabel";
+        _cityZipStateLabel.Size = new Size(127, 20);
+        _cityZipStateLabel.TabIndex = 6;
+        _cityZipStateLabel.Text = "&City / &ZIP / &State:";
+        // 
+        // _cityZipStateLayoutPanel
+        // 
+        _cityZipStateLayoutPanel.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _cityZipStateLayoutPanel.AutoSize = true;
+        _cityZipStateLayoutPanel.ColumnCount = 3;
+        _cityZipStateLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _cityZipStateLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _cityZipStateLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _cityZipStateLayoutPanel.Controls.Add(_cityTextBox, 0, 0);
+        _cityZipStateLayoutPanel.Controls.Add(_zipMaskedTextBox, 1, 0);
+        _cityZipStateLayoutPanel.Controls.Add(_stateTextBox, 2, 0);
+        _cityZipStateLayoutPanel.Location = new Point(133, 99);
+        _cityZipStateLayoutPanel.Margin = new Padding(0);
+        _cityZipStateLayoutPanel.Name = "_cityZipStateLayoutPanel";
+        _cityZipStateLayoutPanel.RowCount = 1;
+        _cityZipStateLayoutPanel.RowStyles.Add(new RowStyle());
+        _cityZipStateLayoutPanel.Size = new Size(435, 40);
+        _cityZipStateLayoutPanel.TabIndex = 7;
+        // 
+        // _cityTextBox
+        // 
+        _cityTextBox.AccessibleName = "City";
+        _cityTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _cityTextBox.Location = new Point(3, 6);
+        _cityTextBox.Name = "_cityTextBox";
+        _cityTextBox.Size = new Size(260, 27);
+        _cityTextBox.TabIndex = 0;
+        _cityTextBox.Text = "Seattle";
+        // 
+        // _zipMaskedTextBox
+        // 
+        _zipMaskedTextBox.AccessibleName = "ZIP code";
+        _zipMaskedTextBox.Location = new Point(269, 6);
+        _zipMaskedTextBox.Mask = "00000-9999";
+        _zipMaskedTextBox.Name = "_zipMaskedTextBox";
+        _zipMaskedTextBox.Size = new Size(98, 27);
+        _zipMaskedTextBox.TabIndex = 1;
+        _zipMaskedTextBox.Text = "98101";
+        // 
+        // _stateTextBox
+        // 
+        _stateTextBox.AccessibleName = "State";
+        _stateTextBox.CharacterCasing = CharacterCasing.Upper;
+        _stateTextBox.Location = new Point(373, 6);
+        _stateTextBox.MaxLength = 2;
+        _stateTextBox.Name = "_stateTextBox";
+        _stateTextBox.Size = new Size(59, 27);
+        _stateTextBox.TabIndex = 2;
+        _stateTextBox.Text = "WA";
+        // 
+        // _countryLabel
+        // 
+        _countryLabel.Anchor = AnchorStyles.Left;
+        _countryLabel.AutoSize = true;
+        _countryLabel.Location = new Point(3, 147);
+        _countryLabel.Name = "_countryLabel";
+        _countryLabel.Size = new Size(63, 20);
+        _countryLabel.TabIndex = 8;
+        _countryLabel.Text = "C&ountry:";
+        // 
+        // _countryComboBox
+        // 
+        _countryComboBox.AccessibleName = "Country";
+        _countryComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _countryComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _countryComboBox.FormattingEnabled = true;
+        _countryComboBox.Location = new Point(136, 143);
+        _countryComboBox.Name = "_countryComboBox";
+        _countryComboBox.Size = new Size(429, 28);
+        _countryComboBox.TabIndex = 9;
+        // 
+        // _preferencesGroupBox
+        // 
+        _preferencesGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        _preferencesGroupBox.Controls.Add(_preferencesLayoutPanel);
+        _preferencesGroupBox.Location = new Point(596, 262);
+        _preferencesGroupBox.Margin = new Padding(4);
+        _preferencesGroupBox.MinimumSize = new Size(0, 300);
+        _preferencesGroupBox.Name = "_preferencesGroupBox";
+        _preferencesGroupBox.Padding = new Padding(8);
+        _preferencesGroupBox.Size = new Size(584, 300);
+        _preferencesGroupBox.TabIndex = 3;
+        _preferencesGroupBox.TabStop = false;
+        _preferencesGroupBox.Text = "Account and preferences";
+        // 
+        // _preferencesLayoutPanel
+        // 
+        _preferencesLayoutPanel.ColumnCount = 4;
+        _preferencesLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _preferencesLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        _preferencesLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _preferencesLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        _preferencesLayoutPanel.Controls.Add(_customerTypeLabel, 0, 0);
+        _preferencesLayoutPanel.Controls.Add(_customerTypeComboBox, 1, 0);
+        _preferencesLayoutPanel.Controls.Add(_accountStatusLabel, 2, 0);
+        _preferencesLayoutPanel.Controls.Add(_accountStatusComboBox, 3, 0);
+        _preferencesLayoutPanel.Controls.Add(_creditLimitLabel, 0, 1);
+        _preferencesLayoutPanel.Controls.Add(_creditLimitNumericUpDown, 1, 1);
+        _preferencesLayoutPanel.Controls.Add(_discountLabel, 2, 1);
+        _preferencesLayoutPanel.Controls.Add(_discountNumericUpDown, 3, 1);
+        _preferencesLayoutPanel.Controls.Add(_languageLabel, 0, 2);
+        _preferencesLayoutPanel.Controls.Add(_languageComboBox, 1, 2);
+        _preferencesLayoutPanel.Controls.Add(_timeZoneLabel, 2, 2);
+        _preferencesLayoutPanel.Controls.Add(_timeZoneComboBox, 3, 2);
+        _preferencesLayoutPanel.Controls.Add(_accountOptionsLabel, 0, 3);
+        _preferencesLayoutPanel.Controls.Add(_accountOptionsFlowPanel, 1, 3);
+        _preferencesLayoutPanel.Dock = DockStyle.Fill;
+        _preferencesLayoutPanel.Location = new Point(8, 39);
+        _preferencesLayoutPanel.Name = "_preferencesLayoutPanel";
+        _preferencesLayoutPanel.RowCount = 4;
+        _preferencesLayoutPanel.RowStyles.Add(new RowStyle());
+        _preferencesLayoutPanel.RowStyles.Add(new RowStyle());
+        _preferencesLayoutPanel.RowStyles.Add(new RowStyle());
+        _preferencesLayoutPanel.RowStyles.Add(new RowStyle());
+        _preferencesLayoutPanel.Size = new Size(568, 225);
+        _preferencesLayoutPanel.TabIndex = 0;
+        _preferencesLayoutPanel.SetColumnSpan(_accountOptionsFlowPanel, 3);
+        // 
+        // _customerTypeLabel
+        // 
+        _customerTypeLabel.Anchor = AnchorStyles.Left;
+        _customerTypeLabel.AutoSize = true;
+        _customerTypeLabel.Location = new Point(3, 7);
+        _customerTypeLabel.Name = "_customerTypeLabel";
+        _customerTypeLabel.Size = new Size(41, 20);
+        _customerTypeLabel.TabIndex = 0;
+        _customerTypeLabel.Text = "T&ype:";
+        // 
+        // _customerTypeComboBox
+        // 
+        _customerTypeComboBox.AccessibleName = "Customer type";
+        _customerTypeComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _customerTypeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _customerTypeComboBox.FormattingEnabled = true;
+        _customerTypeComboBox.Location = new Point(88, 3);
+        _customerTypeComboBox.Name = "_customerTypeComboBox";
+        _customerTypeComboBox.Size = new Size(167, 28);
+        _customerTypeComboBox.TabIndex = 1;
+        // 
+        // _accountStatusLabel
+        // 
+        _accountStatusLabel.Anchor = AnchorStyles.Left;
+        _accountStatusLabel.AutoSize = true;
+        _accountStatusLabel.Location = new Point(261, 7);
+        _accountStatusLabel.Name = "_accountStatusLabel";
+        _accountStatusLabel.Size = new Size(52, 20);
+        _accountStatusLabel.TabIndex = 2;
+        _accountStatusLabel.Text = "&Status:";
+        // 
+        // _accountStatusComboBox
+        // 
+        _accountStatusComboBox.AccessibleName = "Account status";
+        _accountStatusComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _accountStatusComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _accountStatusComboBox.FormattingEnabled = true;
+        _accountStatusComboBox.Location = new Point(398, 3);
+        _accountStatusComboBox.Name = "_accountStatusComboBox";
+        _accountStatusComboBox.Size = new Size(167, 28);
+        _accountStatusComboBox.TabIndex = 3;
+        // 
+        // _creditLimitLabel
+        // 
+        _creditLimitLabel.Anchor = AnchorStyles.Left;
+        _creditLimitLabel.AutoSize = true;
+        _creditLimitLabel.Location = new Point(3, 41);
+        _creditLimitLabel.Name = "_creditLimitLabel";
+        _creditLimitLabel.Size = new Size(79, 20);
+        _creditLimitLabel.TabIndex = 4;
+        _creditLimitLabel.Text = "&Credit limit:";
+        // 
+        // _creditLimitNumericUpDown
+        // 
+        _creditLimitNumericUpDown.AccessibleName = "Credit limit";
+        _creditLimitNumericUpDown.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _creditLimitNumericUpDown.DecimalPlaces = 2;
+        _creditLimitNumericUpDown.Increment = new decimal(new int[] { 100, 0, 0, 0 });
+        _creditLimitNumericUpDown.Location = new Point(88, 37);
+        _creditLimitNumericUpDown.Maximum = new decimal(new int[] { 1000000, 0, 0, 0 });
+        _creditLimitNumericUpDown.Name = "_creditLimitNumericUpDown";
+        _creditLimitNumericUpDown.Size = new Size(167, 27);
+        _creditLimitNumericUpDown.TabIndex = 5;
+        _creditLimitNumericUpDown.ThousandsSeparator = true;
+        _creditLimitNumericUpDown.Value = new decimal(new int[] { 7500, 0, 0, 0 });
+        // 
+        // _discountLabel
+        // 
+        _discountLabel.Anchor = AnchorStyles.Left;
+        _discountLabel.AutoSize = true;
+        _discountLabel.Location = new Point(261, 41);
+        _discountLabel.Name = "_discountLabel";
+        _discountLabel.Size = new Size(131, 20);
+        _discountLabel.TabIndex = 6;
+        _discountLabel.Text = "Default &discount %:";
+        // 
+        // _discountNumericUpDown
+        // 
+        _discountNumericUpDown.AccessibleName = "Default discount percent";
+        _discountNumericUpDown.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _discountNumericUpDown.DecimalPlaces = 1;
+        _discountNumericUpDown.Location = new Point(398, 37);
+        _discountNumericUpDown.Name = "_discountNumericUpDown";
+        _discountNumericUpDown.Size = new Size(167, 27);
+        _discountNumericUpDown.TabIndex = 7;
+        _discountNumericUpDown.Value = new decimal(new int[] { 5, 0, 0, 0 });
+        // 
+        // _languageLabel
+        // 
+        _languageLabel.Anchor = AnchorStyles.Left;
+        _languageLabel.AutoSize = true;
+        _languageLabel.Location = new Point(3, 75);
+        _languageLabel.Name = "_languageLabel";
+        _languageLabel.Size = new Size(74, 20);
+        _languageLabel.TabIndex = 8;
+        _languageLabel.Text = "&Language:";
+        // 
+        // _languageComboBox
+        // 
+        _languageComboBox.AccessibleName = "Preferred language";
+        _languageComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _languageComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _languageComboBox.FormattingEnabled = true;
+        _languageComboBox.Location = new Point(88, 71);
+        _languageComboBox.Name = "_languageComboBox";
+        _languageComboBox.Size = new Size(167, 28);
+        _languageComboBox.TabIndex = 9;
+        // 
+        // _timeZoneLabel
+        // 
+        _timeZoneLabel.Anchor = AnchorStyles.Left;
+        _timeZoneLabel.AutoSize = true;
+        _timeZoneLabel.Location = new Point(261, 75);
+        _timeZoneLabel.Name = "_timeZoneLabel";
+        _timeZoneLabel.Size = new Size(76, 20);
+        _timeZoneLabel.TabIndex = 10;
+        _timeZoneLabel.Text = "Time &zone:";
+        // 
+        // _timeZoneComboBox
+        // 
+        _timeZoneComboBox.AccessibleName = "Time zone";
+        _timeZoneComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _timeZoneComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _timeZoneComboBox.FormattingEnabled = true;
+        _timeZoneComboBox.Location = new Point(398, 71);
+        _timeZoneComboBox.Name = "_timeZoneComboBox";
+        _timeZoneComboBox.Size = new Size(167, 28);
+        _timeZoneComboBox.TabIndex = 11;
+        // 
+        // _accountOptionsLabel
+        // 
+        _accountOptionsLabel.Anchor = AnchorStyles.Left;
+        _accountOptionsLabel.AutoSize = true;
+        _accountOptionsLabel.Location = new Point(3, 109);
+        _accountOptionsLabel.Name = "_accountOptionsLabel";
+        _accountOptionsLabel.Size = new Size(61, 20);
+        _accountOptionsLabel.TabIndex = 12;
+        _accountOptionsLabel.Text = "Options:";
+        // 
+        // _accountOptionsFlowPanel
+        // 
+        _accountOptionsFlowPanel.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _accountOptionsFlowPanel.AutoSize = true;
+        _accountOptionsFlowPanel.Controls.Add(_paperlessCheckBox);
+        _accountOptionsFlowPanel.Controls.Add(_priorityCheckBox);
+        _accountOptionsFlowPanel.Location = new Point(88, 105);
+        _accountOptionsFlowPanel.Name = "_accountOptionsFlowPanel";
+        _accountOptionsFlowPanel.Size = new Size(477, 29);
+        _accountOptionsFlowPanel.TabIndex = 13;
+        _accountOptionsFlowPanel.WrapContents = false;
+        // 
+        // _paperlessCheckBox
+        // 
+        _paperlessCheckBox.AutoSize = true;
+        _paperlessCheckBox.Checked = true;
+        _paperlessCheckBox.CheckState = CheckState.Checked;
+        _paperlessCheckBox.Location = new Point(3, 3);
+        _paperlessCheckBox.Name = "_paperlessCheckBox";
+        _paperlessCheckBox.Size = new Size(139, 24);
+        _paperlessCheckBox.TabIndex = 0;
+        _paperlessCheckBox.Text = "&Paperless billing";
+        _paperlessCheckBox.UseVisualStyleBackColor = true;
+        // 
+        // _priorityCheckBox
+        // 
+        _priorityCheckBox.AutoSize = true;
+        _priorityCheckBox.Location = new Point(148, 3);
+        _priorityCheckBox.Name = "_priorityCheckBox";
+        _priorityCheckBox.Size = new Size(139, 24);
+        _priorityCheckBox.TabIndex = 1;
+        _priorityCheckBox.Text = "Priority &customer";
+        _priorityCheckBox.UseVisualStyleBackColor = true;
+        // 
+        // _notesGroupBox
+        // 
+        _notesGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        _notesGroupBox.Controls.Add(_notesRichTextBox);
+        _notesGroupBox.Location = new Point(4, 542);
+        _notesGroupBox.Margin = new Padding(4);
+        _notesGroupBox.Name = "_notesGroupBox";
+        _notesGroupBox.Padding = new Padding(8);
+        _notesGroupBox.Size = new Size(1176, 330);
+        _notesGroupBox.TabIndex = 4;
+        _notesGroupBox.TabStop = false;
+        _notesGroupBox.Text = "Customer notes";
+        // 
+        // _notesRichTextBox
+        // 
+        _notesRichTextBox.AccessibleName = "Customer notes";
+        _notesRichTextBox.Controls.Add(_notesToolStrip);
+        _notesRichTextBox.Dock = DockStyle.Fill;
+        _notesRichTextBox.Location = new Point(8, 39);
+        _notesRichTextBox.Name = "_notesRichTextBox";
+        _notesRichTextBox.Padding = new Padding(4, 45, 4, 4);
+        _notesRichTextBox.Size = new Size(1160, 283);
+        _notesRichTextBox.TabIndex = 0;
+        _notesRichTextBox.Text = "Prefers email contact. Interested in the premium support plan.";
+        _notesRichTextBox.HandleCreated += NotesRichTextBox_HandleCreated;
+        _notesRichTextBox.PaddingChanged += NotesRichTextBox_LayoutChanged;
+        _notesRichTextBox.Resize += NotesRichTextBox_LayoutChanged;
+        _notesRichTextBox.SelectionChanged += NotesRichTextBox_SelectionChanged;
+        // 
+        // _notesToolStrip
+        // 
+        _notesToolStrip.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        _notesToolStrip.AutoSize = false;
+        _notesToolStrip.BackColor = SystemColors.Control;
+        _notesToolStrip.GripStyle = ToolStripGripStyle.Hidden;
+        _notesToolStrip.ImageScalingSize = new Size(24, 24);
+        _notesToolStrip.Items.AddRange(new ToolStripItem[] { _cutToolStripButton, _copyToolStripButton, _pasteToolStripButton, _clipboardToolStripSeparator, _boldToolStripButton, _italicToolStripButton, _underlineToolStripButton });
+        _notesToolStrip.Location = new Point(4, 4);
+        _notesToolStrip.Name = "_notesToolStrip";
+        _notesToolStrip.Padding = new Padding(2);
+        _notesToolStrip.Size = new Size(1150, 37);
+        _notesToolStrip.TabIndex = 0;
+        // 
+        // _cutToolStripButton
+        // 
+        _cutToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _cutToolStripButton.Name = "_cutToolStripButton";
+        _cutToolStripButton.Size = new Size(29, 26);
+        _cutToolStripButton.Text = "Cut";
+        _cutToolStripButton.ToolTipText = "Cut (Ctrl+X)";
+        _cutToolStripButton.Click += CutToolStripButton_Click;
+        // 
+        // _copyToolStripButton
+        // 
+        _copyToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _copyToolStripButton.Name = "_copyToolStripButton";
+        _copyToolStripButton.Size = new Size(29, 26);
+        _copyToolStripButton.Text = "Copy";
+        _copyToolStripButton.ToolTipText = "Copy (Ctrl+C)";
+        _copyToolStripButton.Click += CopyToolStripButton_Click;
+        // 
+        // _pasteToolStripButton
+        // 
+        _pasteToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _pasteToolStripButton.Name = "_pasteToolStripButton";
+        _pasteToolStripButton.Size = new Size(29, 26);
+        _pasteToolStripButton.Text = "Paste";
+        _pasteToolStripButton.ToolTipText = "Paste (Ctrl+V)";
+        _pasteToolStripButton.Click += PasteToolStripButton_Click;
+        // 
+        // _clipboardToolStripSeparator
+        // 
+        _clipboardToolStripSeparator.Name = "_clipboardToolStripSeparator";
+        _clipboardToolStripSeparator.Size = new Size(6, 28);
+        // 
+        // _boldToolStripButton
+        // 
+        _boldToolStripButton.CheckOnClick = true;
+        _boldToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _boldToolStripButton.Name = "_boldToolStripButton";
+        _boldToolStripButton.Size = new Size(29, 26);
+        _boldToolStripButton.Text = "Bold";
+        _boldToolStripButton.ToolTipText = "Bold (Ctrl+B)";
+        _boldToolStripButton.Click += BoldToolStripButton_Click;
+        // 
+        // _italicToolStripButton
+        // 
+        _italicToolStripButton.CheckOnClick = true;
+        _italicToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _italicToolStripButton.Name = "_italicToolStripButton";
+        _italicToolStripButton.Size = new Size(29, 26);
+        _italicToolStripButton.Text = "Italic";
+        _italicToolStripButton.ToolTipText = "Italic (Ctrl+I)";
+        _italicToolStripButton.Click += ItalicToolStripButton_Click;
+        // 
+        // _underlineToolStripButton
+        // 
+        _underlineToolStripButton.CheckOnClick = true;
+        _underlineToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _underlineToolStripButton.Name = "_underlineToolStripButton";
+        _underlineToolStripButton.Size = new Size(29, 26);
+        _underlineToolStripButton.Text = "Underline";
+        _underlineToolStripButton.ToolTipText = "Underline (Ctrl+U)";
+        _underlineToolStripButton.Click += UnderlineToolStripButton_Click;
+        // 
+        // CustomerEntryView
+        // 
+        AutoScaleMode = AutoScaleMode.Inherit;
+        Controls.Add(_scrollPanel);
+        Name = "CustomerEntryView";
+        Size = new Size(1200, 900);
+        _scrollPanel.ResumeLayout(false);
+        _scrollPanel.PerformLayout();
+        _contentLayoutPanel.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)_identityGroupBox).EndInit();
+        _identityGroupBox.ResumeLayout(false);
+        _identityLayoutPanel.ResumeLayout(false);
+        _identityLayoutPanel.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_contactGroupBox).EndInit();
+        _contactGroupBox.ResumeLayout(false);
+        _contactLayoutPanel.ResumeLayout(false);
+        _contactLayoutPanel.PerformLayout();
+        _contactPermissionsFlowPanel.ResumeLayout(false);
+        _contactPermissionsFlowPanel.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_addressGroupBox).EndInit();
+        _addressGroupBox.ResumeLayout(false);
+        _addressLayoutPanel.ResumeLayout(false);
+        _addressLayoutPanel.PerformLayout();
+        _cityZipStateLayoutPanel.ResumeLayout(false);
+        _cityZipStateLayoutPanel.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_preferencesGroupBox).EndInit();
+        _preferencesGroupBox.ResumeLayout(false);
+        _preferencesLayoutPanel.ResumeLayout(false);
+        _preferencesLayoutPanel.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_creditLimitNumericUpDown).EndInit();
+        ((System.ComponentModel.ISupportInitialize)_discountNumericUpDown).EndInit();
+        _accountOptionsFlowPanel.ResumeLayout(false);
+        _accountOptionsFlowPanel.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_notesGroupBox).EndInit();
+        _notesGroupBox.ResumeLayout(false);
+        _notesRichTextBox.ResumeLayout(false);
+        _notesRichTextBox.PerformLayout();
+        _notesToolStrip.ResumeLayout(false);
+        _notesToolStrip.PerformLayout();
+        ResumeLayout(false);
+    }
+
+    #endregion
+
+    private Panel _scrollPanel;
+    private TableLayoutPanel _contentLayoutPanel;
+    private GroupBoxEx _identityGroupBox;
+    private TableLayoutPanel _identityLayoutPanel;
+    private Label _customerNumberLabel;
+    private TextBox _customerNumberTextBox;
+    private Label _titleLabel;
+    private ComboBox _titleComboBox;
+    private Label _firstNameLabel;
+    private TextBox _firstNameTextBox;
+    private Label _middleNameLabel;
+    private TextBox _middleNameTextBox;
+    private Label _lastNameLabel;
+    private TextBox _lastNameTextBox;
+    private Label _birthDateLabel;
+    private DateTimePicker _birthDatePicker;
+    private Label _customerSinceLabel;
+    private DateTimePicker _customerSincePicker;
+    private Label _activeCustomerLabel;
+    private CheckBox _activeCustomerCheckBox;
+    private GroupBoxEx _contactGroupBox;
+    private TableLayoutPanel _contactLayoutPanel;
+    private Label _emailLabel;
+    private TextBox _emailTextBox;
+    private Label _phoneLabel;
+    private MaskedTextBox _phoneMaskedTextBox;
+    private Label _mobileLabel;
+    private MaskedTextBox _mobileMaskedTextBox;
+    private Label _preferredContactLabel;
+    private ComboBox _preferredContactComboBox;
+    private Label _contactPermissionsLabel;
+    private FlowLayoutPanel _contactPermissionsFlowPanel;
+    private CheckBox _emailPermissionCheckBox;
+    private CheckBox _smsPermissionCheckBox;
+    private GroupBoxEx _addressGroupBox;
+    private TableLayoutPanel _addressLayoutPanel;
+    private Label _addressLine1Label;
+    private TextBox _addressLine1TextBox;
+    private Label _addressLine2Label;
+    private TextBox _addressLine2TextBox;
+    private Label _streetLabel;
+    private TextBox _streetTextBox;
+    private Label _cityZipStateLabel;
+    private TableLayoutPanel _cityZipStateLayoutPanel;
+    private TextBox _cityTextBox;
+    private MaskedTextBox _zipMaskedTextBox;
+    private TextBox _stateTextBox;
+    private Label _countryLabel;
+    private ComboBox _countryComboBox;
+    private GroupBoxEx _preferencesGroupBox;
+    private TableLayoutPanel _preferencesLayoutPanel;
+    private Label _customerTypeLabel;
+    private ComboBox _customerTypeComboBox;
+    private Label _accountStatusLabel;
+    private ComboBox _accountStatusComboBox;
+    private Label _creditLimitLabel;
+    private NumericUpDown _creditLimitNumericUpDown;
+    private Label _discountLabel;
+    private NumericUpDown _discountNumericUpDown;
+    private Label _languageLabel;
+    private ComboBox _languageComboBox;
+    private Label _timeZoneLabel;
+    private ComboBox _timeZoneComboBox;
+    private Label _accountOptionsLabel;
+    private FlowLayoutPanel _accountOptionsFlowPanel;
+    private CheckBox _paperlessCheckBox;
+    private CheckBox _priorityCheckBox;
+    private GroupBoxEx _notesGroupBox;
+    private RichTextBox _notesRichTextBox;
+    private ToolStrip _notesToolStrip;
+    private ToolStripButton _cutToolStripButton;
+    private ToolStripButton _copyToolStripButton;
+    private ToolStripButton _pasteToolStripButton;
+    private ToolStripSeparator _clipboardToolStripSeparator;
+    private ToolStripButton _boldToolStripButton;
+    private ToolStripButton _italicToolStripButton;
+    private ToolStripButton _underlineToolStripButton;
+    private IconFactoryComponent _iconFactoryComponent;
+}
