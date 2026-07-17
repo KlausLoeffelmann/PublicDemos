@@ -119,12 +119,14 @@ public partial class CustomerEntryView : UserControl, IScenarioView
 
     private void PositionNotesToolStrip()
     {
-        int inset = _notesRichTextBox.Padding.Left;
+        int insetX = _notesRichTextBox.Margin.Left+4;
+        int insetY = _notesRichTextBox.Margin.Top + 4;
+
         _notesToolStrip.Bounds = new Rectangle(
-            x: inset,
-            y: inset,
+            x: 0,
+            y: 0,
             width: Math.Max(0, _notesRichTextBox.ClientSize.Width - _notesRichTextBox.Padding.Horizontal),
-            height: _notesToolStrip.Height);
+            height: (int)(Font.SizeInPoints * DeviceDpi / 72F + 8F));
     }
 
     private void ApplyNotesTextPadding()
@@ -135,6 +137,7 @@ public partial class CustomerEntryView : UserControl, IScenarioView
         }
 
         Padding padding = _notesRichTextBox.Padding;
+
         NativeRect formattingRectangle = new(
             left: padding.Left,
             top: padding.Top,
