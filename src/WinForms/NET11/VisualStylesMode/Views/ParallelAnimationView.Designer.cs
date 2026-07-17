@@ -33,74 +33,114 @@ partial class ParallelAnimationView
     {
         components = new System.ComponentModel.Container();
         _rootLayoutPanel = new TableLayoutPanel();
+        _animationToolStrip = new ToolStrip();
+        _maxConcurrentCaptionLabel = new ToolStripLabel();
+        _maxConcurrentTrackBar = new TrackBar();
+        _maxConcurrentTrackBarHost = new ToolStripControlHost(_maxConcurrentTrackBar);
+        _maxConcurrentValueLabel = new ToolStripLabel();
         _introLabel = new Label();
         _statusLabel = new Label();
-        _matrixScrollPanel = new Panel();
         _animationTableLayoutPanel = new TableLayoutPanel();
         _animationTimer = new System.Windows.Forms.Timer(components);
         _rootLayoutPanel.SuspendLayout();
-        _matrixScrollPanel.SuspendLayout();
+        _animationToolStrip.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_maxConcurrentTrackBar).BeginInit();
         SuspendLayout();
         // 
         // _rootLayoutPanel
         // 
         _rootLayoutPanel.ColumnCount = 1;
         _rootLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _rootLayoutPanel.Controls.Add(_introLabel, 0, 0);
-        _rootLayoutPanel.Controls.Add(_statusLabel, 0, 1);
-        _rootLayoutPanel.Controls.Add(_matrixScrollPanel, 0, 2);
+        _rootLayoutPanel.Controls.Add(_animationToolStrip, 0, 0);
+        _rootLayoutPanel.Controls.Add(_introLabel, 0, 1);
+        _rootLayoutPanel.Controls.Add(_statusLabel, 0, 2);
+        _rootLayoutPanel.Controls.Add(_animationTableLayoutPanel, 0, 3);
         _rootLayoutPanel.Dock = DockStyle.Fill;
         _rootLayoutPanel.Location = new Point(0, 0);
         _rootLayoutPanel.Name = "_rootLayoutPanel";
         _rootLayoutPanel.Padding = new Padding(8);
-        _rootLayoutPanel.RowCount = 3;
+        _rootLayoutPanel.RowCount = 4;
+        _rootLayoutPanel.RowStyles.Add(new RowStyle());
         _rootLayoutPanel.RowStyles.Add(new RowStyle());
         _rootLayoutPanel.RowStyles.Add(new RowStyle());
         _rootLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         _rootLayoutPanel.Size = new Size(1200, 850);
         _rootLayoutPanel.TabIndex = 0;
         // 
+        // _animationToolStrip
+        // 
+        _animationToolStrip.GripStyle = ToolStripGripStyle.Hidden;
+        _animationToolStrip.Items.Add(_maxConcurrentCaptionLabel);
+        _animationToolStrip.Items.Add(_maxConcurrentTrackBarHost);
+        _animationToolStrip.Items.Add(_maxConcurrentValueLabel);
+        _animationToolStrip.Location = new Point(11, 11);
+        _animationToolStrip.Name = "_animationToolStrip";
+        _animationToolStrip.Size = new Size(1178, 25);
+        _animationToolStrip.TabIndex = 0;
+        _animationToolStrip.Text = "Animation Controls";
+        // 
+        // _maxConcurrentCaptionLabel
+        // 
+        _maxConcurrentCaptionLabel.Name = "_maxConcurrentCaptionLabel";
+        _maxConcurrentCaptionLabel.Size = new Size(146, 22);
+        _maxConcurrentCaptionLabel.Text = "Max concurrent animations:";
+        // 
+        // _maxConcurrentTrackBar
+        // 
+        _maxConcurrentTrackBar.AutoSize = false;
+        _maxConcurrentTrackBar.LargeChange = 10;
+        _maxConcurrentTrackBar.Maximum = 156;
+        _maxConcurrentTrackBar.Minimum = 1;
+        _maxConcurrentTrackBar.Name = "_maxConcurrentTrackBar";
+        _maxConcurrentTrackBar.Size = new Size(220, 25);
+        _maxConcurrentTrackBar.SmallChange = 1;
+        _maxConcurrentTrackBar.TabIndex = 0;
+        _maxConcurrentTrackBar.TickFrequency = 10;
+        _maxConcurrentTrackBar.TickStyle = TickStyle.BottomRight;
+        _maxConcurrentTrackBar.Value = 24;
+        _maxConcurrentTrackBar.ValueChanged += MaxConcurrentTrackBar_ValueChanged;
+        // 
+        // _maxConcurrentTrackBarHost
+        // 
+        _maxConcurrentTrackBarHost.Name = "_maxConcurrentTrackBarHost";
+        _maxConcurrentTrackBarHost.Size = new Size(220, 25);
+        // 
+        // _maxConcurrentValueLabel
+        // 
+        _maxConcurrentValueLabel.Name = "_maxConcurrentValueLabel";
+        _maxConcurrentValueLabel.Size = new Size(36, 22);
+        _maxConcurrentValueLabel.Text = "24 / 156";
+        // 
         // _introLabel
         // 
         _introLabel.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _introLabel.AutoSize = true;
-        _introLabel.Location = new Point(11, 11);
-        _introLabel.Margin = new Padding(3, 3, 3, 8);
+        _introLabel.Location = new Point(11, 44);
+        _introLabel.Margin = new Padding(3, 8, 3, 8);
         _introLabel.Name = "_introLabel";
         _introLabel.Size = new Size(1178, 40);
-        _introLabel.TabIndex = 0;
-        _introLabel.Text = "A deterministic 12 x 13 matrix drives hover, pressed, and checked transitions on the same timer tick. The animation runs only while this view is visible.";
+        _introLabel.TabIndex = 1;
+        _introLabel.Text = "A 12 x 13 matrix of controls; only a random, independently timed subset animates at any moment, capped by the slider above. Each cell grows to fill the available space.";
         // 
         // _statusLabel
         // 
         _statusLabel.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _statusLabel.AutoSize = true;
-        _statusLabel.Location = new Point(11, 59);
+        _statusLabel.Location = new Point(11, 92);
         _statusLabel.Margin = new Padding(3, 0, 3, 8);
         _statusLabel.Name = "_statusLabel";
         _statusLabel.Size = new Size(1178, 20);
-        _statusLabel.TabIndex = 1;
-        // 
-        // _matrixScrollPanel
-        // 
-        _matrixScrollPanel.AutoScroll = true;
-        _matrixScrollPanel.Controls.Add(_animationTableLayoutPanel);
-        _matrixScrollPanel.Dock = DockStyle.Fill;
-        _matrixScrollPanel.Location = new Point(11, 90);
-        _matrixScrollPanel.Name = "_matrixScrollPanel";
-        _matrixScrollPanel.Size = new Size(1178, 749);
-        _matrixScrollPanel.TabIndex = 2;
+        _statusLabel.TabIndex = 2;
         // 
         // _animationTableLayoutPanel
         // 
-        _animationTableLayoutPanel.AutoSize = true;
-        _animationTableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _animationTableLayoutPanel.ColumnCount = 12;
-        _animationTableLayoutPanel.Location = new Point(0, 0);
+        _animationTableLayoutPanel.Dock = DockStyle.Fill;
+        _animationTableLayoutPanel.Location = new Point(11, 123);
         _animationTableLayoutPanel.Name = "_animationTableLayoutPanel";
         _animationTableLayoutPanel.RowCount = 13;
-        _animationTableLayoutPanel.Size = new Size(1392, 806);
-        _animationTableLayoutPanel.TabIndex = 0;
+        _animationTableLayoutPanel.Size = new Size(1178, 716);
+        _animationTableLayoutPanel.TabIndex = 3;
         // 
         // _animationTimer
         // 
@@ -116,17 +156,22 @@ partial class ParallelAnimationView
         Size = new Size(1200, 850);
         _rootLayoutPanel.ResumeLayout(false);
         _rootLayoutPanel.PerformLayout();
-        _matrixScrollPanel.ResumeLayout(false);
-        _matrixScrollPanel.PerformLayout();
+        _animationToolStrip.ResumeLayout(false);
+        _animationToolStrip.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_maxConcurrentTrackBar).EndInit();
         ResumeLayout(false);
     }
 
     #endregion
 
     private TableLayoutPanel _rootLayoutPanel;
+    private ToolStrip _animationToolStrip;
+    private ToolStripLabel _maxConcurrentCaptionLabel;
+    private TrackBar _maxConcurrentTrackBar;
+    private ToolStripControlHost _maxConcurrentTrackBarHost;
+    private ToolStripLabel _maxConcurrentValueLabel;
     private Label _introLabel;
     private Label _statusLabel;
-    private Panel _matrixScrollPanel;
     private TableLayoutPanel _animationTableLayoutPanel;
     private System.Windows.Forms.Timer _animationTimer;
 }

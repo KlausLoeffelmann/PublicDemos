@@ -7,7 +7,10 @@ namespace VisualStylesModeDemo.Views;
 
 /// <summary>
 ///  Stress scenario that drives hover, pressed, and checked transitions across 156 ButtonBase
-///  controls on the same UI-thread timer tick.
+///  controls. Rather than animating every control on every timer tick, a random subset of
+///  controls independently starts and stops short animation "bursts", capped by a
+///  user-adjustable concurrency limit (see the ToolStrip slider), which is a more realistic
+///  stress pattern than flipping every control in lockstep.
 /// </summary>
 public partial class ParallelAnimationView : UserControl, IScenarioView
 {
@@ -25,18 +28,29 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
         new MouseEventArgs(MouseButtons.Left, clicks: 1, x: 1, y: 1, delta: 0),
     ];
 
+    // Random burst duration bounds, expressed in timer ticks. A "burst" is one control's
+    // independent run of hover/pressed/checked toggling before it goes idle again.
+    private const int MinBurstTicks = 2;
+    private const int MaxBurstTicks = 8;
+
     private readonly List<ButtonBase> _animatedControls = [];
     private readonly List<Button> _pushButtons = [];
     private readonly List<CheckBox> _checkBoxes = [];
     private readonly List<RadioButton> _radioButtons = [];
-    private bool _activePhase;
+    private readonly Dictionary<ButtonBase, AnimationState> _animationStates = [];
+
+    // Deliberately NOT seeded: the user asked for genuinely random start/stop timing so the
+    // stress pattern differs on every run, unlike the deterministic matrix-shuffle seed above.
+    private readonly Random _animationRandom = new();
+
     private long _phaseCount;
+    private int _maxConcurrent = 24;
 
     public ParallelAnimationView()
     {
         InitializeComponent();
         BuildMatrix();
-        UpdateStatus();
+        UpdateStatus(activeCount: 0);
     }
 
     public string DisplayName => "Parallel Button Animations";
@@ -110,14 +124,17 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
 
         _animationTableLayoutPanel.SuspendLayout();
 
+        // Percent-based (rather than fixed-pixel) column/row styles let every cell share the
+        // available real estate equally, so the matrix grows or shrinks with the view instead
+        // of relying on scrollbars.
         for (int column = 0; column < ColumnCount; column++)
         {
-            _animationTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 116F));
+            _animationTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / ColumnCount));
         }
 
         for (int row = 0; row < RowCount; row++)
         {
-            _animationTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 62F));
+            _animationTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / RowCount));
         }
 
         for (int index = 0; index < descriptors.Count; index++)
@@ -126,6 +143,7 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
             ButtonBase control = CreateControl(descriptor, index);
 
             _animatedControls.Add(control);
+            _animationStates[control] = new AnimationState();
             _animationTableLayoutPanel.Controls.Add(control, index % ColumnCount, index / ColumnCount);
         }
 
@@ -202,38 +220,104 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
 
     private void AnimationTimer_Tick(object sender, EventArgs e)
     {
-        _activePhase = !_activePhase;
         _phaseCount++;
+        int activeCount = 0;
 
-        MethodInfo hoverMethod = _activePhase ? s_onMouseEnterMethod : s_onMouseLeaveMethod;
+        // Advance every currently-animating control by one tick; once its burst runs out,
+        // reset it to its idle/normal visual state and free it up for a future burst.
         foreach (ButtonBase control in _animatedControls)
         {
-            hoverMethod.Invoke(control, s_eventArguments);
-        }
-
-        foreach (Button button in _pushButtons)
-        {
-            if (_activePhase)
+            AnimationState state = _animationStates[control];
+            if (!state.IsAnimating)
             {
-                s_onMouseDownMethod.Invoke(button, s_mouseDownArguments);
+                continue;
+            }
+
+            state.CurrentPhaseHot = !state.CurrentPhaseHot;
+            SetControlPhase(control, state.CurrentPhaseHot);
+            state.RemainingTicks--;
+
+            if (state.RemainingTicks <= 0)
+            {
+                state.IsAnimating = false;
+                SetControlPhase(control, hot: false);
             }
             else
             {
-                s_resetFlagsAndPaintMethod.Invoke(button, parameters: null);
+                activeCount++;
             }
         }
 
-        foreach (CheckBox checkBox in _checkBoxes)
+        // Randomly start new bursts on idle controls, but never exceed the concurrency cap.
+        int freeSlots = _maxConcurrent - activeCount;
+        if (freeSlots > 0)
         {
-            checkBox.Checked = !checkBox.Checked;
+            List<ButtonBase> idleControls = new(_animatedControls.Count);
+            foreach (ButtonBase control in _animatedControls)
+            {
+                if (!_animationStates[control].IsAnimating)
+                {
+                    idleControls.Add(control);
+                }
+            }
+
+            // Shuffle so a different random subset of idle controls gets a chance to start
+            // each tick, then only take as many as there are free concurrency slots.
+            for (int index = idleControls.Count - 1; index > 0; index--)
+            {
+                int swapIndex = _animationRandom.Next(index + 1);
+                (idleControls[index], idleControls[swapIndex]) = (idleControls[swapIndex], idleControls[index]);
+            }
+
+            int startCount = Math.Min(freeSlots, idleControls.Count);
+            for (int index = 0; index < startCount; index++)
+            {
+                ButtonBase control = idleControls[index];
+                AnimationState state = _animationStates[control];
+                state.IsAnimating = true;
+                state.CurrentPhaseHot = true;
+                state.RemainingTicks = _animationRandom.Next(MinBurstTicks, MaxBurstTicks + 1);
+                SetControlPhase(control, hot: true);
+                activeCount++;
+            }
         }
 
-        foreach (RadioButton radioButton in _radioButtons)
-        {
-            radioButton.Checked = !radioButton.Checked;
-        }
+        UpdateStatus(activeCount);
+    }
 
-        UpdateStatus();
+    /// <summary>
+    ///  Applies the hover/pressed (or checked) visual state for a single control, reusing the
+    ///  reflection-based ButtonBase hooks so no mouse/keyboard input is simulated on the OS level.
+    /// </summary>
+    private static void SetControlPhase(ButtonBase control, bool hot)
+    {
+        MethodInfo hoverMethod = hot ? s_onMouseEnterMethod : s_onMouseLeaveMethod;
+        hoverMethod.Invoke(control, s_eventArguments);
+
+        switch (control)
+        {
+            case Button button when hot:
+                s_onMouseDownMethod.Invoke(button, s_mouseDownArguments);
+                break;
+
+            case Button button:
+                s_resetFlagsAndPaintMethod.Invoke(button, parameters: null);
+                break;
+
+            case CheckBox checkBox:
+                checkBox.Checked = hot;
+                break;
+
+            case RadioButton radioButton:
+                radioButton.Checked = hot;
+                break;
+        }
+    }
+
+    private void MaxConcurrentTrackBar_ValueChanged(object sender, EventArgs e)
+    {
+        _maxConcurrent = _maxConcurrentTrackBar.Value;
+        _maxConcurrentValueLabel.Text = $"{_maxConcurrent} / {ColumnCount * RowCount}";
     }
 
     private void UpdateAnimationTimer()
@@ -255,27 +339,23 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
 
         foreach (ButtonBase control in _animatedControls)
         {
-            s_onMouseLeaveMethod.Invoke(control, s_eventArguments);
+            AnimationState state = _animationStates[control];
+            state.IsAnimating = false;
+            state.CurrentPhaseHot = false;
+            SetControlPhase(control, hot: false);
         }
 
-        foreach (Button button in _pushButtons)
-        {
-            s_resetFlagsAndPaintMethod.Invoke(button, parameters: null);
-        }
-
-        _activePhase = false;
-        UpdateStatus();
+        UpdateStatus(activeCount: 0);
     }
 
-    private void UpdateStatus()
+    private void UpdateStatus(int activeCount)
     {
         string lifecycle = _animationTimer.Enabled ? "running" : "stopped";
-        string phase = _activePhase ? "hot / pressed" : "normal / released";
 
         _statusLabel.Text =
             $"{_animatedControls.Count} controls | {_pushButtons.Count} Buttons | "
             + $"{_checkBoxes.Count} CheckBoxes | {_radioButtons.Count} RadioButtons | "
-            + $"{lifecycle}, phase {_phaseCount}: {phase}";
+            + $"{lifecycle}, tick {_phaseCount}: {activeCount} / {_maxConcurrent} animating";
     }
 
     private enum ControlKind
@@ -290,4 +370,15 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
         FlatStyle FlatStyle,
         Appearance Appearance,
         bool InitiallyChecked);
+
+    /// <summary>
+    ///  Tracks whether a single control is currently mid-burst, which visual phase it's in, and
+    ///  how many ticks remain before the burst ends and the control goes idle again.
+    /// </summary>
+    private sealed class AnimationState
+    {
+        public bool IsAnimating;
+        public bool CurrentPhaseHot;
+        public int RemainingTicks;
+    }
 }
