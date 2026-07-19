@@ -109,6 +109,8 @@ public partial class MainForm : Form
                 return;
             }
 
+            using var scope = this.SuspendPainting(LayoutSuspendTraversal.Traverse);
+
             if (_activeView is not null)
             {
                 if (_editModeEnabled)
@@ -169,23 +171,23 @@ public partial class MainForm : Form
         UpdateSelectionUi();
     }
 
-    private void ClassicVisualStylesToolStripMenuItem_Click(object sender, EventArgs e) =>
-        SetVisualStylesMode(VisualStylesMode.Classic);
+    private void ClassicVisualStylesToolStripMenuItem_Click(object sender, EventArgs e) 
+        => SetVisualStylesMode(VisualStylesMode.Classic);
 
-    private void Net11VisualStylesToolStripMenuItem_Click(object sender, EventArgs e) =>
-        SetVisualStylesMode(VisualStylesMode.Net11);
+    private void Net11VisualStylesToolStripMenuItem_Click(object sender, EventArgs e) 
+        => SetVisualStylesMode(VisualStylesMode.Net11);
 
-    private void StandardFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) =>
-        SetFlatStyle(FlatStyle.Standard);
+    private void StandardFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) 
+        => SetFlatStyle(FlatStyle.Standard);
 
-    private void FlatFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) =>
-        SetFlatStyle(FlatStyle.Flat);
+    private void FlatFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) 
+        => SetFlatStyle(FlatStyle.Flat);
 
-    private void PopupFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) =>
-        SetFlatStyle(FlatStyle.Popup);
+    private void PopupFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) 
+        => SetFlatStyle(FlatStyle.Popup);
 
-    private void SystemFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) =>
-        SetFlatStyle(FlatStyle.System);
+    private void SystemFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) 
+        => SetFlatStyle(FlatStyle.System);
 
     private void SetVisualStylesMode(VisualStylesMode visualStylesMode)
     {
@@ -243,13 +245,13 @@ public partial class MainForm : Form
         _systemFlatStyleToolStripMenuItem.Checked = _selectedFlatStyle == FlatStyle.System;
     }
 
-    private void SelectionAdorner_SelectionChanged(object? sender, EventArgs e) 
+    private void SelectionAdorner_SelectionChanged(object? sender, EventArgs e)
         => UpdateSelectionUi();
 
-    private void EditModeToolStripMenuItem_Click(object sender, EventArgs e) 
+    private void EditModeToolStripMenuItem_Click(object sender, EventArgs e)
         => SetEditMode(!_editModeEnabled);
 
-    private void SelectAllToolStripMenuItem_Click(object sender, EventArgs e) 
+    private void SelectAllToolStripMenuItem_Click(object sender, EventArgs e)
         => _selectionAdorner.SelectAll();
 
     private void DeselectAllToolStripMenuItem_Click(object sender, EventArgs e)
@@ -310,9 +312,9 @@ public partial class MainForm : Form
         _saveSettingsToolStripButton.Enabled = hasSelection;
     }
 
-    private static string GetControlDisplayName(Control control) 
-        => string.IsNullOrEmpty(control.Name) 
-            ? control.GetType().Name 
+    private static string GetControlDisplayName(Control control)
+        => string.IsNullOrEmpty(control.Name)
+            ? control.GetType().Name
             : control.Name;
 
     private void ApplyToolStripImages()
@@ -609,6 +611,7 @@ public partial class MainForm : Form
         foreach ((string propertyName, string text) in values)
         {
             PropertyDescriptor? property = properties[propertyName];
+
             if (property is null || property.IsReadOnly)
             {
                 continue;
@@ -632,13 +635,6 @@ public partial class MainForm : Form
         }
     }
 
-    private void MainForm_SystemTextSizeChanged(object sender, EventArgs e)
-    {
-        ApplySystemTextSize();
-        UpdateScaleStatusLabels();
-        _selectionAdorner.SynchronizeBoundsAndRender();
-    }
-
     private void MainForm_DpiChanged(object sender, DpiChangedEventArgs e)
     {
         ApplyToolStripImages();
@@ -646,11 +642,12 @@ public partial class MainForm : Form
         _selectionAdorner.SynchronizeBoundsAndRender();
     }
 
-    private void SystemAppearanceTimer_Tick(object sender, EventArgs e) => UpdateSystemAppearance();
+    private void SystemAppearanceTimer_Tick(object sender, EventArgs e) 
+        => UpdateSystemAppearance();
 
     private void ApplySystemTextSize()
     {
-        float scaledSize = BaseUiFontSize * (float)Application.SystemTextSize;
+        float scaledSize = BaseUiFontSize * (float)Application.SystemVisualSettings.TextScaleFactor;
         Font newFont = new("Segoe UI", scaledSize, FontStyle.Regular, GraphicsUnit.Point);
         Font? oldFont = _scaledUiFont;
         _scaledUiFont = newFont;
@@ -681,8 +678,24 @@ public partial class MainForm : Form
     private void UpdateScaleStatusLabels()
     {
         int displayPercent = (int)Math.Round(DeviceDpi / 96D * 100D);
-        int textPercent = (int)Math.Round(Application.SystemTextSize * 100D);
+        int textPercent = (int)Math.Round(Application.SystemVisualSettings.TextScaleFactor * 100D);
         _displayScaleStatusLabel.Text = $"Display: {displayPercent}% ({DeviceDpi} DPI)";
         _textScaleStatusLabel.Text = $"Text: {textPercent}%";
+    }
+
+    private void MainForm_SystemVisualSettingsChanged(object sender, SystemVisualSettingsChangedEventArgs e)
+    {
+        switch (e.Changed)
+        {
+            case SystemVisualSettingsCategories.AccentColor:
+            UpdateSystemAppearance();
+            break;
+
+            case SystemVisualSettingsCategories.TextScale:
+                ApplySystemTextSize();
+                UpdateScaleStatusLabels();
+                _selectionAdorner.SynchronizeBoundsAndRender();
+                break;
+        }
     }
 }

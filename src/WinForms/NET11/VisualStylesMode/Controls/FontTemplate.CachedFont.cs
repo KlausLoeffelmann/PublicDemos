@@ -3,7 +3,7 @@
 
 namespace VisualStylesModeDemo.Controls;
 
-public sealed partial class FontDelta
+public sealed partial class FontTemplate
 {
     private sealed class CachedFont(Font font)
     {

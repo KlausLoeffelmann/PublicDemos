@@ -10,15 +10,14 @@ namespace VisualStylesModeDemo.Controls;
 /// <summary>
 ///  Describes font size and style changes relative to an existing font.
 /// </summary>
-[TypeConverter(typeof(FontDeltaConverter))]
-public sealed partial class FontDelta : IEquatable<FontDelta>
+[TypeConverter(typeof(FontTemplateConverter))]
+public sealed partial class FontTemplate : IEquatable<FontTemplate>
 {
     private const float MinimumFontSizeInPoints = 1F;
     private const FontStyle ValidFontStyles =
         FontStyle.Bold | FontStyle.Italic | FontStyle.Underline | FontStyle.Strikeout;
 
     private readonly ConditionalWeakTable<Font, CachedFont> _fontCache = [];
-    private readonly List<WeakReference<Font>> _cachedFonts = [];
     private readonly Lock _fontCacheLock = new();
     private float _sizeDeltaInPoints;
     private FontStyle _addedStyle;
@@ -27,7 +26,7 @@ public sealed partial class FontDelta : IEquatable<FontDelta>
     /// <summary>
     ///  Initializes a relative font without any size or style changes.
     /// </summary>
-    public FontDelta()
+    public FontTemplate()
     {
     }
 
@@ -37,7 +36,7 @@ public sealed partial class FontDelta : IEquatable<FontDelta>
     /// <param name="sizeDeltaInPoints">The number of points to add to the source font size.</param>
     /// <param name="addedStyle">The font styles to add after removing <paramref name="removedStyle"/>.</param>
     /// <param name="removedStyle">The font styles to remove from the source font.</param>
-    public FontDelta(
+    public FontTemplate(
         float sizeDeltaInPoints,
         FontStyle addedStyle,
         FontStyle removedStyle)
@@ -114,6 +113,13 @@ public sealed partial class FontDelta : IEquatable<FontDelta>
         }
     }
 
+    /// <summary>
+    ///  Occurs after the relative font definition changes and its cached fonts are invalidated.
+    /// </summary>
+    /// <remarks>
+    ///  This internal notification lets layout templates refresh controls without exposing
+    ///  cache-management details as part of the public API.
+    /// </remarks>
     internal event EventHandler? Changed;
 
     /// <summary>
@@ -121,7 +127,7 @@ public sealed partial class FontDelta : IEquatable<FontDelta>
     /// </summary>
     /// <param name="sourceFont">The font whose size and styles provide the baseline.</param>
     /// <returns>
-    ///  A weakly cached font owned by this <see cref="FontDelta"/>. The caller must not dispose it.
+    ///  A weakly cached font owned by this <see cref="FontTemplate"/>. The caller must not dispose it.
     /// </returns>
     public Font GetFont(Font sourceFont)
     {
@@ -139,22 +145,20 @@ public sealed partial class FontDelta : IEquatable<FontDelta>
 
             Font createdFont = CreateFont(sourceFont);
             _fontCache.Add(sourceFont, new CachedFont(createdFont));
-            _cachedFonts.RemoveAll(static reference => !reference.TryGetTarget(out _));
-            _cachedFonts.Add(new WeakReference<Font>(createdFont));
 
             return createdFont;
         }
     }
 
     /// <inheritdoc/>
-    public bool Equals(FontDelta? other) =>
+    public bool Equals(FontTemplate? other) =>
         other is not null
         && SizeDeltaInPoints == other.SizeDeltaInPoints
         && AddedStyle == other.AddedStyle
         && RemovedStyle == other.RemovedStyle;
 
     /// <inheritdoc/>
-    public override bool Equals(object? obj) => obj is FontDelta other && Equals(other);
+    public override bool Equals(object? obj) => obj is FontTemplate other && Equals(other);
 
     /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(SizeDeltaInPoints, AddedStyle, RemovedStyle);
@@ -227,15 +231,9 @@ public sealed partial class FontDelta : IEquatable<FontDelta>
     {
         lock (_fontCacheLock)
         {
-            foreach (WeakReference<Font> reference in _cachedFonts)
-            {
-                if (reference.TryGetTarget(out Font? font))
-                {
-                    font.Dispose();
-                }
-            }
-
-            _cachedFonts.Clear();
+            // Controls can intentionally retain an applied font after their template
+            // assignment is cleared. Clearing only the weak cache keeps those shared
+            // instances valid until their final control references are released.
             _fontCache.Clear();
         }
     }

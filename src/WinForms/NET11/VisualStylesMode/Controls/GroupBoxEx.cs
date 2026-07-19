@@ -15,7 +15,11 @@ public class GroupBoxEx : GroupBox, ISupportInitialize
     private const int LogicalCaptionBottomPadding = 2;
     private const int CaptionLeadingPadding = 1;
 
-    private FontDelta _captionFontDelta = new(1F, FontStyle.Bold, FontStyle.Regular);
+    private FontTemplate _captionFontTemplate = new(
+        1F, 
+        FontStyle.Bold, 
+        FontStyle.Regular);
+
     private Color _captionBackColor = SystemColors.Control;
     private int _captionHeight;
     private int _measuredCaptionWidth = -1;
@@ -34,7 +38,7 @@ public class GroupBoxEx : GroupBox, ISupportInitialize
                 | ControlStyles.ResizeRedraw,
             true);
 
-        _captionFontDelta.Changed += CaptionFontDelta_Changed;
+        _captionFontTemplate.Changed += CaptionFontDelta_Changed;
         BackColor = SystemColors.ControlLight;
         _initialized = true;
     }
@@ -73,21 +77,21 @@ public class GroupBoxEx : GroupBox, ISupportInitialize
     [Category("Appearance")]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     [RefreshProperties(RefreshProperties.All)]
-    public FontDelta CaptionFontDelta
+    public FontTemplate CaptionFontTemplate
     {
-        get => _captionFontDelta;
+        get => _captionFontTemplate;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (_captionFontDelta.Equals(value))
+            if (_captionFontTemplate.Equals(value))
             {
                 return;
             }
 
-            _captionFontDelta.Changed -= CaptionFontDelta_Changed;
-            _captionFontDelta = value;
-            _captionFontDelta.Changed += CaptionFontDelta_Changed;
+            _captionFontTemplate.Changed -= CaptionFontDelta_Changed;
+            _captionFontTemplate = value;
+            _captionFontTemplate.Changed += CaptionFontDelta_Changed;
             UpdateCaptionMetrics(forceLayout: true);
         }
     }
@@ -151,7 +155,7 @@ public class GroupBoxEx : GroupBox, ISupportInitialize
     {
         if (disposing)
         {
-            _captionFontDelta.Changed -= CaptionFontDelta_Changed;
+            _captionFontTemplate.Changed -= CaptionFontDelta_Changed;
         }
 
         base.Dispose(disposing);
@@ -244,7 +248,7 @@ public class GroupBoxEx : GroupBox, ISupportInitialize
     }
 
     private Font CaptionFont
-        => _captionFontDelta.GetFont(Font);
+        => _captionFontTemplate.GetFont(Font);
 
     private bool IsInitializing
         => _initializationCount > 0;
@@ -358,7 +362,7 @@ public class GroupBoxEx : GroupBox, ISupportInitialize
     }
 
     private void ResetCaptionFontDelta()
-        => CaptionFontDelta = new FontDelta(
+        => CaptionFontTemplate = new FontTemplate(
             sizeDeltaInPoints: 1F,
             addedStyle: FontStyle.Bold,
             removedStyle: FontStyle.Regular);
@@ -367,7 +371,7 @@ public class GroupBoxEx : GroupBox, ISupportInitialize
         => (int)Math.Round(logicalValue * DeviceDpi / 96F, MidpointRounding.AwayFromZero);
 
     private bool ShouldSerializeCaptionFontDelta()
-        => _captionFontDelta.SizeDeltaInPoints != 1F
-            || _captionFontDelta.AddedStyle != FontStyle.Bold
-            || _captionFontDelta.RemovedStyle != FontStyle.Regular;
+        => _captionFontTemplate.SizeDeltaInPoints != 1F
+            || _captionFontTemplate.AddedStyle != FontStyle.Bold
+            || _captionFontTemplate.RemovedStyle != FontStyle.Regular;
 }

@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace VisualStylesModeDemo.Controls;
 
-internal sealed class FontDeltaConverter : ExpandableObjectConverter
+internal sealed class FontTemplateConverter : ExpandableObjectConverter
 {
     public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
         sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
@@ -34,7 +34,7 @@ internal sealed class FontDeltaConverter : ExpandableObjectConverter
             throw new FormatException("A relative font must contain a size delta, added style, and removed style.");
         }
 
-        return new FontDelta(
+        return new FontTemplate(
             float.Parse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture),
             Enum.Parse<FontStyle>(parts[1]),
             Enum.Parse<FontStyle>(parts[2]));
@@ -46,7 +46,7 @@ internal sealed class FontDeltaConverter : ExpandableObjectConverter
         object? value,
         Type destinationType)
     {
-        if (value is FontDelta relativeFont)
+        if (value is FontTemplate relativeFont)
         {
             if (destinationType == typeof(string))
             {
@@ -56,7 +56,7 @@ internal sealed class FontDeltaConverter : ExpandableObjectConverter
 
             if (destinationType == typeof(InstanceDescriptor))
             {
-                ConstructorInfo constructor = typeof(FontDelta).GetConstructor(
+                ConstructorInfo constructor = typeof(FontTemplate).GetConstructor(
                     [typeof(float), typeof(FontStyle), typeof(FontStyle)])!;
 
                 return new InstanceDescriptor(
