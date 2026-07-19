@@ -109,8 +109,6 @@ public partial class MainForm : Form
                 return;
             }
 
-            using var scope = this.SuspendPainting(LayoutSuspendTraversal.Traverse);
-
             if (_activeView is not null)
             {
                 if (_editModeEnabled)
@@ -192,6 +190,9 @@ public partial class MainForm : Form
     private void SetVisualStylesMode(VisualStylesMode visualStylesMode)
     {
         _selectedVisualStylesMode = visualStylesMode;
+
+        using var scope = this.SuspendPainting(LayoutSuspendTraversal.Traverse);
+
         if (_activeView is Control activeView)
         {
             ApplyVisualStylesModeRecursively(activeView, visualStylesMode);
@@ -210,6 +211,8 @@ public partial class MainForm : Form
     {
         _selectedFlatStyle = flatStyle;
 
+        using var scope = this.SuspendPainting(LayoutSuspendTraversal.Traverse);
+
         if (_activeView is IFlatStyleScenarioView flatStyleScenario)
         {
             flatStyleScenario.ApplyFlatStyle(flatStyle);
@@ -222,6 +225,7 @@ public partial class MainForm : Form
     private static void ApplyVisualStylesModeRecursively(Control control, VisualStylesMode visualStylesMode)
     {
         control.VisualStylesMode = visualStylesMode;
+
         foreach (Control child in control.Controls)
         {
             ApplyVisualStylesModeRecursively(child, visualStylesMode);
