@@ -33,6 +33,8 @@ partial class ButtonVisualStylesView
     /// </summary>
     private void InitializeComponent()
     {
+        components = new System.ComponentModel.Container();
+        Components.LayoutTemplateItem layoutTemplateItem1 = new Components.LayoutTemplateItem();
         _rootTableLayoutPanel = new TableLayoutPanel();
         _flatStyleGroupBox = new GroupBoxEx();
         _flatStyleTableLayoutPanel = new TableLayoutPanel();
@@ -77,6 +79,7 @@ partial class ButtonVisualStylesView
         _backgroundImageStretchButton = new Button();
         _backgroundImageZoomButton = new Button();
         _backgroundImageCenterButton = new Button();
+        layoutTemplateProvider1 = new VisualStylesModeDemo.Components.LayoutTemplateProvider(components);
         _rootTableLayoutPanel.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)_flatStyleGroupBox).BeginInit();
         _flatStyleGroupBox.SuspendLayout();
@@ -120,14 +123,17 @@ partial class ButtonVisualStylesView
         // _flatStyleGroupBox
         // 
         _flatStyleGroupBox.AutoSize = true;
+        _flatStyleGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _flatStyleGroupBox.Controls.Add(_flatStyleTableLayoutPanel);
         _flatStyleGroupBox.Dock = DockStyle.Fill;
+        _flatStyleGroupBox.FlatStyle = FlatStyle.Popup;
         _flatStyleGroupBox.Location = new Point(3, 3);
         _flatStyleGroupBox.Name = "_flatStyleGroupBox";
-        _flatStyleGroupBox.Size = new Size(805, 352);
+        _flatStyleGroupBox.Size = new Size(805, 345);
         _flatStyleGroupBox.TabIndex = 0;
         _flatStyleGroupBox.TabStop = false;
         _flatStyleGroupBox.Text = "FlatStyle variations";
+        _flatStyleGroupBox.VisualStylesMode = VisualStylesMode.Net11;
         // 
         // _flatStyleTableLayoutPanel
         // 
@@ -145,24 +151,24 @@ partial class ButtonVisualStylesView
         _flatStyleTableLayoutPanel.Controls.Add(_flatStyleSystemLabel, 0, 3);
         _flatStyleTableLayoutPanel.Controls.Add(_flatStyleSystemButton, 1, 3);
         _flatStyleTableLayoutPanel.Dock = DockStyle.Fill;
-        _flatStyleTableLayoutPanel.Location = new Point(8, 40);
+        _flatStyleTableLayoutPanel.Location = new Point(8, 48);
         _flatStyleTableLayoutPanel.Name = "_flatStyleTableLayoutPanel";
         _flatStyleTableLayoutPanel.RowCount = 4;
         _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle());
         _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle());
         _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle());
         _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _flatStyleTableLayoutPanel.Size = new Size(789, 304);
+        _flatStyleTableLayoutPanel.Size = new Size(789, 289);
         _flatStyleTableLayoutPanel.TabIndex = 0;
         // 
         // _flatStyleStandardLabel
         // 
         _flatStyleStandardLabel.Anchor = AnchorStyles.Left;
         _flatStyleStandardLabel.AutoSize = true;
-        _flatStyleStandardLabel.Location = new Point(3, 16);
+        _flatStyleStandardLabel.Location = new Point(3, 29);
         _flatStyleStandardLabel.Margin = new Padding(3, 6, 3, 3);
         _flatStyleStandardLabel.Name = "_flatStyleStandardLabel";
-        _flatStyleStandardLabel.Size = new Size(114, 35);
+        _flatStyleStandardLabel.Size = new Size(83, 25);
         _flatStyleStandardLabel.TabIndex = 0;
         _flatStyleStandardLabel.Text = "Standard";
         // 
@@ -172,10 +178,11 @@ partial class ButtonVisualStylesView
         _flatStyleStandardButton.AutoSize = true;
         _flatStyleStandardButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flatStyleStandardButton.DialogResult = DialogResult.OK;
-        _flatStyleStandardButton.Location = new Point(130, 10);
+        _flatStyleStandardButton.Location = new Point(99, 10);
         _flatStyleStandardButton.Margin = new Padding(10);
         _flatStyleStandardButton.Name = "_flatStyleStandardButton";
-        _flatStyleStandardButton.Size = new Size(124, 45);
+        _flatStyleStandardButton.Padding = new Padding(5);
+        _flatStyleStandardButton.Size = new Size(119, 61);
         _flatStyleStandardButton.TabIndex = 1;
         _flatStyleStandardButton.Text = "Standard";
         // 
@@ -183,10 +190,10 @@ partial class ButtonVisualStylesView
         // 
         _flatStylePopupLabel.Anchor = AnchorStyles.Left;
         _flatStylePopupLabel.AutoSize = true;
-        _flatStylePopupLabel.Location = new Point(3, 100);
+        _flatStylePopupLabel.Location = new Point(3, 114);
         _flatStylePopupLabel.Margin = new Padding(3, 6, 3, 3);
         _flatStylePopupLabel.Name = "_flatStylePopupLabel";
-        _flatStylePopupLabel.Size = new Size(87, 35);
+        _flatStylePopupLabel.Size = new Size(64, 25);
         _flatStylePopupLabel.TabIndex = 2;
         _flatStylePopupLabel.Text = "Popup";
         // 
@@ -196,11 +203,11 @@ partial class ButtonVisualStylesView
         _flatStylePopupButton.AutoSize = true;
         _flatStylePopupButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flatStylePopupButton.FlatStyle = FlatStyle.Popup;
-        _flatStylePopupButton.Location = new Point(130, 75);
+        _flatStylePopupButton.Location = new Point(99, 91);
         _flatStylePopupButton.Margin = new Padding(10);
         _flatStylePopupButton.Name = "_flatStylePopupButton";
         _flatStylePopupButton.Padding = new Padding(10);
-        _flatStylePopupButton.Size = new Size(214, 82);
+        _flatStylePopupButton.Size = new Size(166, 69);
         _flatStylePopupButton.TabIndex = 3;
         _flatStylePopupButton.Text = "Popup-Button";
         _flatStylePopupButton.VisualStylesMode = VisualStylesMode.Latest;
@@ -209,10 +216,10 @@ partial class ButtonVisualStylesView
         // 
         _flatStyleFlatLabel.Anchor = AnchorStyles.Left;
         _flatStyleFlatLabel.AutoSize = true;
-        _flatStyleFlatLabel.Location = new Point(3, 187);
+        _flatStyleFlatLabel.Location = new Point(3, 194);
         _flatStyleFlatLabel.Margin = new Padding(3, 6, 3, 3);
         _flatStyleFlatLabel.Name = "_flatStyleFlatLabel";
-        _flatStyleFlatLabel.Size = new Size(54, 35);
+        _flatStyleFlatLabel.Size = new Size(40, 25);
         _flatStyleFlatLabel.TabIndex = 4;
         _flatStyleFlatLabel.Text = "Flat";
         // 
@@ -222,10 +229,11 @@ partial class ButtonVisualStylesView
         _flatStyleFlatButton.AutoSize = true;
         _flatStyleFlatButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flatStyleFlatButton.FlatStyle = FlatStyle.Flat;
-        _flatStyleFlatButton.Location = new Point(130, 177);
+        _flatStyleFlatButton.Location = new Point(99, 180);
         _flatStyleFlatButton.Margin = new Padding(10);
         _flatStyleFlatButton.Name = "_flatStyleFlatButton";
-        _flatStyleFlatButton.Size = new Size(72, 53);
+        _flatStyleFlatButton.Padding = new Padding(5);
+        _flatStyleFlatButton.Size = new Size(66, 51);
         _flatStyleFlatButton.TabIndex = 5;
         _flatStyleFlatButton.Text = "Flat";
         _flatStyleFlatButton.VisualStylesMode = VisualStylesMode.Latest;
@@ -234,10 +242,10 @@ partial class ButtonVisualStylesView
         // 
         _flatStyleSystemLabel.Anchor = AnchorStyles.Left;
         _flatStyleSystemLabel.AutoSize = true;
-        _flatStyleSystemLabel.Location = new Point(3, 256);
+        _flatStyleSystemLabel.Location = new Point(3, 262);
         _flatStyleSystemLabel.Margin = new Padding(3, 6, 3, 3);
         _flatStyleSystemLabel.Name = "_flatStyleSystemLabel";
-        _flatStyleSystemLabel.Size = new Size(93, 35);
+        _flatStyleSystemLabel.Size = new Size(69, 25);
         _flatStyleSystemLabel.TabIndex = 6;
         _flatStyleSystemLabel.Text = "System";
         // 
@@ -247,10 +255,11 @@ partial class ButtonVisualStylesView
         _flatStyleSystemButton.AutoSize = true;
         _flatStyleSystemButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flatStyleSystemButton.FlatStyle = FlatStyle.System;
-        _flatStyleSystemButton.Location = new Point(130, 250);
+        _flatStyleSystemButton.Location = new Point(99, 251);
         _flatStyleSystemButton.Margin = new Padding(10);
         _flatStyleSystemButton.Name = "_flatStyleSystemButton";
-        _flatStyleSystemButton.Size = new Size(107, 44);
+        _flatStyleSystemButton.Padding = new Padding(5);
+        _flatStyleSystemButton.Size = new Size(93, 44);
         _flatStyleSystemButton.TabIndex = 7;
         _flatStyleSystemButton.Text = "System";
         _flatStyleSystemButton.VisualStylesMode = VisualStylesMode.Latest;
@@ -258,11 +267,12 @@ partial class ButtonVisualStylesView
         // _visualStylesGroupBox
         // 
         _visualStylesGroupBox.AutoSize = true;
+        _visualStylesGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _visualStylesGroupBox.Controls.Add(_visualStylesTableLayoutPanel);
         _visualStylesGroupBox.Dock = DockStyle.Fill;
         _visualStylesGroupBox.Location = new Point(814, 3);
         _visualStylesGroupBox.Name = "_visualStylesGroupBox";
-        _visualStylesGroupBox.Size = new Size(805, 352);
+        _visualStylesGroupBox.Size = new Size(805, 345);
         _visualStylesGroupBox.TabIndex = 1;
         _visualStylesGroupBox.TabStop = false;
         _visualStylesGroupBox.Text = "Per-control VisualStylesMode";
@@ -281,23 +291,23 @@ partial class ButtonVisualStylesView
         _visualStylesTableLayoutPanel.Controls.Add(_visualStylesLatestLabel, 0, 2);
         _visualStylesTableLayoutPanel.Controls.Add(_visualStylesLatestButton, 1, 2);
         _visualStylesTableLayoutPanel.Dock = DockStyle.Fill;
-        _visualStylesTableLayoutPanel.Location = new Point(8, 40);
+        _visualStylesTableLayoutPanel.Location = new Point(8, 32);
         _visualStylesTableLayoutPanel.Name = "_visualStylesTableLayoutPanel";
         _visualStylesTableLayoutPanel.RowCount = 3;
         _visualStylesTableLayoutPanel.RowStyles.Add(new RowStyle());
         _visualStylesTableLayoutPanel.RowStyles.Add(new RowStyle());
         _visualStylesTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _visualStylesTableLayoutPanel.Size = new Size(789, 304);
+        _visualStylesTableLayoutPanel.Size = new Size(789, 305);
         _visualStylesTableLayoutPanel.TabIndex = 0;
         // 
         // _visualStylesClassicLabel
         // 
         _visualStylesClassicLabel.Anchor = AnchorStyles.Left;
         _visualStylesClassicLabel.AutoSize = true;
-        _visualStylesClassicLabel.Location = new Point(3, 19);
+        _visualStylesClassicLabel.Location = new Point(3, 24);
         _visualStylesClassicLabel.Margin = new Padding(3, 6, 3, 3);
         _visualStylesClassicLabel.Name = "_visualStylesClassicLabel";
-        _visualStylesClassicLabel.Size = new Size(89, 35);
+        _visualStylesClassicLabel.Size = new Size(64, 25);
         _visualStylesClassicLabel.TabIndex = 0;
         _visualStylesClassicLabel.Text = "Classic";
         // 
@@ -305,9 +315,10 @@ partial class ButtonVisualStylesView
         // 
         _visualStylesClassicButton.Anchor = AnchorStyles.Left;
         _visualStylesClassicButton.AutoSize = true;
-        _visualStylesClassicButton.Location = new Point(105, 10);
+        _visualStylesClassicButton.Location = new Point(80, 10);
         _visualStylesClassicButton.Margin = new Padding(10);
         _visualStylesClassicButton.Name = "_visualStylesClassicButton";
+        _visualStylesClassicButton.Padding = new Padding(5);
         _visualStylesClassicButton.Size = new Size(297, 50);
         _visualStylesClassicButton.TabIndex = 1;
         _visualStylesClassicButton.Text = "VisualStylesMode.Classic";
@@ -317,10 +328,10 @@ partial class ButtonVisualStylesView
         // 
         _visualStylesNet11Label.Anchor = AnchorStyles.Left;
         _visualStylesNet11Label.AutoSize = true;
-        _visualStylesNet11Label.Location = new Point(3, 96);
+        _visualStylesNet11Label.Location = new Point(3, 101);
         _visualStylesNet11Label.Margin = new Padding(3, 6, 3, 3);
         _visualStylesNet11Label.Name = "_visualStylesNet11Label";
-        _visualStylesNet11Label.Size = new Size(81, 35);
+        _visualStylesNet11Label.Size = new Size(60, 25);
         _visualStylesNet11Label.TabIndex = 2;
         _visualStylesNet11Label.Text = "Net11";
         // 
@@ -328,9 +339,10 @@ partial class ButtonVisualStylesView
         // 
         _visualStylesNet11Button.Anchor = AnchorStyles.Left;
         _visualStylesNet11Button.AutoSize = true;
-        _visualStylesNet11Button.Location = new Point(105, 80);
+        _visualStylesNet11Button.Location = new Point(80, 80);
         _visualStylesNet11Button.Margin = new Padding(10);
         _visualStylesNet11Button.Name = "_visualStylesNet11Button";
+        _visualStylesNet11Button.Padding = new Padding(5);
         _visualStylesNet11Button.Size = new Size(309, 65);
         _visualStylesNet11Button.TabIndex = 3;
         _visualStylesNet11Button.Text = "VisualStylesMode.Net11";
@@ -340,10 +352,10 @@ partial class ButtonVisualStylesView
         // 
         _visualStylesLatestLabel.Anchor = AnchorStyles.Left;
         _visualStylesLatestLabel.AutoSize = true;
-        _visualStylesLatestLabel.Location = new Point(3, 213);
+        _visualStylesLatestLabel.Location = new Point(3, 219);
         _visualStylesLatestLabel.Margin = new Padding(3, 6, 3, 3);
         _visualStylesLatestLabel.Name = "_visualStylesLatestLabel";
-        _visualStylesLatestLabel.Size = new Size(80, 35);
+        _visualStylesLatestLabel.Size = new Size(58, 25);
         _visualStylesLatestLabel.TabIndex = 4;
         _visualStylesLatestLabel.Text = "Latest";
         // 
@@ -351,9 +363,10 @@ partial class ButtonVisualStylesView
         // 
         _visualStylesLatestButton.Anchor = AnchorStyles.Left;
         _visualStylesLatestButton.AutoSize = true;
-        _visualStylesLatestButton.Location = new Point(105, 197);
+        _visualStylesLatestButton.Location = new Point(80, 197);
         _visualStylesLatestButton.Margin = new Padding(10);
         _visualStylesLatestButton.Name = "_visualStylesLatestButton";
+        _visualStylesLatestButton.Padding = new Padding(5);
         _visualStylesLatestButton.Size = new Size(308, 65);
         _visualStylesLatestButton.TabIndex = 5;
         _visualStylesLatestButton.Text = "VisualStylesMode.Latest";
@@ -362,11 +375,12 @@ partial class ButtonVisualStylesView
         // _enabledStateGroupBox
         // 
         _enabledStateGroupBox.AutoSize = true;
+        _enabledStateGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _enabledStateGroupBox.Controls.Add(_enabledStateTableLayoutPanel);
         _enabledStateGroupBox.Dock = DockStyle.Fill;
-        _enabledStateGroupBox.Location = new Point(3, 361);
+        _enabledStateGroupBox.Location = new Point(3, 354);
         _enabledStateGroupBox.Name = "_enabledStateGroupBox";
-        _enabledStateGroupBox.Size = new Size(805, 302);
+        _enabledStateGroupBox.Size = new Size(805, 284);
         _enabledStateGroupBox.TabIndex = 2;
         _enabledStateGroupBox.TabStop = false;
         _enabledStateGroupBox.Text = "Enabled / Disabled";
@@ -383,29 +397,31 @@ partial class ButtonVisualStylesView
         _enabledStateTableLayoutPanel.Controls.Add(_disabledButtonLabel, 0, 1);
         _enabledStateTableLayoutPanel.Controls.Add(_disabledButton, 1, 1);
         _enabledStateTableLayoutPanel.Dock = DockStyle.Fill;
-        _enabledStateTableLayoutPanel.Location = new Point(8, 40);
+        _enabledStateTableLayoutPanel.Location = new Point(8, 32);
         _enabledStateTableLayoutPanel.Name = "_enabledStateTableLayoutPanel";
         _enabledStateTableLayoutPanel.RowCount = 2;
         _enabledStateTableLayoutPanel.RowStyles.Add(new RowStyle());
         _enabledStateTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _enabledStateTableLayoutPanel.Size = new Size(789, 254);
+        _enabledStateTableLayoutPanel.Size = new Size(789, 244);
         _enabledStateTableLayoutPanel.TabIndex = 0;
         // 
         // _enabledButtonLabel
         // 
         _enabledButtonLabel.Anchor = AnchorStyles.Left;
         _enabledButtonLabel.AutoSize = true;
-        _enabledButtonLabel.Location = new Point(3, 36);
+        _enabledButtonLabel.Location = new Point(3, 41);
         _enabledButtonLabel.Margin = new Padding(3, 6, 3, 3);
         _enabledButtonLabel.Name = "_enabledButtonLabel";
-        _enabledButtonLabel.Size = new Size(104, 35);
+        _enabledButtonLabel.Size = new Size(75, 25);
         _enabledButtonLabel.TabIndex = 0;
         _enabledButtonLabel.Text = "Enabled";
         // 
         // _enabledButton
         // 
         _enabledButton.Anchor = AnchorStyles.Left;
-        _enabledButton.Location = new Point(128, 10);
+        _enabledButton.Font = new Font("Segoe UI Semibold", 13F);
+        layoutTemplateProvider1.SetLayoutTemplate(_enabledButton, "Headertext");
+        _enabledButton.Location = new Point(97, 10);
         _enabledButton.Margin = new Padding(10);
         _enabledButton.Name = "_enabledButton";
         _enabledButton.Size = new Size(140, 85);
@@ -419,7 +435,7 @@ partial class ButtonVisualStylesView
         _disabledButtonLabel.Location = new Point(3, 163);
         _disabledButtonLabel.Margin = new Padding(3, 6, 3, 3);
         _disabledButtonLabel.Name = "_disabledButtonLabel";
-        _disabledButtonLabel.Size = new Size(112, 35);
+        _disabledButtonLabel.Size = new Size(81, 25);
         _disabledButtonLabel.TabIndex = 2;
         _disabledButtonLabel.Text = "Disabled";
         // 
@@ -427,7 +443,9 @@ partial class ButtonVisualStylesView
         // 
         _disabledButton.Anchor = AnchorStyles.Left;
         _disabledButton.Enabled = false;
-        _disabledButton.Location = new Point(128, 129);
+        _disabledButton.Font = new Font("Segoe UI Semibold", 13F);
+        layoutTemplateProvider1.SetLayoutTemplate(_disabledButton, "Headertext");
+        _disabledButton.Location = new Point(97, 124);
         _disabledButton.Margin = new Padding(10);
         _disabledButton.Name = "_disabledButton";
         _disabledButton.Size = new Size(140, 101);
@@ -437,11 +455,12 @@ partial class ButtonVisualStylesView
         // _commandGroupBox
         // 
         _commandGroupBox.AutoSize = true;
+        _commandGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _commandGroupBox.Controls.Add(_commandTableLayoutPanel);
         _commandGroupBox.Dock = DockStyle.Fill;
-        _commandGroupBox.Location = new Point(814, 361);
+        _commandGroupBox.Location = new Point(814, 354);
         _commandGroupBox.Name = "_commandGroupBox";
-        _commandGroupBox.Size = new Size(805, 302);
+        _commandGroupBox.Size = new Size(805, 284);
         _commandGroupBox.TabIndex = 3;
         _commandGroupBox.TabStop = false;
         _commandGroupBox.Text = "Command / CommandParameter";
@@ -461,33 +480,34 @@ partial class ButtonVisualStylesView
         _commandTableLayoutPanel.Controls.Add(_commandToggleEnabledButton, 1, 2);
         _commandTableLayoutPanel.Controls.Add(_commandResultLabel, 0, 3);
         _commandTableLayoutPanel.Dock = DockStyle.Fill;
-        _commandTableLayoutPanel.Location = new Point(8, 40);
+        _commandTableLayoutPanel.Location = new Point(8, 32);
         _commandTableLayoutPanel.Name = "_commandTableLayoutPanel";
         _commandTableLayoutPanel.RowCount = 4;
         _commandTableLayoutPanel.RowStyles.Add(new RowStyle());
         _commandTableLayoutPanel.RowStyles.Add(new RowStyle());
         _commandTableLayoutPanel.RowStyles.Add(new RowStyle());
         _commandTableLayoutPanel.RowStyles.Add(new RowStyle());
-        _commandTableLayoutPanel.Size = new Size(789, 254);
+        _commandTableLayoutPanel.Size = new Size(789, 244);
         _commandTableLayoutPanel.TabIndex = 0;
         // 
         // _commandAlphaLabel
         // 
         _commandAlphaLabel.Anchor = AnchorStyles.Left;
         _commandAlphaLabel.AutoSize = true;
-        _commandAlphaLabel.Location = new Point(3, 19);
+        _commandAlphaLabel.Location = new Point(3, 24);
         _commandAlphaLabel.Margin = new Padding(3, 6, 3, 3);
         _commandAlphaLabel.Name = "_commandAlphaLabel";
-        _commandAlphaLabel.Size = new Size(79, 35);
+        _commandAlphaLabel.Size = new Size(58, 25);
         _commandAlphaLabel.TabIndex = 0;
         _commandAlphaLabel.Text = "Alpha";
         // 
         // _commandAlphaButton
         // 
         _commandAlphaButton.Anchor = AnchorStyles.Left;
-        _commandAlphaButton.Location = new Point(182, 10);
+        _commandAlphaButton.Location = new Point(135, 10);
         _commandAlphaButton.Margin = new Padding(10);
         _commandAlphaButton.Name = "_commandAlphaButton";
+        _commandAlphaButton.Padding = new Padding(5);
         _commandAlphaButton.Size = new Size(249, 50);
         _commandAlphaButton.TabIndex = 1;
         _commandAlphaButton.Text = "Run Command (Alpha)";
@@ -496,19 +516,20 @@ partial class ButtonVisualStylesView
         // 
         _commandBetaLabel.Anchor = AnchorStyles.Left;
         _commandBetaLabel.AutoSize = true;
-        _commandBetaLabel.Location = new Point(3, 89);
+        _commandBetaLabel.Location = new Point(3, 94);
         _commandBetaLabel.Margin = new Padding(3, 6, 3, 3);
         _commandBetaLabel.Name = "_commandBetaLabel";
-        _commandBetaLabel.Size = new Size(63, 35);
+        _commandBetaLabel.Size = new Size(46, 25);
         _commandBetaLabel.TabIndex = 2;
         _commandBetaLabel.Text = "Beta";
         // 
         // _commandBetaButton
         // 
         _commandBetaButton.Anchor = AnchorStyles.Left;
-        _commandBetaButton.Location = new Point(182, 80);
+        _commandBetaButton.Location = new Point(135, 80);
         _commandBetaButton.Margin = new Padding(10);
         _commandBetaButton.Name = "_commandBetaButton";
+        _commandBetaButton.Padding = new Padding(5);
         _commandBetaButton.Size = new Size(249, 50);
         _commandBetaButton.TabIndex = 3;
         _commandBetaButton.Text = "Run Command (Beta)";
@@ -517,19 +538,20 @@ partial class ButtonVisualStylesView
         // 
         _commandToggleEnabledLabel.Anchor = AnchorStyles.Left;
         _commandToggleEnabledLabel.AutoSize = true;
-        _commandToggleEnabledLabel.Location = new Point(3, 159);
+        _commandToggleEnabledLabel.Location = new Point(3, 164);
         _commandToggleEnabledLabel.Margin = new Padding(3, 6, 3, 3);
         _commandToggleEnabledLabel.Name = "_commandToggleEnabledLabel";
-        _commandToggleEnabledLabel.Size = new Size(166, 35);
+        _commandToggleEnabledLabel.Size = new Size(119, 25);
         _commandToggleEnabledLabel.TabIndex = 4;
         _commandToggleEnabledLabel.Text = "Toggle switch";
         // 
         // _commandToggleEnabledButton
         // 
         _commandToggleEnabledButton.Anchor = AnchorStyles.Left;
-        _commandToggleEnabledButton.Location = new Point(182, 150);
+        _commandToggleEnabledButton.Location = new Point(135, 150);
         _commandToggleEnabledButton.Margin = new Padding(10);
         _commandToggleEnabledButton.Name = "_commandToggleEnabledButton";
+        _commandToggleEnabledButton.Padding = new Padding(5);
         _commandToggleEnabledButton.Size = new Size(249, 50);
         _commandToggleEnabledButton.TabIndex = 5;
         _commandToggleEnabledButton.Text = "Toggle CanExecute";
@@ -542,18 +564,19 @@ partial class ButtonVisualStylesView
         _commandResultLabel.Location = new Point(3, 216);
         _commandResultLabel.Margin = new Padding(3, 6, 3, 3);
         _commandResultLabel.Name = "_commandResultLabel";
-        _commandResultLabel.Size = new Size(331, 35);
+        _commandResultLabel.Size = new Size(236, 25);
         _commandResultLabel.TabIndex = 6;
         _commandResultLabel.Text = "Last command result: (none)";
         // 
         // _backgroundImageGroupBox
         // 
+        _backgroundImageGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _rootTableLayoutPanel.SetColumnSpan(_backgroundImageGroupBox, 2);
         _backgroundImageGroupBox.Controls.Add(_backgroundImageTableLayoutPanel);
         _backgroundImageGroupBox.Dock = DockStyle.Fill;
-        _backgroundImageGroupBox.Location = new Point(3, 669);
+        _backgroundImageGroupBox.Location = new Point(3, 644);
         _backgroundImageGroupBox.Name = "_backgroundImageGroupBox";
-        _backgroundImageGroupBox.Size = new Size(1616, 294);
+        _backgroundImageGroupBox.Size = new Size(1616, 319);
         _backgroundImageGroupBox.TabIndex = 4;
         _backgroundImageGroupBox.TabStop = false;
         _backgroundImageGroupBox.Text = "BackgroundImage / BackgroundImageLayout";
@@ -575,12 +598,12 @@ partial class ButtonVisualStylesView
         _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageZoomButton, 2, 1);
         _backgroundImageTableLayoutPanel.Controls.Add(_backgroundImageCenterButton, 3, 1);
         _backgroundImageTableLayoutPanel.Dock = DockStyle.Fill;
-        _backgroundImageTableLayoutPanel.Location = new Point(8, 40);
+        _backgroundImageTableLayoutPanel.Location = new Point(8, 32);
         _backgroundImageTableLayoutPanel.Name = "_backgroundImageTableLayoutPanel";
         _backgroundImageTableLayoutPanel.RowCount = 2;
         _backgroundImageTableLayoutPanel.RowStyles.Add(new RowStyle());
         _backgroundImageTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        _backgroundImageTableLayoutPanel.Size = new Size(1600, 246);
+        _backgroundImageTableLayoutPanel.Size = new Size(1600, 279);
         _backgroundImageTableLayoutPanel.TabIndex = 0;
         // 
         // _backgroundImageTileLabel
@@ -591,7 +614,7 @@ partial class ButtonVisualStylesView
         _backgroundImageTileLabel.Location = new Point(3, 3);
         _backgroundImageTileLabel.Margin = new Padding(3, 3, 3, 0);
         _backgroundImageTileLabel.Name = "_backgroundImageTileLabel";
-        _backgroundImageTileLabel.Size = new Size(394, 32);
+        _backgroundImageTileLabel.Size = new Size(394, 28);
         _backgroundImageTileLabel.TabIndex = 0;
         _backgroundImageTileLabel.Text = "Tile";
         _backgroundImageTileLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -604,7 +627,7 @@ partial class ButtonVisualStylesView
         _backgroundImageStretchLabel.Location = new Point(403, 3);
         _backgroundImageStretchLabel.Margin = new Padding(3, 3, 3, 0);
         _backgroundImageStretchLabel.Name = "_backgroundImageStretchLabel";
-        _backgroundImageStretchLabel.Size = new Size(394, 32);
+        _backgroundImageStretchLabel.Size = new Size(394, 28);
         _backgroundImageStretchLabel.TabIndex = 1;
         _backgroundImageStretchLabel.Text = "Stretch";
         _backgroundImageStretchLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -617,7 +640,7 @@ partial class ButtonVisualStylesView
         _backgroundImageZoomLabel.Location = new Point(803, 3);
         _backgroundImageZoomLabel.Margin = new Padding(3, 3, 3, 0);
         _backgroundImageZoomLabel.Name = "_backgroundImageZoomLabel";
-        _backgroundImageZoomLabel.Size = new Size(394, 32);
+        _backgroundImageZoomLabel.Size = new Size(394, 28);
         _backgroundImageZoomLabel.TabIndex = 2;
         _backgroundImageZoomLabel.Text = "Zoom";
         _backgroundImageZoomLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -630,7 +653,7 @@ partial class ButtonVisualStylesView
         _backgroundImageCenterLabel.Location = new Point(1203, 3);
         _backgroundImageCenterLabel.Margin = new Padding(3, 3, 3, 0);
         _backgroundImageCenterLabel.Name = "_backgroundImageCenterLabel";
-        _backgroundImageCenterLabel.Size = new Size(394, 32);
+        _backgroundImageCenterLabel.Size = new Size(394, 28);
         _backgroundImageCenterLabel.TabIndex = 3;
         _backgroundImageCenterLabel.Text = "Center";
         _backgroundImageCenterLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -639,10 +662,10 @@ partial class ButtonVisualStylesView
         // 
         _backgroundImageTileButton.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _backgroundImageTileButton.AutoSize = true;
-        _backgroundImageTileButton.Location = new Point(14, 49);
+        _backgroundImageTileButton.Location = new Point(14, 45);
         _backgroundImageTileButton.Margin = new Padding(14);
         _backgroundImageTileButton.Name = "_backgroundImageTileButton";
-        _backgroundImageTileButton.Size = new Size(372, 183);
+        _backgroundImageTileButton.Size = new Size(372, 220);
         _backgroundImageTileButton.TabIndex = 4;
         _backgroundImageTileButton.Text = "Tile";
         // 
@@ -651,10 +674,10 @@ partial class ButtonVisualStylesView
         _backgroundImageStretchButton.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _backgroundImageStretchButton.AutoSize = true;
         _backgroundImageStretchButton.BackgroundImageLayout = ImageLayout.Stretch;
-        _backgroundImageStretchButton.Location = new Point(414, 49);
+        _backgroundImageStretchButton.Location = new Point(414, 45);
         _backgroundImageStretchButton.Margin = new Padding(14);
         _backgroundImageStretchButton.Name = "_backgroundImageStretchButton";
-        _backgroundImageStretchButton.Size = new Size(372, 183);
+        _backgroundImageStretchButton.Size = new Size(372, 220);
         _backgroundImageStretchButton.TabIndex = 5;
         _backgroundImageStretchButton.Text = "Stretch";
         // 
@@ -663,10 +686,10 @@ partial class ButtonVisualStylesView
         _backgroundImageZoomButton.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _backgroundImageZoomButton.AutoSize = true;
         _backgroundImageZoomButton.BackgroundImageLayout = ImageLayout.Zoom;
-        _backgroundImageZoomButton.Location = new Point(814, 49);
+        _backgroundImageZoomButton.Location = new Point(814, 45);
         _backgroundImageZoomButton.Margin = new Padding(14);
         _backgroundImageZoomButton.Name = "_backgroundImageZoomButton";
-        _backgroundImageZoomButton.Size = new Size(372, 183);
+        _backgroundImageZoomButton.Size = new Size(372, 220);
         _backgroundImageZoomButton.TabIndex = 6;
         _backgroundImageZoomButton.Text = "Zoom";
         // 
@@ -675,12 +698,23 @@ partial class ButtonVisualStylesView
         _backgroundImageCenterButton.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _backgroundImageCenterButton.AutoSize = true;
         _backgroundImageCenterButton.BackgroundImageLayout = ImageLayout.Center;
-        _backgroundImageCenterButton.Location = new Point(1214, 49);
+        _backgroundImageCenterButton.Location = new Point(1214, 45);
         _backgroundImageCenterButton.Margin = new Padding(14);
         _backgroundImageCenterButton.Name = "_backgroundImageCenterButton";
-        _backgroundImageCenterButton.Size = new Size(372, 183);
+        _backgroundImageCenterButton.Size = new Size(372, 220);
         _backgroundImageCenterButton.TabIndex = 7;
         _backgroundImageCenterButton.Text = "Center";
+        // 
+        // layoutTemplateProvider1
+        // 
+        layoutTemplateItem1.BackColor = Color.Empty;
+        layoutTemplateItem1.FontTemplate = new FontTemplate(4F, FontStyle.Bold, FontStyle.Regular);
+        layoutTemplateItem1.ForeColor = Color.Empty;
+        layoutTemplateItem1.Margin = new Padding(0, 0, 0, 0);
+        layoutTemplateItem1.Name = "Headertext";
+        layoutTemplateItem1.Padding = new Padding(0, 0, 0, 0);
+        layoutTemplateProvider1.LayoutTemplates.Add(layoutTemplateItem1);
+        layoutTemplateProvider1.TemplateSourceContainer = this;
         // 
         // ButtonVisualStylesView
         // 
@@ -765,4 +799,5 @@ partial class ButtonVisualStylesView
     private Button _backgroundImageStretchButton;
     private Button _backgroundImageZoomButton;
     private Button _backgroundImageCenterButton;
+    private Components.LayoutTemplateProvider layoutTemplateProvider1;
 }

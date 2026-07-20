@@ -209,7 +209,7 @@ partial class CashRegisterView
         _display.TabIndex = 1;
         _display.TabStop = false;
         // 
-        // tableLayoutPanel1
+        // _tlpDialogResultButtons
         // 
         tableLayoutPanel1.AutoSize = true;
         tableLayoutPanel1.AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -219,7 +219,7 @@ partial class CashRegisterView
         tableLayoutPanel1.Controls.Add(checkBox2, 0, 0);
         tableLayoutPanel1.Dock = DockStyle.Fill;
         tableLayoutPanel1.Location = new Point(3, 3);
-        tableLayoutPanel1.Name = "tableLayoutPanel1";
+        tableLayoutPanel1.Name = "_tlpDialogResultButtons";
         tableLayoutPanel1.RowCount = 2;
         tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
         tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
