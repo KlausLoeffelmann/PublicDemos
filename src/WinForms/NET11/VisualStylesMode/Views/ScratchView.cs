@@ -14,5 +14,10 @@ namespace VisualStylesModeDemo.Views
         {
             InitializeComponent();
         }
+
+        private void ScratchView_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

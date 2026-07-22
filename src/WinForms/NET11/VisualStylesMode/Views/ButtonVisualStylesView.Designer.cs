@@ -36,7 +36,7 @@ partial class ButtonVisualStylesView
         components = new System.ComponentModel.Container();
         Components.LayoutTemplateItem layoutTemplateItem1 = new Components.LayoutTemplateItem();
         _rootTableLayoutPanel = new TableLayoutPanel();
-        _flatStyleGroupBox = new GroupBoxEx();
+        _flatStyleGroupBox = new GroupBox();
         _flatStyleTableLayoutPanel = new TableLayoutPanel();
         _flatStyleStandardLabel = new Label();
         _flatStyleStandardButton = new Button();
@@ -46,7 +46,7 @@ partial class ButtonVisualStylesView
         _flatStyleFlatButton = new Button();
         _flatStyleSystemLabel = new Label();
         _flatStyleSystemButton = new Button();
-        _visualStylesGroupBox = new GroupBoxEx();
+        _visualStylesGroupBox = new GroupBox();
         _visualStylesTableLayoutPanel = new TableLayoutPanel();
         _visualStylesClassicLabel = new Label();
         _visualStylesClassicButton = new Button();
@@ -54,13 +54,13 @@ partial class ButtonVisualStylesView
         _visualStylesNet11Button = new Button();
         _visualStylesLatestLabel = new Label();
         _visualStylesLatestButton = new Button();
-        _enabledStateGroupBox = new GroupBoxEx();
+        _enabledStateGroupBox = new GroupBox();
         _enabledStateTableLayoutPanel = new TableLayoutPanel();
         _enabledButtonLabel = new Label();
         _enabledButton = new Button();
         _disabledButtonLabel = new Label();
         _disabledButton = new Button();
-        _commandGroupBox = new GroupBoxEx();
+        _commandGroupBox = new GroupBox();
         _commandTableLayoutPanel = new TableLayoutPanel();
         _commandAlphaLabel = new Label();
         _commandAlphaButton = new Button();
@@ -69,7 +69,7 @@ partial class ButtonVisualStylesView
         _commandToggleEnabledLabel = new Label();
         _commandToggleEnabledButton = new Button();
         _commandResultLabel = new Label();
-        _backgroundImageGroupBox = new GroupBoxEx();
+        _backgroundImageGroupBox = new GroupBox();
         _backgroundImageTableLayoutPanel = new TableLayoutPanel();
         _backgroundImageTileLabel = new Label();
         _backgroundImageStretchLabel = new Label();
@@ -81,19 +81,14 @@ partial class ButtonVisualStylesView
         _backgroundImageCenterButton = new Button();
         layoutTemplateProvider1 = new VisualStylesModeDemo.Components.LayoutTemplateProvider(components);
         _rootTableLayoutPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_flatStyleGroupBox).BeginInit();
         _flatStyleGroupBox.SuspendLayout();
         _flatStyleTableLayoutPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_visualStylesGroupBox).BeginInit();
         _visualStylesGroupBox.SuspendLayout();
         _visualStylesTableLayoutPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_enabledStateGroupBox).BeginInit();
         _enabledStateGroupBox.SuspendLayout();
         _enabledStateTableLayoutPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_commandGroupBox).BeginInit();
         _commandGroupBox.SuspendLayout();
         _commandTableLayoutPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_backgroundImageGroupBox).BeginInit();
         _backgroundImageGroupBox.SuspendLayout();
         _backgroundImageTableLayoutPanel.SuspendLayout();
         SuspendLayout();
@@ -123,7 +118,6 @@ partial class ButtonVisualStylesView
         // _flatStyleGroupBox
         // 
         _flatStyleGroupBox.AutoSize = true;
-        _flatStyleGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _flatStyleGroupBox.Controls.Add(_flatStyleTableLayoutPanel);
         _flatStyleGroupBox.Dock = DockStyle.Fill;
         _flatStyleGroupBox.FlatStyle = FlatStyle.Popup;
@@ -267,7 +261,6 @@ partial class ButtonVisualStylesView
         // _visualStylesGroupBox
         // 
         _visualStylesGroupBox.AutoSize = true;
-        _visualStylesGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _visualStylesGroupBox.Controls.Add(_visualStylesTableLayoutPanel);
         _visualStylesGroupBox.Dock = DockStyle.Fill;
         _visualStylesGroupBox.Location = new Point(814, 3);
@@ -375,7 +368,6 @@ partial class ButtonVisualStylesView
         // _enabledStateGroupBox
         // 
         _enabledStateGroupBox.AutoSize = true;
-        _enabledStateGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _enabledStateGroupBox.Controls.Add(_enabledStateTableLayoutPanel);
         _enabledStateGroupBox.Dock = DockStyle.Fill;
         _enabledStateGroupBox.Location = new Point(3, 354);
@@ -455,7 +447,6 @@ partial class ButtonVisualStylesView
         // _commandGroupBox
         // 
         _commandGroupBox.AutoSize = true;
-        _commandGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _commandGroupBox.Controls.Add(_commandTableLayoutPanel);
         _commandGroupBox.Dock = DockStyle.Fill;
         _commandGroupBox.Location = new Point(814, 354);
@@ -570,7 +561,6 @@ partial class ButtonVisualStylesView
         // 
         // _backgroundImageGroupBox
         // 
-        _backgroundImageGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _rootTableLayoutPanel.SetColumnSpan(_backgroundImageGroupBox, 2);
         _backgroundImageGroupBox.Controls.Add(_backgroundImageTableLayoutPanel);
         _backgroundImageGroupBox.Dock = DockStyle.Fill;
@@ -725,27 +715,22 @@ partial class ButtonVisualStylesView
         Size = new Size(1622, 966);
         _rootTableLayoutPanel.ResumeLayout(false);
         _rootTableLayoutPanel.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)_flatStyleGroupBox).EndInit();
         _flatStyleGroupBox.ResumeLayout(false);
         _flatStyleGroupBox.PerformLayout();
         _flatStyleTableLayoutPanel.ResumeLayout(false);
         _flatStyleTableLayoutPanel.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)_visualStylesGroupBox).EndInit();
         _visualStylesGroupBox.ResumeLayout(false);
         _visualStylesGroupBox.PerformLayout();
         _visualStylesTableLayoutPanel.ResumeLayout(false);
         _visualStylesTableLayoutPanel.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)_enabledStateGroupBox).EndInit();
         _enabledStateGroupBox.ResumeLayout(false);
         _enabledStateGroupBox.PerformLayout();
         _enabledStateTableLayoutPanel.ResumeLayout(false);
         _enabledStateTableLayoutPanel.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)_commandGroupBox).EndInit();
         _commandGroupBox.ResumeLayout(false);
         _commandGroupBox.PerformLayout();
         _commandTableLayoutPanel.ResumeLayout(false);
         _commandTableLayoutPanel.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)_backgroundImageGroupBox).EndInit();
         _backgroundImageGroupBox.ResumeLayout(false);
         _backgroundImageTableLayoutPanel.ResumeLayout(false);
         _backgroundImageTableLayoutPanel.PerformLayout();
@@ -756,7 +741,7 @@ partial class ButtonVisualStylesView
     #endregion
 
     private TableLayoutPanel _rootTableLayoutPanel;
-    private GroupBoxEx _flatStyleGroupBox;
+    private GroupBox _flatStyleGroupBox;
     private TableLayoutPanel _flatStyleTableLayoutPanel;
     private Label _flatStyleStandardLabel;
     private Button _flatStyleStandardButton;
@@ -766,21 +751,21 @@ partial class ButtonVisualStylesView
     private Button _flatStyleFlatButton;
     private Label _flatStyleSystemLabel;
     private Button _flatStyleSystemButton;
-    private GroupBoxEx _visualStylesGroupBox;
+    private GroupBox _visualStylesGroupBox;
     private TableLayoutPanel _visualStylesTableLayoutPanel;
     private Label _visualStylesClassicLabel;
     private Button _visualStylesClassicButton;
     private Label _visualStylesNet11Label;
     private Button _visualStylesNet11Button;
     private Label _visualStylesLatestLabel;
-    private Button _visualStylesLatestButton;
-    private GroupBoxEx _enabledStateGroupBox;
+    private Button _visualStylesLatestButton;    
+    private GroupBox _enabledStateGroupBox;
     private TableLayoutPanel _enabledStateTableLayoutPanel;
     private Label _enabledButtonLabel;
     private Button _enabledButton;
     private Label _disabledButtonLabel;
-    private Button _disabledButton;
-    private GroupBoxEx _commandGroupBox;
+    private Button _disabledButton;    
+    private GroupBox _commandGroupBox;
     private TableLayoutPanel _commandTableLayoutPanel;
     private Label _commandAlphaLabel;
     private Button _commandAlphaButton;
@@ -789,7 +774,7 @@ partial class ButtonVisualStylesView
     private Label _commandToggleEnabledLabel;
     private Button _commandToggleEnabledButton;
     private Label _commandResultLabel;
-    private GroupBoxEx _backgroundImageGroupBox;
+    private GroupBox _backgroundImageGroupBox;
     private TableLayoutPanel _backgroundImageTableLayoutPanel;
     private Label _backgroundImageTileLabel;
     private Label _backgroundImageStretchLabel;

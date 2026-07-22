@@ -37,6 +37,14 @@ internal sealed class ControlSelectionAdornerForm : Form
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual;
+
+        // This overlay is a WS_EX_LAYERED window painted exclusively through UpdateLayeredWindow;
+        // it never runs the normal WM_PAINT/layout reveal cycle that FormRevealMode.Deferred waits
+        // on. The application default reveal mode is Deferred, so leaving this form on the default
+        // (Inherit) would keep it DWM-cloaked forever and Edit mode would show nothing. Force the
+        // legacy immediate reveal so the overlay appears as soon as it is shown.
+        FormRevealMode = FormRevealMode.Classic;
+
         SetStyle(ControlStyles.StandardClick | ControlStyles.StandardDoubleClick, true);
     }
 

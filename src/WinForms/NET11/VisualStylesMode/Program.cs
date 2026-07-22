@@ -15,6 +15,7 @@ internal static class Program
         Application.SetCompatibleTextRenderingDefault(false);
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.SetColorMode(SystemColorMode.System);
+        Application.SetDefaultFormRevealMode(FormRevealMode.Deferred);
         MainForm form = new();
         Application.Run(form);
     }

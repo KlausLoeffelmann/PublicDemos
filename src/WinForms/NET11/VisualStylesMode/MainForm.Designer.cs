@@ -363,7 +363,7 @@ partial class MainForm
         _propertyGrid.Dock = DockStyle.Fill;
         _propertyGrid.Location = new Point(0, 0);
         _propertyGrid.Name = "_propertyGrid";
-        _propertyGrid.Size = new Size(74, 78);
+        _propertyGrid.Size = new Size(96, 100);
         _propertyGrid.TabIndex = 0;
         _propertyGrid.PropertyValueChanged += PropertyGrid_PropertyValueChanged;
         // 
@@ -381,6 +381,7 @@ partial class MainForm
         Controls.Add(_toolStrip);
         Controls.Add(_menuStrip);
         Controls.Add(_statusStrip);
+        FormRevealMode = FormRevealMode.Deferred;
         MainMenuStrip = _menuStrip;
         MinimumSize = new Size(860, 552);
         Name = "MainForm";

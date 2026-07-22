@@ -436,7 +436,10 @@ public partial class MainForm : Form
         {
             string path = GetSettingsFilePath();
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+
+            File.WriteAllText(path, JsonSerializer.Serialize(
+                settings, 
+                new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -490,7 +493,8 @@ public partial class MainForm : Form
     /// </summary>
     private void SaveSettingsToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        Control[] selected = _selectionAdorner.SelectedControls.ToArray();
+        Control[] selected = [.. _selectionAdorner.SelectedControls];
+
         if (selected.Length == 0)
         {
             MessageBox.Show(
@@ -523,7 +527,9 @@ public partial class MainForm : Form
             data[control.Name] = CapturePropertyValues(control);
         }
 
-        File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(
+            data, 
+            new JsonSerializerOptions { WriteIndented = true }));
     }
 
     /// <summary>

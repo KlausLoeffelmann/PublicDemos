@@ -34,7 +34,7 @@ partial class TextBoxScenariosView
     private void InitializeComponent()
     {
         _rootTableLayoutPanel = new TableLayoutPanel();
-        _textBoxGroupBox = new GroupBoxEx();
+        _textBoxGroupBox = new GroupBox();
         _textBoxTableLayoutPanel = new TableLayoutPanel();
         _textBoxDefaultLabel = new Label();
         _textBoxDefault = new TextBox();
@@ -46,7 +46,7 @@ partial class TextBoxScenariosView
         _textBoxNoBorderReadOnly = new TextBox();
         numericUpDown1 = new NumericUpDown();
         label1 = new Label();
-        _richTextBoxGroupBox = new GroupBoxEx();
+        _richTextBoxGroupBox = new GroupBox();
         _richTextBoxTableLayoutPanel = new TableLayoutPanel();
         _richTextBoxDefaultLabel = new Label();
         _richTextBoxDefault = new RichTextBox();
@@ -57,11 +57,9 @@ partial class TextBoxScenariosView
         _richTextBoxReadOnlyLabel = new Label();
         _richTextBoxReadOnly = new RichTextBox();
         _rootTableLayoutPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_textBoxGroupBox).BeginInit();
         _textBoxGroupBox.SuspendLayout();
         _textBoxTableLayoutPanel.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)_richTextBoxGroupBox).BeginInit();
         _richTextBoxGroupBox.SuspendLayout();
         _richTextBoxTableLayoutPanel.SuspendLayout();
         SuspendLayout();
@@ -377,12 +375,10 @@ partial class TextBoxScenariosView
         Size = new Size(1307, 803);
         VisualStylesMode = VisualStylesMode.Net11;
         _rootTableLayoutPanel.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)_textBoxGroupBox).EndInit();
         _textBoxGroupBox.ResumeLayout(false);
         _textBoxTableLayoutPanel.ResumeLayout(false);
         _textBoxTableLayoutPanel.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
-        ((System.ComponentModel.ISupportInitialize)_richTextBoxGroupBox).EndInit();
         _richTextBoxGroupBox.ResumeLayout(false);
         _richTextBoxTableLayoutPanel.ResumeLayout(false);
         _richTextBoxTableLayoutPanel.PerformLayout();
@@ -392,7 +388,7 @@ partial class TextBoxScenariosView
     #endregion
 
     private TableLayoutPanel _rootTableLayoutPanel;
-    private GroupBoxEx _textBoxGroupBox;
+    private GroupBox _textBoxGroupBox;
     private TableLayoutPanel _textBoxTableLayoutPanel;
     private Label _textBoxDefaultLabel;
     private TextBox _textBoxDefault;
@@ -402,7 +398,7 @@ partial class TextBoxScenariosView
     private TextBox _textBoxMultiline;
     private Label _textBoxNoBorderReadOnlyLabel;
     private TextBox _textBoxNoBorderReadOnly;
-    private GroupBoxEx _richTextBoxGroupBox;
+    private GroupBox _richTextBoxGroupBox;
     private TableLayoutPanel _richTextBoxTableLayoutPanel;
     private Label _richTextBoxDefaultLabel;
     private RichTextBox _richTextBoxDefault;

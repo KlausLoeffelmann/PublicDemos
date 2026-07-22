@@ -128,7 +128,7 @@ partial class CashRegisterView
         _subtotalButton = new CashRegisterKeyButton();
         _voidButton = new CashRegisterKeyButton();
         _totalButton = new CashRegisterKeyButton();
-        _receiptGroupBox = new GroupBoxEx();
+        _receiptGroupBox = new GroupBox();
         _receiptTextBox = new RichTextBox();
         _rootLayout.SuspendLayout();
         _registerLayout.SuspendLayout();
@@ -139,7 +139,6 @@ partial class CashRegisterView
         _departmentAndActionLayout.SuspendLayout();
         _departmentGrid.SuspendLayout();
         _actionGrid.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_receiptGroupBox).BeginInit();
         _receiptGroupBox.SuspendLayout();
         SuspendLayout();
         // 
@@ -1652,7 +1651,6 @@ partial class CashRegisterView
         // 
         _receiptGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _receiptGroupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _receiptGroupBox.CaptionFontTemplate = new FontTemplate(1F, FontStyle.Bold, FontStyle.Regular);
         _receiptGroupBox.Controls.Add(_receiptTextBox);
         _receiptGroupBox.Location = new Point(1135, 11);
         _receiptGroupBox.Name = "_receiptGroupBox";
@@ -1706,7 +1704,6 @@ partial class CashRegisterView
         _departmentGrid.PerformLayout();
         _actionGrid.ResumeLayout(false);
         _actionGrid.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)_receiptGroupBox).EndInit();
         _receiptGroupBox.ResumeLayout(false);
         ResumeLayout(false);
         PerformLayout();
@@ -1727,7 +1724,7 @@ partial class CashRegisterView
     private TableLayoutPanel _departmentAndActionLayout;
     private TableLayoutPanel _departmentGrid;
     private TableLayoutPanel _actionGrid;
-    private GroupBoxEx _receiptGroupBox;
+    private GroupBox _receiptGroupBox;
     private RichTextBox _receiptTextBox;
     private CashRegisterKeyButton _thousands9Button;
     private CashRegisterKeyButton _thousands8Button;

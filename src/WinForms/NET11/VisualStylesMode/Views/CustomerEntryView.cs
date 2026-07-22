@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using VisualStylesModeDemo.Components;
 
@@ -119,7 +120,7 @@ public partial class CustomerEntryView : UserControl, IScenarioView
 
     private void PositionNotesToolStrip()
     {
-        int insetX = _notesRichTextBox.Margin.Left+4;
+        int insetX = _notesRichTextBox.Margin.Left + 4;
         int insetY = _notesRichTextBox.Margin.Top + 4;
 
         _notesToolStrip.Bounds = new Rectangle(
@@ -170,6 +171,11 @@ public partial class CustomerEntryView : UserControl, IScenarioView
     [DllImport("user32.dll")]
     private static extern nint SendMessage(nint window, int message, nint wParam, ref NativeRect rectangle);
 
+    private void PreferredContactComboBox_MouseClick(object sender, MouseEventArgs e)
+    {
+
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct NativeRect(int left, int top, int right, int bottom)
     {
@@ -177,5 +183,14 @@ public partial class CustomerEntryView : UserControl, IScenarioView
         public int Top = top;
         public int Right = right;
         public int Bottom = bottom;
+    }
+}
+
+public class ComboBoxEx : ComboBox
+{
+    protected override void DefWndProc(ref Message m)
+    {
+        base.DefWndProc(ref m);
+        Debug.WriteLine($"[{DateTime.Now:HH:mm:ss-fff}]ComboBoxEx: {m.Msg} - {m.WParam} - {m.LParam}");
     }
 }
