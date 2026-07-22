@@ -50,6 +50,9 @@ partial class MainForm
         _flatFlatStyleToolStripMenuItem = new ToolStripMenuItem();
         _popupFlatStyleToolStripMenuItem = new ToolStripMenuItem();
         _systemFlatStyleToolStripMenuItem = new ToolStripMenuItem();
+        _behaviorSeparator = new ToolStripSeparator();
+        _useSuspendPaintingScopeToolStripMenuItem = new ToolStripMenuItem();
+        _applyVisualStylesRecursivelyToolStripMenuItem = new ToolStripMenuItem();
         _toolStrip = new ToolStrip();
         _saveSettingsToolStripButton = new ToolStripButton();
         _loadSettingsToolStripButton = new ToolStripButton();
@@ -149,7 +152,7 @@ partial class MainForm
         // 
         // _viewToolStripMenuItem
         // 
-        _viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _viewAppearanceSeparator, _classicVisualStylesToolStripMenuItem, _net11VisualStylesToolStripMenuItem, _flatStyleSeparator, _standardFlatStyleToolStripMenuItem, _flatFlatStyleToolStripMenuItem, _popupFlatStyleToolStripMenuItem, _systemFlatStyleToolStripMenuItem });
+        _viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _viewAppearanceSeparator, _classicVisualStylesToolStripMenuItem, _net11VisualStylesToolStripMenuItem, _flatStyleSeparator, _standardFlatStyleToolStripMenuItem, _flatFlatStyleToolStripMenuItem, _popupFlatStyleToolStripMenuItem, _systemFlatStyleToolStripMenuItem, _behaviorSeparator, _useSuspendPaintingScopeToolStripMenuItem, _applyVisualStylesRecursivelyToolStripMenuItem });
         _viewToolStripMenuItem.Name = "_viewToolStripMenuItem";
         _viewToolStripMenuItem.Size = new Size(65, 29);
         _viewToolStripMenuItem.Text = "&View";
@@ -216,6 +219,32 @@ partial class MainForm
         _systemFlatStyleToolStripMenuItem.Size = new Size(185, 34);
         _systemFlatStyleToolStripMenuItem.Text = "S&ystem";
         _systemFlatStyleToolStripMenuItem.Click += SystemFlatStyleToolStripMenuItem_Click;
+        // 
+        // _behaviorSeparator
+        // 
+        _behaviorSeparator.Name = "_behaviorSeparator";
+        _behaviorSeparator.Size = new Size(182, 6);
+        // 
+        // _useSuspendPaintingScopeToolStripMenuItem
+        // 
+        _useSuspendPaintingScopeToolStripMenuItem.CheckOnClick = true;
+        _useSuspendPaintingScopeToolStripMenuItem.Checked = true;
+        _useSuspendPaintingScopeToolStripMenuItem.CheckState = CheckState.Checked;
+        _useSuspendPaintingScopeToolStripMenuItem.Margin = new Padding(0, 15, 0, 0);
+        _useSuspendPaintingScopeToolStripMenuItem.Name = "_useSuspendPaintingScopeToolStripMenuItem";
+        _useSuspendPaintingScopeToolStripMenuItem.Size = new Size(185, 34);
+        _useSuspendPaintingScopeToolStripMenuItem.Text = "Use &SuspendPainting scope";
+        _useSuspendPaintingScopeToolStripMenuItem.CheckedChanged += UseSuspendPaintingScopeToolStripMenuItem_CheckedChanged;
+        // 
+        // _applyVisualStylesRecursivelyToolStripMenuItem
+        // 
+        _applyVisualStylesRecursivelyToolStripMenuItem.CheckOnClick = true;
+        _applyVisualStylesRecursivelyToolStripMenuItem.Checked = true;
+        _applyVisualStylesRecursivelyToolStripMenuItem.CheckState = CheckState.Checked;
+        _applyVisualStylesRecursivelyToolStripMenuItem.Name = "_applyVisualStylesRecursivelyToolStripMenuItem";
+        _applyVisualStylesRecursivelyToolStripMenuItem.Size = new Size(185, 34);
+        _applyVisualStylesRecursivelyToolStripMenuItem.Text = "Change VisualStylesMode &recursively";
+        _applyVisualStylesRecursivelyToolStripMenuItem.CheckedChanged += ApplyVisualStylesRecursivelyToolStripMenuItem_CheckedChanged;
         // 
         // _toolStrip
         // 
@@ -421,6 +450,9 @@ partial class MainForm
     private ToolStripMenuItem _flatFlatStyleToolStripMenuItem;
     private ToolStripMenuItem _popupFlatStyleToolStripMenuItem;
     private ToolStripMenuItem _systemFlatStyleToolStripMenuItem;
+    private ToolStripSeparator _behaviorSeparator;
+    private ToolStripMenuItem _useSuspendPaintingScopeToolStripMenuItem;
+    private ToolStripMenuItem _applyVisualStylesRecursivelyToolStripMenuItem;
     private ToolStrip _toolStrip;
     private ToolStripButton _saveSettingsToolStripButton;
     private ToolStripButton _loadSettingsToolStripButton;

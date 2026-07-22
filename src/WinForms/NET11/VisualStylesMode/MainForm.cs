@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text.Json;
 using VisualStylesModeDemo.Components;
 using VisualStylesModeDemo.Views;
@@ -35,6 +36,8 @@ public partial class MainForm : Form
     private Color _accentColor = SystemColors.Highlight;
     private VisualStylesMode _selectedVisualStylesMode = VisualStylesMode.Net11;
     private FlatStyle _selectedFlatStyle = FlatStyle.Standard;
+    private bool _useSuspendPaintingScope = true;
+    private bool _applyVisualStylesRecursively = true;
 
     public MainForm()
     {
@@ -71,10 +74,34 @@ public partial class MainForm : Form
         RegisterView(new CashRegisterView());
         RegisterView(new CustomerEntryView());
         RegisterView(new ParallelAnimationView());
+        RegisterView(new ScratchView());
 
         // Future views, following the exact same pattern:
         //   RegisterView(new TreeViewNodeLeadingScenariosView());
         //   RegisterView(new SystemTextSizeScenariosView());
+    }
+
+    protected override void SetVisibleCore(bool value)
+    {
+        Debug.Print($"Before SetVisibleCore: IsFormRevealDeferred={FormRevealMode}");
+        base.SetVisibleCore(value);
+        Debug.Print($"After SetVisibleCore: IsFormRevealDeferred={FormRevealMode}");
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        Debug.Print($"Before OnHandleCreated: IsFormRevealDeferred={FormRevealMode}");
+        base.OnHandleCreated(e);
+        Debug.Print($"After OnHandleCreated: IsFormRevealDeferred={FormRevealMode}");
+    }
+
+    protected override void OnFormRevealModeChanged(EventArgs e)
+    {
+        bool revealed = Application.IsFormRevealDeferred;
+        Debug.Print($"Before OnFormRevealModeChanged: IsFormRevealDeferred={revealed}");
+        base.OnFormRevealModeChanged(e);
+        revealed = Application.IsFormRevealDeferred;
+        Debug.Print($"OnFormRevealModeChanged: IsFormRevealDeferred={revealed}");
     }
 
     private void RegisterView(UserControl view)
@@ -144,7 +171,7 @@ public partial class MainForm : Form
             }
 
             viewControl.Dock = DockStyle.Fill;
-            ApplyVisualStylesModeRecursively(viewControl, _selectedVisualStylesMode);
+            ApplyVisualStylesMode(viewControl, _selectedVisualStylesMode);
 
             if (scenario is IFlatStyleScenarioView flatStyleScenario)
             {
@@ -189,13 +216,58 @@ public partial class MainForm : Form
 
     private void SetVisualStylesMode(VisualStylesMode visualStylesMode)
     {
+        if (_useSuspendPaintingScope)
+        {
+            SetVisualStylesModeWithSuspendPainting(visualStylesMode);
+        }
+        else
+        {
+            SetVisualStylesModeWithoutSuspendPainting(visualStylesMode);
+        }
+    }
+
+    /// <summary>
+    ///  Conference-demo variant that applies the visual styles mode <b>inside</b> a
+    ///  <c>SuspendPainting</c> scope. The whole target subtree is frozen
+    ///  while every control is retargeted, so the audience sees a single clean repaint.
+    /// </summary>
+    /// <remarks>
+    ///  Kept byte-for-byte identical to <see cref="SetVisualStylesModeWithoutSuspendPainting"/>
+    ///  except for the <c>using</c> scope line, so the two can be shown side by side to demonstrate
+    ///  exactly what the SuspendPainting API removes.
+    /// </remarks>
+    private void SetVisualStylesModeWithSuspendPainting(VisualStylesMode visualStylesMode)
+    {
         _selectedVisualStylesMode = visualStylesMode;
 
-        using var scope = this.SuspendPainting(LayoutSuspendTraversal.Traverse);
+        using var scope = this.SuspendPainting(LayoutSuspendTraversal.TargetAndDescendants);
 
         if (_activeView is Control activeView)
         {
-            ApplyVisualStylesModeRecursively(activeView, visualStylesMode);
+            ApplyVisualStylesMode(activeView, visualStylesMode);
+        }
+
+        if (_activeView is IFlatStyleScenarioView flatStyleScenario)
+        {
+            flatStyleScenario.ApplyFlatStyle(_selectedFlatStyle);
+        }
+
+        UpdateViewAppearanceMenu();
+        _selectionAdorner.SynchronizeBoundsAndRender();
+    }
+
+    /// <summary>
+    ///  Conference-demo variant that applies the visual styles mode <b>without</b> a
+    ///  <c>SuspendPainting</c> scope, so each intermediate control change
+    ///  repaints and the audience sees the flicker the API is designed to eliminate.
+    /// </summary>
+    private void SetVisualStylesModeWithoutSuspendPainting(VisualStylesMode visualStylesMode)
+    {
+        _selectedVisualStylesMode = visualStylesMode;
+
+        if (_activeView is Control activeView)
+        {
+            ApplyVisualStylesMode(activeView, visualStylesMode);
         }
 
         if (_activeView is IFlatStyleScenarioView flatStyleScenario)
@@ -209,9 +281,25 @@ public partial class MainForm : Form
 
     private void SetFlatStyle(FlatStyle flatStyle)
     {
+        if (_useSuspendPaintingScope)
+        {
+            SetFlatStyleWithSuspendPainting(flatStyle);
+        }
+        else
+        {
+            SetFlatStyleWithoutSuspendPainting(flatStyle);
+        }
+    }
+
+    /// <summary>
+    ///  Conference-demo variant that applies the flat style <b>inside</b> a
+    ///  <c>SuspendPainting</c> scope (single clean repaint).
+    /// </summary>
+    private void SetFlatStyleWithSuspendPainting(FlatStyle flatStyle)
+    {
         _selectedFlatStyle = flatStyle;
 
-        using var scope = this.SuspendPainting(LayoutSuspendTraversal.Traverse);
+        using var scope = this.SuspendPainting(LayoutSuspendTraversal.TargetAndDescendants);
 
         if (_activeView is IFlatStyleScenarioView flatStyleScenario)
         {
@@ -220,6 +308,47 @@ public partial class MainForm : Form
 
         UpdateViewAppearanceMenu();
         _selectionAdorner.SynchronizeBoundsAndRender();
+    }
+
+    /// <summary>
+    ///  Conference-demo variant that applies the flat style <b>without</b> a
+    ///  <c>SuspendPainting</c> scope, so the flicker is visible.
+    /// </summary>
+    private void SetFlatStyleWithoutSuspendPainting(FlatStyle flatStyle)
+    {
+        _selectedFlatStyle = flatStyle;
+
+        if (_activeView is IFlatStyleScenarioView flatStyleScenario)
+        {
+            flatStyleScenario.ApplyFlatStyle(flatStyle);
+        }
+
+        UpdateViewAppearanceMenu();
+        _selectionAdorner.SynchronizeBoundsAndRender();
+    }
+
+    private void UseSuspendPaintingScopeToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        => _useSuspendPaintingScope = _useSuspendPaintingScopeToolStripMenuItem.Checked;
+
+    private void ApplyVisualStylesRecursivelyToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        => _applyVisualStylesRecursively = _applyVisualStylesRecursivelyToolStripMenuItem.Checked;
+
+    /// <summary>
+    ///  Applies <paramref name="visualStylesMode"/> to <paramref name="control"/> either by
+    ///  traversing the whole subtree (recursive) or by setting only the root and letting descendants
+    ///  with <see cref="VisualStylesMode.Inherit"/> pick it up. The toggle exists to demonstrate
+    ///  whether inheritance is honored correctly across the control tree.
+    /// </summary>
+    private void ApplyVisualStylesMode(Control control, VisualStylesMode visualStylesMode)
+    {
+        if (_applyVisualStylesRecursively)
+        {
+            ApplyVisualStylesModeRecursively(control, visualStylesMode);
+        }
+        else
+        {
+            control.VisualStylesMode = visualStylesMode;
+        }
     }
 
     private static void ApplyVisualStylesModeRecursively(Control control, VisualStylesMode visualStylesMode)
@@ -469,16 +598,6 @@ public partial class MainForm : Form
         }
 
         return false;
-    }
-
-    /// <summary>Small JSON-serialized snapshot of the window's restore state.</summary>
-    private sealed record WindowSettings
-    {
-        public int X { get; init; }
-        public int Y { get; init; }
-        public int Width { get; init; }
-        public int Height { get; init; }
-        public bool Maximized { get; init; }
     }
 
     private void UpdateFormSizeStatusLabels()

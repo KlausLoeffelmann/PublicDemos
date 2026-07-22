@@ -160,7 +160,7 @@ partial class CustomerEntryView
         _identityGroupBox.Dock = DockStyle.Fill;
         _identityGroupBox.Location = new Point(3, 3);
         _identityGroupBox.Name = "_identityGroupBox";
-        _identityGroupBox.Size = new Size(762, 311);
+        _identityGroupBox.Size = new Size(762, 324);
         _identityGroupBox.TabIndex = 0;
         _identityGroupBox.TabStop = false;
         _identityGroupBox.Text = "Customer identity";
@@ -198,14 +198,14 @@ partial class CustomerEntryView
         _identityLayoutPanel.RowStyles.Add(new RowStyle());
         _identityLayoutPanel.RowStyles.Add(new RowStyle());
         _identityLayoutPanel.RowStyles.Add(new RowStyle());
-        _identityLayoutPanel.Size = new Size(756, 268);
+        _identityLayoutPanel.Size = new Size(756, 281);
         _identityLayoutPanel.TabIndex = 0;
         // 
         // _customerNumberLabel
         // 
         _customerNumberLabel.Anchor = AnchorStyles.Left;
         _customerNumberLabel.AutoSize = true;
-        _customerNumberLabel.Location = new Point(3, 13);
+        _customerNumberLabel.Location = new Point(3, 15);
         _customerNumberLabel.Name = "_customerNumberLabel";
         _customerNumberLabel.Size = new Size(126, 25);
         _customerNumberLabel.TabIndex = 0;
@@ -215,7 +215,7 @@ partial class CustomerEntryView
         // 
         _customerNumberTextBox.AccessibleName = "Customer number";
         _customerNumberTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _customerNumberTextBox.Location = new Point(148, 5);
+        _customerNumberTextBox.Location = new Point(148, 7);
         _customerNumberTextBox.Margin = new Padding(5);
         _customerNumberTextBox.Name = "_customerNumberTextBox";
         _customerNumberTextBox.Size = new Size(247, 42);
@@ -226,7 +226,7 @@ partial class CustomerEntryView
         // 
         _titleLabel.Anchor = AnchorStyles.Left;
         _titleLabel.AutoSize = true;
-        _titleLabel.Location = new Point(403, 13);
+        _titleLabel.Location = new Point(403, 15);
         _titleLabel.Name = "_titleLabel";
         _titleLabel.Size = new Size(48, 25);
         _titleLabel.TabIndex = 2;
@@ -238,7 +238,7 @@ partial class CustomerEntryView
         _titleComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _titleComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         _titleComboBox.FormattingEnabled = true;
-        _titleComboBox.Location = new Point(503, 9);
+        _titleComboBox.Location = new Point(503, 5);
         _titleComboBox.Margin = new Padding(5);
         _titleComboBox.Name = "_titleComboBox";
         _titleComboBox.Size = new Size(248, 46);
@@ -248,7 +248,7 @@ partial class CustomerEntryView
         // 
         _firstNameLabel.Anchor = AnchorStyles.Left;
         _firstNameLabel.AutoSize = true;
-        _firstNameLabel.Location = new Point(3, 69);
+        _firstNameLabel.Location = new Point(3, 73);
         _firstNameLabel.Name = "_firstNameLabel";
         _firstNameLabel.Size = new Size(98, 25);
         _firstNameLabel.TabIndex = 4;
@@ -258,7 +258,7 @@ partial class CustomerEntryView
         // 
         _firstNameTextBox.AccessibleName = "First name";
         _firstNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _firstNameTextBox.Location = new Point(148, 57);
+        _firstNameTextBox.Location = new Point(148, 61);
         _firstNameTextBox.Margin = new Padding(5);
         _firstNameTextBox.Name = "_firstNameTextBox";
         _firstNameTextBox.Padding = new Padding(4);
@@ -270,7 +270,7 @@ partial class CustomerEntryView
         // 
         _middleNameLabel.Anchor = AnchorStyles.Left;
         _middleNameLabel.AutoSize = true;
-        _middleNameLabel.Location = new Point(403, 69);
+        _middleNameLabel.Location = new Point(403, 73);
         _middleNameLabel.Name = "_middleNameLabel";
         _middleNameLabel.Size = new Size(71, 25);
         _middleNameLabel.TabIndex = 6;
@@ -280,7 +280,7 @@ partial class CustomerEntryView
         // 
         _middleNameTextBox.AccessibleName = "Middle name";
         _middleNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _middleNameTextBox.Location = new Point(503, 57);
+        _middleNameTextBox.Location = new Point(503, 61);
         _middleNameTextBox.Margin = new Padding(5);
         _middleNameTextBox.Name = "_middleNameTextBox";
         _middleNameTextBox.Padding = new Padding(4);
@@ -291,7 +291,7 @@ partial class CustomerEntryView
         // 
         _lastNameLabel.Anchor = AnchorStyles.Left;
         _lastNameLabel.AutoSize = true;
-        _lastNameLabel.Location = new Point(3, 129);
+        _lastNameLabel.Location = new Point(3, 133);
         _lastNameLabel.Name = "_lastNameLabel";
         _lastNameLabel.Size = new Size(96, 25);
         _lastNameLabel.TabIndex = 8;
@@ -301,7 +301,7 @@ partial class CustomerEntryView
         // 
         _lastNameTextBox.AccessibleName = "Last name";
         _lastNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _lastNameTextBox.Location = new Point(148, 117);
+        _lastNameTextBox.Location = new Point(148, 121);
         _lastNameTextBox.Margin = new Padding(5);
         _lastNameTextBox.Name = "_lastNameTextBox";
         _lastNameTextBox.Padding = new Padding(4);
@@ -313,7 +313,7 @@ partial class CustomerEntryView
         // 
         _birthDateLabel.Anchor = AnchorStyles.Left;
         _birthDateLabel.AutoSize = true;
-        _birthDateLabel.Location = new Point(403, 129);
+        _birthDateLabel.Location = new Point(403, 133);
         _birthDateLabel.Name = "_birthDateLabel";
         _birthDateLabel.Size = new Size(92, 25);
         _birthDateLabel.TabIndex = 10;
@@ -324,7 +324,7 @@ partial class CustomerEntryView
         _birthDatePicker.AccessibleName = "Birth date";
         _birthDatePicker.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _birthDatePicker.Format = DateTimePickerFormat.Short;
-        _birthDatePicker.Location = new Point(503, 126);
+        _birthDatePicker.Location = new Point(503, 130);
         _birthDatePicker.Margin = new Padding(5);
         _birthDatePicker.Name = "_birthDatePicker";
         _birthDatePicker.Size = new Size(248, 31);
@@ -335,7 +335,7 @@ partial class CustomerEntryView
         // 
         _customerSinceLabel.Anchor = AnchorStyles.Left;
         _customerSinceLabel.AutoSize = true;
-        _customerSinceLabel.Location = new Point(3, 207);
+        _customerSinceLabel.Location = new Point(3, 216);
         _customerSinceLabel.Name = "_customerSinceLabel";
         _customerSinceLabel.Size = new Size(137, 25);
         _customerSinceLabel.TabIndex = 12;
@@ -346,7 +346,7 @@ partial class CustomerEntryView
         _customerSincePicker.AccessibleName = "Customer since";
         _customerSincePicker.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _customerSincePicker.Format = DateTimePickerFormat.Short;
-        _customerSincePicker.Location = new Point(148, 204);
+        _customerSincePicker.Location = new Point(148, 213);
         _customerSincePicker.Margin = new Padding(5);
         _customerSincePicker.Name = "_customerSincePicker";
         _customerSincePicker.Size = new Size(247, 31);
@@ -356,7 +356,7 @@ partial class CustomerEntryView
         // 
         _activeCustomerLabel.Anchor = AnchorStyles.Left;
         _activeCustomerLabel.AutoSize = true;
-        _activeCustomerLabel.Location = new Point(403, 207);
+        _activeCustomerLabel.Location = new Point(403, 216);
         _activeCustomerLabel.Name = "_activeCustomerLabel";
         _activeCustomerLabel.Size = new Size(64, 25);
         _activeCustomerLabel.TabIndex = 14;
@@ -370,7 +370,7 @@ partial class CustomerEntryView
         _activeCustomerCheckBox.AutoSize = true;
         _activeCustomerCheckBox.Checked = true;
         _activeCustomerCheckBox.CheckState = CheckState.Checked;
-        _activeCustomerCheckBox.Location = new Point(503, 203);
+        _activeCustomerCheckBox.Location = new Point(503, 212);
         _activeCustomerCheckBox.Margin = new Padding(5);
         _activeCustomerCheckBox.Name = "_activeCustomerCheckBox";
         _activeCustomerCheckBox.Padding = new Padding(4);
@@ -387,7 +387,7 @@ partial class CustomerEntryView
         _contactGroupBox.Dock = DockStyle.Fill;
         _contactGroupBox.Location = new Point(771, 3);
         _contactGroupBox.Name = "_contactGroupBox";
-        _contactGroupBox.Size = new Size(762, 311);
+        _contactGroupBox.Size = new Size(762, 324);
         _contactGroupBox.TabIndex = 1;
         _contactGroupBox.TabStop = false;
         _contactGroupBox.Text = "Contact details";
@@ -418,7 +418,7 @@ partial class CustomerEntryView
         _contactLayoutPanel.RowStyles.Add(new RowStyle());
         _contactLayoutPanel.RowStyles.Add(new RowStyle());
         _contactLayoutPanel.RowStyles.Add(new RowStyle());
-        _contactLayoutPanel.Size = new Size(756, 268);
+        _contactLayoutPanel.Size = new Size(756, 281);
         _contactLayoutPanel.TabIndex = 0;
         // 
         // _emailLabel
@@ -493,7 +493,7 @@ partial class CustomerEntryView
         // 
         _preferredContactLabel.Anchor = AnchorStyles.Left;
         _preferredContactLabel.AutoSize = true;
-        _preferredContactLabel.Location = new Point(3, 189);
+        _preferredContactLabel.Location = new Point(3, 195);
         _preferredContactLabel.Name = "_preferredContactLabel";
         _preferredContactLabel.Size = new Size(151, 25);
         _preferredContactLabel.TabIndex = 6;
@@ -515,7 +515,7 @@ partial class CustomerEntryView
         // 
         _contactPermissionsLabel.Anchor = AnchorStyles.Left;
         _contactPermissionsLabel.AutoSize = true;
-        _contactPermissionsLabel.Location = new Point(3, 233);
+        _contactPermissionsLabel.Location = new Point(3, 246);
         _contactPermissionsLabel.Name = "_contactPermissionsLabel";
         _contactPermissionsLabel.Size = new Size(109, 25);
         _contactPermissionsLabel.TabIndex = 8;
@@ -527,7 +527,7 @@ partial class CustomerEntryView
         _contactPermissionsFlowPanel.AutoSize = true;
         _contactPermissionsFlowPanel.Controls.Add(_emailPermissionCheckBox);
         _contactPermissionsFlowPanel.Controls.Add(_smsPermissionCheckBox);
-        _contactPermissionsFlowPanel.Location = new Point(160, 226);
+        _contactPermissionsFlowPanel.Location = new Point(160, 239);
         _contactPermissionsFlowPanel.Name = "_contactPermissionsFlowPanel";
         _contactPermissionsFlowPanel.Size = new Size(593, 39);
         _contactPermissionsFlowPanel.TabIndex = 9;
@@ -566,7 +566,7 @@ partial class CustomerEntryView
         _addressGroupBox.Controls.Add(_addressLayoutPanel);
         _addressGroupBox.Dock = DockStyle.Fill;
         _addressGroupBox.FlatStyle = FlatStyle.Popup;
-        _addressGroupBox.Location = new Point(0, 317);
+        _addressGroupBox.Location = new Point(0, 330);
         _addressGroupBox.Margin = new Padding(0);
         _addressGroupBox.MinimumSize = new Size(0, 300);
         _addressGroupBox.Name = "_addressGroupBox";
@@ -765,7 +765,7 @@ partial class CustomerEntryView
         _preferencesGroupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _preferencesGroupBox.Controls.Add(_preferencesLayoutPanel);
         _preferencesGroupBox.Dock = DockStyle.Fill;
-        _preferencesGroupBox.Location = new Point(771, 320);
+        _preferencesGroupBox.Location = new Point(771, 333);
         _preferencesGroupBox.MinimumSize = new Size(0, 300);
         _preferencesGroupBox.Name = "_preferencesGroupBox";
         _preferencesGroupBox.Size = new Size(762, 357);
@@ -855,7 +855,7 @@ partial class CustomerEntryView
         // 
         _creditLimitLabel.Anchor = AnchorStyles.Left;
         _creditLimitLabel.AutoSize = true;
-        _creditLimitLabel.Location = new Point(3, 60);
+        _creditLimitLabel.Location = new Point(3, 69);
         _creditLimitLabel.Name = "_creditLimitLabel";
         _creditLimitLabel.Padding = new Padding(4);
         _creditLimitLabel.Size = new Size(110, 33);
@@ -873,7 +873,8 @@ partial class CustomerEntryView
         _creditLimitNumericUpDown.Margin = new Padding(5);
         _creditLimitNumericUpDown.Maximum = new decimal(new int[] { 1000000, 0, 0, 0 });
         _creditLimitNumericUpDown.Name = "_creditLimitNumericUpDown";
-        _creditLimitNumericUpDown.Size = new Size(196, 32);
+        _creditLimitNumericUpDown.Padding = new Padding(7);
+        _creditLimitNumericUpDown.Size = new Size(196, 50);
         _creditLimitNumericUpDown.TabIndex = 5;
         _creditLimitNumericUpDown.ThousandsSeparator = true;
         _creditLimitNumericUpDown.Value = new decimal(new int[] { 7500, 0, 0, 0 });
@@ -882,7 +883,7 @@ partial class CustomerEntryView
         // 
         _discountLabel.Anchor = AnchorStyles.Left;
         _discountLabel.AutoSize = true;
-        _discountLabel.Location = new Point(325, 60);
+        _discountLabel.Location = new Point(325, 69);
         _discountLabel.Name = "_discountLabel";
         _discountLabel.Padding = new Padding(4);
         _discountLabel.Size = new Size(174, 33);
@@ -895,10 +896,10 @@ partial class CustomerEntryView
         _discountNumericUpDown.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _discountNumericUpDown.AutoSize = true;
         _discountNumericUpDown.DecimalPlaces = 1;
-        _discountNumericUpDown.Location = new Point(507, 61);
+        _discountNumericUpDown.Location = new Point(507, 68);
         _discountNumericUpDown.Margin = new Padding(5);
         _discountNumericUpDown.Name = "_discountNumericUpDown";
-        _discountNumericUpDown.Size = new Size(196, 32);
+        _discountNumericUpDown.Size = new Size(196, 36);
         _discountNumericUpDown.TabIndex = 7;
         _discountNumericUpDown.Value = new decimal(new int[] { 5, 0, 0, 0 });
         // 
@@ -906,7 +907,7 @@ partial class CustomerEntryView
         // 
         _languageLabel.Anchor = AnchorStyles.Left;
         _languageLabel.AutoSize = true;
-        _languageLabel.Location = new Point(3, 109);
+        _languageLabel.Location = new Point(3, 121);
         _languageLabel.Name = "_languageLabel";
         _languageLabel.Padding = new Padding(4);
         _languageLabel.Size = new Size(101, 33);
@@ -919,7 +920,7 @@ partial class CustomerEntryView
         _languageComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _languageComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         _languageComboBox.FormattingEnabled = true;
-        _languageComboBox.Location = new Point(121, 103);
+        _languageComboBox.Location = new Point(121, 121);
         _languageComboBox.Margin = new Padding(5);
         _languageComboBox.Name = "_languageComboBox";
         _languageComboBox.Size = new Size(196, 46);
@@ -929,7 +930,7 @@ partial class CustomerEntryView
         // 
         _timeZoneLabel.Anchor = AnchorStyles.Left;
         _timeZoneLabel.AutoSize = true;
-        _timeZoneLabel.Location = new Point(325, 109);
+        _timeZoneLabel.Location = new Point(325, 121);
         _timeZoneLabel.Name = "_timeZoneLabel";
         _timeZoneLabel.Padding = new Padding(4);
         _timeZoneLabel.Size = new Size(105, 33);
@@ -942,7 +943,7 @@ partial class CustomerEntryView
         _timeZoneComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _timeZoneComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         _timeZoneComboBox.FormattingEnabled = true;
-        _timeZoneComboBox.Location = new Point(507, 103);
+        _timeZoneComboBox.Location = new Point(507, 121);
         _timeZoneComboBox.Margin = new Padding(5);
         _timeZoneComboBox.Name = "_timeZoneComboBox";
         _timeZoneComboBox.Size = new Size(196, 46);
@@ -952,7 +953,7 @@ partial class CustomerEntryView
         // 
         _accountOptionsLabel.Anchor = AnchorStyles.Left;
         _accountOptionsLabel.AutoSize = true;
-        _accountOptionsLabel.Location = new Point(3, 205);
+        _accountOptionsLabel.Location = new Point(3, 208);
         _accountOptionsLabel.Name = "_accountOptionsLabel";
         _accountOptionsLabel.Size = new Size(80, 25);
         _accountOptionsLabel.TabIndex = 12;
@@ -965,7 +966,7 @@ partial class CustomerEntryView
         _preferencesLayoutPanel.SetColumnSpan(_accountOptionsFlowPanel, 3);
         _accountOptionsFlowPanel.Controls.Add(_paperlessCheckBox);
         _accountOptionsFlowPanel.Controls.Add(_priorityCheckBox);
-        _accountOptionsFlowPanel.Location = new Point(119, 196);
+        _accountOptionsFlowPanel.Location = new Point(119, 199);
         _accountOptionsFlowPanel.Name = "_accountOptionsFlowPanel";
         _accountOptionsFlowPanel.Size = new Size(586, 43);
         _accountOptionsFlowPanel.TabIndex = 13;
@@ -1004,10 +1005,10 @@ partial class CustomerEntryView
         _contentLayoutPanel.SetColumnSpan(_notesGroupBox, 2);
         _notesGroupBox.Controls.Add(_notesRichTextBox);
         _notesGroupBox.Dock = DockStyle.Fill;
-        _notesGroupBox.Location = new Point(4, 684);
+        _notesGroupBox.Location = new Point(4, 697);
         _notesGroupBox.Margin = new Padding(4);
         _notesGroupBox.Name = "_notesGroupBox";
-        _notesGroupBox.Size = new Size(1528, 291);
+        _notesGroupBox.Size = new Size(1528, 278);
         _notesGroupBox.TabIndex = 4;
         _notesGroupBox.TabStop = false;
         _notesGroupBox.Text = "Customer notes";
@@ -1020,7 +1021,7 @@ partial class CustomerEntryView
         _notesRichTextBox.Location = new Point(3, 40);
         _notesRichTextBox.Name = "_notesRichTextBox";
         _notesRichTextBox.Padding = new Padding(4, 45, 4, 4);
-        _notesRichTextBox.Size = new Size(1522, 248);
+        _notesRichTextBox.Size = new Size(1522, 235);
         _notesRichTextBox.TabIndex = 0;
         _notesRichTextBox.Text = "Prefers email contact. Interested in the premium support plan.";
         _notesRichTextBox.SelectionChanged += NotesRichTextBox_SelectionChanged;
