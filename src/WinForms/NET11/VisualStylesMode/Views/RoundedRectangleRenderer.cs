@@ -12,10 +12,17 @@ namespace VisualStylesModeDemo.Views;
 internal enum RoundedRectangleTechnique
 {
     /// <summary>
+    ///  The current framework way: the built-in <see cref="Graphics.DrawRoundedRectangle(Pen, RectangleF, SizeF)"/>
+    ///  and <see cref="Graphics.FillRoundedRectangle(Brush, RectangleF, SizeF)"/> APIs. This is what
+    ///  most code uses today and exhibits the reported corner-arc anti-aliasing artifact.
+    /// </summary>
+    BuiltInFramework,
+
+    /// <summary>
     ///  The common "naive" recipe: an arc-based <see cref="GraphicsPath"/> stroked with a centered
     ///  pen under <see cref="SmoothingMode.AntiAlias"/> but the default
-    ///  <see cref="PixelOffsetMode"/>. Reproduces the reported artifact where the corner arcs look
-    ///  softer / offset relative to the crisp straight edges.
+    ///  <see cref="PixelOffsetMode"/>. Reproduces the same artifact by hand so it can be compared to
+    ///  the framework method and to the fixes.
     /// </summary>
     NaiveBaseline,
 
@@ -74,10 +81,15 @@ internal static class RoundedRectangleRenderer
 
         float radius = parameters.CornerRadius * dpiScale;
         float penWidth = Math.Max(1f, parameters.BorderThickness * dpiScale);
+
         radius = Math.Clamp(radius, 0f, Math.Min(area.Width, area.Height) / 2f);
 
         switch (technique)
         {
+            case RoundedRectangleTechnique.BuiltInFramework:
+                DrawBuiltIn(graphics, area, radius, penWidth, parameters, fillColor);
+                break;
+
             case RoundedRectangleTechnique.NaiveBaseline:
                 DrawStroked(graphics, area, radius, penWidth, parameters, fillColor, PixelOffsetMode.Default, strokeInset: 0f);
                 break;
@@ -100,16 +112,60 @@ internal static class RoundedRectangleRenderer
         }
     }
 
-    /// <summary>Human-readable caption for a technique (used as a column header).</summary>
+    /// <summary>Human-readable caption for a technique (used as a card header).</summary>
     public static string GetCaption(RoundedRectangleTechnique technique) => technique switch
     {
-        RoundedRectangleTechnique.NaiveBaseline => "1. Naive baseline",
-        RoundedRectangleTechnique.PixelOffsetHighQuality => "2. + PixelOffset HQ",
-        RoundedRectangleTechnique.HighQualityInsetStroke => "3. HQ + inset stroke",
-        RoundedRectangleTechnique.WidenedOutline => "4. Widened outline",
-        RoundedRectangleTechnique.Supersampled => "5. Supersampled (SSAA)",
+        RoundedRectangleTechnique.BuiltInFramework => "Graphics.DrawRoundedRectangle (current)",
+        RoundedRectangleTechnique.NaiveBaseline => "Manual arc path (naive)",
+        RoundedRectangleTechnique.PixelOffsetHighQuality => "+ PixelOffset HQ",
+        RoundedRectangleTechnique.HighQualityInsetStroke => "HQ + inset stroke",
+        RoundedRectangleTechnique.WidenedOutline => "Widened outline",
+        RoundedRectangleTechnique.Supersampled => "Supersampled (SSAA)",
         _ => technique.ToString(),
     };
+
+    /// <summary>
+    ///  True for the techniques that represent how a rounded rectangle is drawn today (the built-in
+    ///  framework method and the equivalent hand-rolled arc path), as opposed to the improved
+    ///  variants that fix the corner-arc artifact.
+    /// </summary>
+    public static bool IsCurrentTechnique(RoundedRectangleTechnique technique)
+        => technique is RoundedRectangleTechnique.BuiltInFramework or RoundedRectangleTechnique.NaiveBaseline;
+
+    private static void DrawBuiltIn(
+        Graphics graphics,
+        RectangleF area,
+        float radius,
+        float penWidth,
+        RoundedRectanglePrototypeParameters parameters,
+        Color fillColor)
+    {
+        SmoothingMode previousSmoothing = graphics.SmoothingMode;
+
+        try
+        {
+            // Leave PixelOffsetMode at its default: this cell demonstrates the framework method as it
+            // is typically called, which is exactly where the corner-arc artifact shows up.
+            graphics.SmoothingMode = ResolveSmoothing(parameters);
+
+            SizeF cornerRadius = new(radius, radius);
+            if (parameters.FillEnabled)
+            {
+                using SolidBrush brush = new(Color.FromArgb(parameters.FillAlpha, fillColor));
+                graphics.FillRoundedRectangle(brush, area, cornerRadius);
+            }
+
+            using Pen pen = new(parameters.StrokeColor, penWidth);
+            graphics.DrawRoundedRectangle(pen, area, cornerRadius);
+        }
+        finally
+        {
+            graphics.SmoothingMode = previousSmoothing;
+        }
+    }
+
+    private static SmoothingMode ResolveSmoothing(RoundedRectanglePrototypeParameters parameters)
+        => parameters.AntiAliasEnabled ? SmoothingMode.AntiAlias : SmoothingMode.None;
 
     private static void DrawStroked(
         Graphics graphics,
@@ -126,7 +182,7 @@ internal static class RoundedRectangleRenderer
 
         try
         {
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.SmoothingMode = ResolveSmoothing(parameters);
             graphics.PixelOffsetMode = pixelOffsetMode;
 
             if (parameters.FillEnabled)
@@ -166,7 +222,7 @@ internal static class RoundedRectangleRenderer
 
         try
         {
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.SmoothingMode = ResolveSmoothing(parameters);
             graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
             if (parameters.FillEnabled)
@@ -181,6 +237,7 @@ internal static class RoundedRectangleRenderer
             RectangleF outlineRect = RectangleF.Inflate(area, -penWidth / 2f, -penWidth / 2f);
             float outlineRadius = Math.Max(0f, radius - penWidth / 2f);
             using GraphicsPath outline = CreateRoundedPath(outlineRect, outlineRadius);
+
             using (Pen pen = new(parameters.StrokeColor, penWidth) { LineJoin = LineJoin.Round })
             {
                 outline.Widen(pen);
@@ -212,15 +269,17 @@ internal static class RoundedRectangleRenderer
         RectangleF hiArea = RectangleF.Inflate(area, margin, margin);
         int width = (int)Math.Ceiling(hiArea.Width * factor);
         int height = (int)Math.Ceiling(hiArea.Height * factor);
+
         if (width <= 0 || height <= 0)
         {
             return;
         }
 
         using Bitmap bitmap = new(width, height, PixelFormat.Format32bppPArgb);
+
         using (Graphics hi = Graphics.FromImage(bitmap))
         {
-            hi.SmoothingMode = SmoothingMode.AntiAlias;
+            hi.SmoothingMode = ResolveSmoothing(parameters);
             hi.PixelOffsetMode = PixelOffsetMode.HighQuality;
             hi.Clear(Color.Transparent);
 
@@ -233,6 +292,7 @@ internal static class RoundedRectangleRenderer
             float shapePen = penWidth * factor;
 
             using GraphicsPath path = CreateRoundedPath(shape, shapeRadius);
+
             if (parameters.FillEnabled)
             {
                 using SolidBrush brush = new(Color.FromArgb(parameters.FillAlpha, fillColor));
@@ -244,6 +304,7 @@ internal static class RoundedRectangleRenderer
                 Alignment = PenAlignment.Center,
                 LineJoin = LineJoin.Round,
             };
+
             hi.DrawPath(pen, path);
         }
 

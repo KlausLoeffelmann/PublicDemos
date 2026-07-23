@@ -16,10 +16,14 @@ internal sealed class RoundedRectanglePrototypeParameters
 {
     private float _cornerRadius = 18f;
     private float _borderThickness = 2f;
+    private float _rectWidth = 240f;
+    private float _rectHeight = 130f;
     private Color _strokeColor = Color.FromArgb(0, 120, 215);
     private bool _fillEnabled = true;
     private int _fillAlpha = 255;
     private int _supersamplingFactor = 4;
+    private bool _antiAliasEnabled = true;
+    private PreviewBackgroundTheme _backgroundTheme = PreviewBackgroundTheme.Dark;
 
     /// <summary>Raised whenever any parameter changes so previews can invalidate.</summary>
     public event EventHandler? Changed;
@@ -36,6 +40,20 @@ internal sealed class RoundedRectanglePrototypeParameters
     {
         get => _borderThickness;
         set => SetField(ref _borderThickness, value);
+    }
+
+    /// <summary>Width of the drawn rectangle in DIPs.</summary>
+    public float RectWidth
+    {
+        get => _rectWidth;
+        set => SetField(ref _rectWidth, Math.Max(1f, value));
+    }
+
+    /// <summary>Height of the drawn rectangle in DIPs.</summary>
+    public float RectHeight
+    {
+        get => _rectHeight;
+        set => SetField(ref _rectHeight, Math.Max(1f, value));
     }
 
     /// <summary>Color of the stroked border.</summary>
@@ -64,6 +82,20 @@ internal sealed class RoundedRectanglePrototypeParameters
     {
         get => _supersamplingFactor;
         set => SetField(ref _supersamplingFactor, Math.Clamp(value, 2, 4));
+    }
+
+    /// <summary>Whether anti-aliasing (smoothing) is enabled for every technique.</summary>
+    public bool AntiAliasEnabled
+    {
+        get => _antiAliasEnabled;
+        set => SetField(ref _antiAliasEnabled, value);
+    }
+
+    /// <summary>The background environment all preview cells paint over.</summary>
+    public PreviewBackgroundTheme BackgroundTheme
+    {
+        get => _backgroundTheme;
+        set => SetField(ref _backgroundTheme, value);
     }
 
     private void SetField<T>(ref T field, T value)

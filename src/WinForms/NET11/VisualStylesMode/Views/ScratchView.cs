@@ -17,7 +17,6 @@ namespace VisualStylesModeDemo.Views;
 public partial class ScratchView : UserControl, IScenarioView
 {
     private static readonly RoundedRectangleTechnique[] s_techniques = Enum.GetValues<RoundedRectangleTechnique>();
-    private static readonly PreviewBackgroundTheme[] s_themes = Enum.GetValues<PreviewBackgroundTheme>();
 
     private readonly RoundedRectanglePrototypeParameters _parameters = new();
     private Panel? _colorIndicator;
@@ -47,7 +46,7 @@ public partial class ScratchView : UserControl, IScenarioView
 
         root.Controls.Add(CreateDescriptionLabel(), 0, 0);
         root.Controls.Add(CreateControlStrip(), 0, 1);
-        root.Controls.Add(CreatePreviewGrid(), 0, 2);
+        root.Controls.Add(CreatePreviewFlows(), 0, 2);
 
         Controls.Add(root);
 
@@ -59,9 +58,10 @@ public partial class ScratchView : UserControl, IScenarioView
         Dock = DockStyle.Fill,
         AutoSize = true,
         Padding = new Padding(8, 8, 8, 2),
-        Text = "GDI+ rounded-rectangle anti-aliasing prototype. Columns are drawing techniques, rows "
-            + "are background themes. Tune the parameters below and watch how each technique's corner "
-            + "arcs blend with the straight edges.",
+        Text = "GDI+ rounded-rectangle anti-aliasing prototype. The top row shows how a rounded "
+            + "rectangle is drawn today (the built-in Graphics.DrawRoundedRectangle and the equivalent "
+            + "manual arc path); the bottom row shows improved techniques. Tune the parameters and "
+            + "watch how each technique's corner arcs blend with the straight edges.",
     };
 
     private Control CreateControlStrip()
@@ -77,13 +77,31 @@ public partial class ScratchView : UserControl, IScenarioView
         };
 
         Label radiusValue = new() { AutoSize = true, Text = FormatDip(_parameters.CornerRadius) };
-        TrackBar radius = CreateTrackBar(0, 60, (int)_parameters.CornerRadius);
+        TrackBar radius = CreateTrackBar(0, 80, (int)_parameters.CornerRadius);
         radius.ValueChanged += (_, _) =>
         {
             _parameters.CornerRadius = radius.Value;
             radiusValue.Text = FormatDip(radius.Value);
         };
-        strip.Controls.Add(CreateCluster("Corner radius", radius, radiusValue));
+        strip.Controls.Add(CreateCluster("Size (corner radius)", radius, radiusValue));
+
+        Label widthValue = new() { AutoSize = true, Text = FormatDip(_parameters.RectWidth) };
+        TrackBar width = CreateTrackBar(40, 400, (int)_parameters.RectWidth);
+        width.ValueChanged += (_, _) =>
+        {
+            _parameters.RectWidth = width.Value;
+            widthValue.Text = FormatDip(width.Value);
+        };
+        strip.Controls.Add(CreateCluster("Width", width, widthValue));
+
+        Label heightValue = new() { AutoSize = true, Text = FormatDip(_parameters.RectHeight) };
+        TrackBar height = CreateTrackBar(40, 300, (int)_parameters.RectHeight);
+        height.ValueChanged += (_, _) =>
+        {
+            _parameters.RectHeight = height.Value;
+            heightValue.Text = FormatDip(height.Value);
+        };
+        strip.Controls.Add(CreateCluster("Height", height, heightValue));
 
         Label thicknessValue = new() { AutoSize = true, Text = FormatDip(_parameters.BorderThickness) };
         TrackBar thickness = CreateTrackBar(1, 12, (int)_parameters.BorderThickness);
@@ -93,6 +111,10 @@ public partial class ScratchView : UserControl, IScenarioView
             thicknessValue.Text = FormatDip(thickness.Value);
         };
         strip.Controls.Add(CreateCluster("Border thickness", thickness, thicknessValue));
+
+        CheckBox antiAlias = new() { Text = "Anti-alias", AutoSize = true, Checked = _parameters.AntiAliasEnabled };
+        antiAlias.CheckedChanged += (_, _) => _parameters.AntiAliasEnabled = antiAlias.Checked;
+        strip.Controls.Add(CreateCluster("Smoothing", antiAlias));
 
         CheckBox fill = new() { Text = "Fill body", AutoSize = true, Checked = _parameters.FillEnabled };
         fill.CheckedChanged += (_, _) => _parameters.FillEnabled = fill.Checked;
@@ -113,7 +135,23 @@ public partial class ScratchView : UserControl, IScenarioView
             Width = 56,
         };
         ssaa.ValueChanged += (_, _) => _parameters.SupersamplingFactor = (int)ssaa.Value;
-        strip.Controls.Add(CreateCluster("SSAA factor (col 5)", ssaa));
+        strip.Controls.Add(CreateCluster("SSAA factor", ssaa));
+
+        ComboBox background = new()
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width = 110,
+        };
+        background.Items.AddRange([.. Enum.GetNames<PreviewBackgroundTheme>()]);
+        background.SelectedItem = _parameters.BackgroundTheme.ToString();
+        background.SelectedIndexChanged += (_, _) =>
+        {
+            if (background.SelectedItem is string name && Enum.TryParse(name, out PreviewBackgroundTheme theme))
+            {
+                _parameters.BackgroundTheme = theme;
+            }
+        };
+        strip.Controls.Add(CreateCluster("Background", background));
 
         strip.Controls.Add(CreateColorCluster());
 
@@ -185,59 +223,53 @@ public partial class ScratchView : UserControl, IScenarioView
         return swatch;
     }
 
-    private Control CreatePreviewGrid()
+    private Control CreatePreviewFlows()
     {
-        TableLayoutPanel grid = new()
+        TableLayoutPanel groups = new()
         {
             Dock = DockStyle.Fill,
-            ColumnCount = s_techniques.Length + 1,
-            RowCount = s_themes.Length + 1,
+            ColumnCount = 1,
+            RowCount = 2,
+            Padding = new Padding(6),
+        };
+        groups.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+        groups.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+        groups.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+
+        RoundedRectangleTechnique[] current = [.. s_techniques.Where(RoundedRectangleRenderer.IsCurrentTechnique)];
+        RoundedRectangleTechnique[] improved = [.. s_techniques.Where(technique => !RoundedRectangleRenderer.IsCurrentTechnique(technique))];
+
+        groups.Controls.Add(CreateTechniqueGroup("Current / standard ways", current), 0, 0);
+        groups.Controls.Add(CreateTechniqueGroup("Improved ways", improved), 0, 1);
+
+        return groups;
+    }
+
+    private Control CreateTechniqueGroup(string caption, RoundedRectangleTechnique[] techniques)
+    {
+        GroupBox group = new()
+        {
+            Text = caption,
+            Dock = DockStyle.Fill,
             Padding = new Padding(6),
         };
 
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        foreach (RoundedRectangleTechnique _ in s_techniques)
+        FlowLayoutPanel flow = new()
         {
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / s_techniques.Length));
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+            WrapContents = true,
+            FlowDirection = FlowDirection.LeftToRight,
+        };
+
+        foreach (RoundedRectangleTechnique technique in techniques)
+        {
+            flow.Controls.Add(new RoundedRectanglePreviewPanel(technique, _parameters));
         }
 
-        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        foreach (PreviewBackgroundTheme _ in s_themes)
-        {
-            grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / s_themes.Length));
-        }
-
-        grid.Controls.Add(new Label { AutoSize = true, Anchor = AnchorStyles.None, Text = string.Empty }, 0, 0);
-
-        for (int column = 0; column < s_techniques.Length; column++)
-        {
-            grid.Controls.Add(CreateHeaderLabel(RoundedRectangleRenderer.GetCaption(s_techniques[column])), column + 1, 0);
-        }
-
-        for (int rowIndex = 0; rowIndex < s_themes.Length; rowIndex++)
-        {
-            grid.Controls.Add(CreateHeaderLabel(s_themes[rowIndex].ToString()), 0, rowIndex + 1);
-
-            for (int column = 0; column < s_techniques.Length; column++)
-            {
-                grid.Controls.Add(
-                    new RoundedRectanglePreviewPanel(s_techniques[column], s_themes[rowIndex], _parameters),
-                    column + 1,
-                    rowIndex + 1);
-            }
-        }
-
-        return grid;
+        group.Controls.Add(flow);
+        return group;
     }
-
-    private static Label CreateHeaderLabel(string text) => new()
-    {
-        AutoSize = true,
-        Anchor = AnchorStyles.None,
-        TextAlign = ContentAlignment.MiddleCenter,
-        Margin = new Padding(4),
-        Text = text,
-    };
 
     private static Control CreateCluster(string caption, params Control[] controls)
     {

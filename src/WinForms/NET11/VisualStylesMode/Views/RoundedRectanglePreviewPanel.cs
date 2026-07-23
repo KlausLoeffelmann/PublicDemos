@@ -17,35 +17,40 @@ internal enum PreviewBackgroundTheme
 }
 
 /// <summary>
-///  A single, double-buffered preview cell. It paints its assigned <see cref="Theme"/> background and
-///  then renders the shared <see cref="RoundedRectanglePrototypeParameters"/> with its assigned
-///  <see cref="Technique"/>. All cells share one parameter instance and re-paint together whenever it
-///  changes, so tuning any control updates every technique across every theme at once.
+///  A single, double-buffered preview card. It paints the shared
+///  <see cref="RoundedRectanglePrototypeParameters.BackgroundTheme"/> background, a caption, and the
+///  rounded rectangle rendered with its assigned <see cref="Technique"/>. The card sizes itself to
+///  the shared Width/Height parameters so a <see cref="FlowLayoutPanel"/> can arrange the cards, and
+///  all cards re-paint together whenever any parameter changes.
 /// </summary>
 internal sealed class RoundedRectanglePreviewPanel : Panel
 {
+    private const int CaptionHeightDip = 24;
+    private const int PaddingDip = 16;
+
     private readonly RoundedRectanglePrototypeParameters _parameters;
 
     public RoundedRectanglePreviewPanel(
         RoundedRectangleTechnique technique,
-        PreviewBackgroundTheme theme,
         RoundedRectanglePrototypeParameters parameters)
     {
         Technique = technique;
-        Theme = theme;
         _parameters = parameters;
 
         DoubleBuffered = true;
-        ResizeRedraw = true;
-        Margin = new Padding(4);
-        Dock = DockStyle.Fill;
+        Margin = new Padding(8);
 
         _parameters.Changed += OnParametersChanged;
+        UpdatePreferredSize();
     }
 
     public RoundedRectangleTechnique Technique { get; }
 
-    public PreviewBackgroundTheme Theme { get; }
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        UpdatePreferredSize();
+    }
 
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -53,23 +58,44 @@ internal sealed class RoundedRectanglePreviewPanel : Panel
 
         Graphics graphics = e.Graphics;
         Rectangle client = ClientRectangle;
+        float dpiScale = DeviceDpi / 96f;
 
         PaintBackgroundTheme(graphics, client);
+        PaintCaption(graphics, client, dpiScale);
 
-        float dpiScale = DeviceDpi / 96f;
-        float padding = 18f * dpiScale;
-        RectangleF area = RectangleF.Inflate(client, -padding, -padding);
-        if (area.Width <= 1f || area.Height <= 1f)
+        float padding = PaddingDip * dpiScale;
+        float captionHeight = CaptionHeightDip * dpiScale;
+        float availableX = padding;
+        float availableY = captionHeight + padding;
+        float availableWidth = client.Width - (2f * padding);
+        float availableHeight = client.Height - captionHeight - (2f * padding);
+        if (availableWidth <= 1f || availableHeight <= 1f)
         {
             return;
         }
 
+        float rectWidth = Math.Min(_parameters.RectWidth * dpiScale, availableWidth);
+        float rectHeight = Math.Min(_parameters.RectHeight * dpiScale, availableHeight);
+        RectangleF area = new(
+            availableX + ((availableWidth - rectWidth) / 2f),
+            availableY + ((availableHeight - rectHeight) / 2f),
+            rectWidth,
+            rectHeight);
+
         RoundedRectangleRenderer.Draw(graphics, area, Technique, _parameters, GetBodyFillColor(), dpiScale);
+    }
+
+    private void UpdatePreferredSize()
+    {
+        float dpiScale = DeviceDpi / 96f;
+        int width = (int)Math.Ceiling((_parameters.RectWidth + (2 * PaddingDip)) * dpiScale);
+        int height = (int)Math.Ceiling((_parameters.RectHeight + CaptionHeightDip + (2 * PaddingDip)) * dpiScale);
+        Size = new Size(width, height);
     }
 
     private void PaintBackgroundTheme(Graphics graphics, Rectangle client)
     {
-        switch (Theme)
+        switch (_parameters.BackgroundTheme)
         {
             case PreviewBackgroundTheme.Dark:
                 using (SolidBrush brush = new(Color.FromArgb(32, 32, 32)))
@@ -102,7 +128,28 @@ internal sealed class RoundedRectanglePreviewPanel : Panel
         }
     }
 
-    private Color GetBodyFillColor() => Theme switch
+    private void PaintCaption(Graphics graphics, Rectangle client, float dpiScale)
+    {
+        int captionHeight = (int)Math.Ceiling(CaptionHeightDip * dpiScale);
+        Rectangle captionBounds = new(client.X, client.Y, client.Width, captionHeight);
+        TextRenderer.DrawText(
+            graphics,
+            RoundedRectangleRenderer.GetCaption(Technique),
+            Font,
+            captionBounds,
+            GetCaptionColor(),
+            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+    }
+
+    private Color GetCaptionColor() => _parameters.BackgroundTheme switch
+    {
+        PreviewBackgroundTheme.Dark => Color.Gainsboro,
+        PreviewBackgroundTheme.Classic => Color.FromArgb(40, 40, 40),
+        PreviewBackgroundTheme.Colorful => Color.White,
+        _ => Color.Black,
+    };
+
+    private Color GetBodyFillColor() => _parameters.BackgroundTheme switch
     {
         PreviewBackgroundTheme.Dark => Color.FromArgb(58, 58, 60),
         PreviewBackgroundTheme.Classic => Color.White,
@@ -110,7 +157,11 @@ internal sealed class RoundedRectanglePreviewPanel : Panel
         _ => Color.White,
     };
 
-    private void OnParametersChanged(object? sender, EventArgs e) => Invalidate();
+    private void OnParametersChanged(object? sender, EventArgs e)
+    {
+        UpdatePreferredSize();
+        Invalidate();
+    }
 
     protected override void Dispose(bool disposing)
     {
