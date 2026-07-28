@@ -751,7 +751,7 @@ partial class ButtonVisualStylesView
         // 
         _backgroundImageZoomButton.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _backgroundImageZoomButton.AutoSize = true;
-        _backgroundImageZoomButton.BackgroundImage = RoundedRectangle.Properties.Resources.IcedWaterfall_LensMoments_01;
+        _backgroundImageZoomButton.BackgroundImage = VisualStylesModeDemo.Properties.Resources.IcedWaterfall_LensMoments_01;
         _backgroundImageZoomButton.BackgroundImageLayout = ImageLayout.Zoom;
         _backgroundImageZoomButton.Location = new Point(732, 45);
         _backgroundImageZoomButton.Margin = new Padding(14);
@@ -764,7 +764,7 @@ partial class ButtonVisualStylesView
         // 
         _backgroundImageCenterButton.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _backgroundImageCenterButton.AutoSize = true;
-        _backgroundImageCenterButton.BackgroundImage = RoundedRectangle.Properties.Resources.IcedWaterfall_LensMoments_01;
+        _backgroundImageCenterButton.BackgroundImage = VisualStylesModeDemo.Properties.Resources.IcedWaterfall_LensMoments_01;
         _backgroundImageCenterButton.BackgroundImageLayout = ImageLayout.Center;
         _backgroundImageCenterButton.Location = new Point(1091, 45);
         _backgroundImageCenterButton.Margin = new Padding(14);
