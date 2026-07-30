@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/Copilot/">
+    <File Path="CameraControl_WordOrder_Prompt.md" />
+  </Folder>
+  <Project Path="CameraControlDemo/CameraControlDemo.csproj" />
+</Solution>
