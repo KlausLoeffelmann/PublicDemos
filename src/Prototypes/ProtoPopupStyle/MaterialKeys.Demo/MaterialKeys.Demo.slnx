@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../MaterialKeys/MaterialKeys.csproj" />
+  <Project Path="MaterialKeys.Demo.csproj" />
+</Solution>
