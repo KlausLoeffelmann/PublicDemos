@@ -11,11 +11,11 @@ namespace VisualStylesModeDemo.Views;
 ///  A dense, responsive customer-entry form that exercises common WinForms input controls and an
 ///  embedded RichTextBox editing toolbar.
 /// </summary>
-public partial class CustomerEntryView : UserControl, IScenarioView
+public partial class CustomerEntryView_Broken : UserControl, IScenarioView
 {
     private const int EmSetRect = 0x00B3;
 
-    public CustomerEntryView()
+    public CustomerEntryView_Broken()
     {
         InitializeComponent();
         PopulateSelections();
@@ -176,16 +176,6 @@ public partial class CustomerEntryView : UserControl, IScenarioView
 
     }
 
-    private void _identityGroupBox_Enter(object sender, EventArgs e)
-    {
-
-    }
-
-    private void _addressGroupBox_Enter(object sender, EventArgs e)
-    {
-
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     private struct NativeRect(int left, int top, int right, int bottom)
     {
@@ -193,14 +183,5 @@ public partial class CustomerEntryView : UserControl, IScenarioView
         public int Top = top;
         public int Right = right;
         public int Bottom = bottom;
-    }
-}
-
-public class ComboBoxEx : ComboBox
-{
-    protected override void DefWndProc(ref Message m)
-    {
-        base.DefWndProc(ref m);
-        Debug.WriteLine($"[{DateTime.Now:HH:mm:ss-fff}]ComboBoxEx: {m.Msg} - {m.WParam} - {m.LParam}");
     }
 }
