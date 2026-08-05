@@ -95,15 +95,6 @@ public partial class MainForm : Form
         Debug.Print($"After OnHandleCreated: IsFormRevealDeferred={FormRevealMode}");
     }
 
-    protected override void OnFormRevealModeChanged(EventArgs e)
-    {
-        bool revealed = Application.IsFormRevealDeferred;
-        Debug.Print($"Before OnFormRevealModeChanged: IsFormRevealDeferred={revealed}");
-        base.OnFormRevealModeChanged(e);
-        revealed = Application.IsFormRevealDeferred;
-        Debug.Print($"OnFormRevealModeChanged: IsFormRevealDeferred={revealed}");
-    }
-
     private void RegisterView(UserControl view)
     {
         if (view is not IScenarioView scenario)
@@ -129,67 +120,59 @@ public partial class MainForm : Form
 
     private void SwitchToView(IScenarioView scenario)
     {
-        try
+        if (ReferenceEquals(_activeView, scenario))
         {
-            if (ReferenceEquals(_activeView, scenario))
-            {
-                return;
-            }
+            return;
+        }
 
-            if (_activeView is not null)
-            {
-                if (_editModeEnabled)
-                {
-                    _selectionAdorner.DeactivateAndClear();
-                }
+        using var scope = this.SuspendPainting(LayoutSuspendTraversal.TargetAndDescendants);
 
-                ((Control)_activeView).Visible = false;
-                _splitContainer.Panel1.Controls.Remove((Control)_activeView);
-            }
-
-            _activeView = scenario;
-
-            _splitContainer.Panel1.SuspendLayout();
-            Control viewControl = (Control)scenario;
-            _activeView.SuspendLayout();
-
-            // Set AutoScaleMode to Inherited, if we're dealing with a container control
-            // so we're not running the DPI layout logic twice.
-            if (viewControl is ContainerControl viewAsContainer)
-            {
-                viewAsContainer.AutoScaleMode = AutoScaleMode.Inherit;
-            }
-
-            if (_scaledUiFont is not null)
-            {
-                viewControl.Font = _scaledUiFont;
-            }
-
-            foreach ((IScenarioView candidate, ToolStripMenuItem menuItem) in _views)
-            {
-                menuItem.Checked = ReferenceEquals(candidate, scenario);
-            }
-
-            viewControl.Dock = DockStyle.Fill;
-            ApplyVisualStylesMode(viewControl, _selectedVisualStylesMode);
-
-            if (scenario is IFlatStyleScenarioView flatStyleScenario)
-            {
-                flatStyleScenario.ApplyFlatStyle(_selectedFlatStyle);
-            }
-
-            _splitContainer.Panel1.Controls.Add(viewControl);
-            viewControl.Visible = true;
-
+        if (_activeView is not null)
+        {
             if (_editModeEnabled)
             {
-                _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
+                _selectionAdorner.DeactivateAndClear();
             }
+
+            ((Control)_activeView).Visible = false;
+            _splitContainer.Panel1.Controls.Remove((Control)_activeView);
         }
-        finally
+
+        _activeView = scenario;
+
+        Control viewControl = (Control)scenario;
+
+        // Set AutoScaleMode to Inherited, if we're dealing with a container control
+        // so we're not running the DPI layout logic twice.
+        if (viewControl is ContainerControl viewAsContainer)
         {
-            _splitContainer.Panel1.ResumeLayout(true);
-            _activeView?.ResumeLayout();
+            viewAsContainer.AutoScaleMode = AutoScaleMode.Inherit;
+        }
+
+        if (_scaledUiFont is not null)
+        {
+            viewControl.Font = _scaledUiFont;
+        }
+
+        foreach ((IScenarioView candidate, ToolStripMenuItem menuItem) in _views)
+        {
+            menuItem.Checked = ReferenceEquals(candidate, scenario);
+        }
+
+        viewControl.Dock = DockStyle.Fill;
+        ApplyVisualStylesMode(viewControl, _selectedVisualStylesMode);
+
+        if (scenario is IFlatStyleScenarioView flatStyleScenario)
+        {
+            flatStyleScenario.ApplyFlatStyle(_selectedFlatStyle);
+        }
+
+        _splitContainer.Panel1.Controls.Add(viewControl);
+        viewControl.Visible = true;
+
+        if (_editModeEnabled)
+        {
+            _selectionAdorner.Activate(this, viewControl, _splitContainer.Panel1);
         }
 
         UpdateViewAppearanceMenu();
