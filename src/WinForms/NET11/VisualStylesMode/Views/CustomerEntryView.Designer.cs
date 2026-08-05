@@ -210,7 +210,7 @@ partial class CustomerEntryView
         // 
         _customerNumberLabel.Anchor = AnchorStyles.Left;
         _customerNumberLabel.AutoSize = true;
-        _customerNumberLabel.Location = new Point(0, 14);
+        _customerNumberLabel.Location = new Point(0, 16);
         _customerNumberLabel.Margin = new Padding(0);
         _customerNumberLabel.Name = "_customerNumberLabel";
         _customerNumberLabel.Size = new Size(173, 35);
@@ -221,7 +221,7 @@ partial class CustomerEntryView
         // 
         _customerNumberTextBox.AccessibleName = "Customer number";
         _customerNumberTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _customerNumberTextBox.Location = new Point(195, 5);
+        _customerNumberTextBox.Location = new Point(195, 7);
         _customerNumberTextBox.Margin = new Padding(5);
         _customerNumberTextBox.Name = "_customerNumberTextBox";
         _customerNumberTextBox.Size = new Size(318, 54);
@@ -232,7 +232,7 @@ partial class CustomerEntryView
         // 
         _titleLabel.Anchor = AnchorStyles.Left;
         _titleLabel.AutoSize = true;
-        _titleLabel.Location = new Point(521, 14);
+        _titleLabel.Location = new Point(521, 16);
         _titleLabel.Name = "_titleLabel";
         _titleLabel.Size = new Size(66, 35);
         _titleLabel.TabIndex = 2;
@@ -244,7 +244,7 @@ partial class CustomerEntryView
         _titleComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _titleComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         _titleComboBox.FormattingEnabled = true;
-        _titleComboBox.Location = new Point(656, 10);
+        _titleComboBox.Location = new Point(656, 5);
         _titleComboBox.Margin = new Padding(5);
         _titleComboBox.Name = "_titleComboBox";
         _titleComboBox.Size = new Size(318, 58);
@@ -254,7 +254,7 @@ partial class CustomerEntryView
         // 
         _firstNameLabel.Anchor = AnchorStyles.Left;
         _firstNameLabel.AutoSize = true;
-        _firstNameLabel.Location = new Point(0, 78);
+        _firstNameLabel.Location = new Point(0, 82);
         _firstNameLabel.Margin = new Padding(0);
         _firstNameLabel.Name = "_firstNameLabel";
         _firstNameLabel.Size = new Size(135, 35);
@@ -265,7 +265,7 @@ partial class CustomerEntryView
         // 
         _firstNameTextBox.AccessibleName = "First name";
         _firstNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _firstNameTextBox.Location = new Point(195, 69);
+        _firstNameTextBox.Location = new Point(195, 73);
         _firstNameTextBox.Margin = new Padding(5);
         _firstNameTextBox.Name = "_firstNameTextBox";
         _firstNameTextBox.Size = new Size(318, 54);
@@ -276,7 +276,7 @@ partial class CustomerEntryView
         // 
         _middleNameLabel.Anchor = AnchorStyles.Left;
         _middleNameLabel.AutoSize = true;
-        _middleNameLabel.Location = new Point(521, 78);
+        _middleNameLabel.Location = new Point(521, 82);
         _middleNameLabel.Name = "_middleNameLabel";
         _middleNameLabel.Size = new Size(97, 35);
         _middleNameLabel.TabIndex = 6;
@@ -286,7 +286,7 @@ partial class CustomerEntryView
         // 
         _middleNameTextBox.AccessibleName = "Middle name";
         _middleNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _middleNameTextBox.Location = new Point(656, 69);
+        _middleNameTextBox.Location = new Point(656, 73);
         _middleNameTextBox.Margin = new Padding(5);
         _middleNameTextBox.Name = "_middleNameTextBox";
         _middleNameTextBox.Size = new Size(318, 54);
@@ -296,7 +296,7 @@ partial class CustomerEntryView
         // 
         _lastNameLabel.Anchor = AnchorStyles.Left;
         _lastNameLabel.AutoSize = true;
-        _lastNameLabel.Location = new Point(0, 142);
+        _lastNameLabel.Location = new Point(0, 146);
         _lastNameLabel.Margin = new Padding(0);
         _lastNameLabel.Name = "_lastNameLabel";
         _lastNameLabel.Size = new Size(133, 35);
@@ -307,7 +307,7 @@ partial class CustomerEntryView
         // 
         _lastNameTextBox.AccessibleName = "Last name";
         _lastNameTextBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _lastNameTextBox.Location = new Point(195, 133);
+        _lastNameTextBox.Location = new Point(195, 137);
         _lastNameTextBox.Margin = new Padding(5);
         _lastNameTextBox.Name = "_lastNameTextBox";
         _lastNameTextBox.Size = new Size(318, 54);
@@ -318,7 +318,7 @@ partial class CustomerEntryView
         // 
         _birthDateLabel.Anchor = AnchorStyles.Left;
         _birthDateLabel.AutoSize = true;
-        _birthDateLabel.Location = new Point(521, 142);
+        _birthDateLabel.Location = new Point(521, 146);
         _birthDateLabel.Name = "_birthDateLabel";
         _birthDateLabel.Size = new Size(127, 35);
         _birthDateLabel.TabIndex = 10;
@@ -329,7 +329,7 @@ partial class CustomerEntryView
         _birthDatePicker.AccessibleName = "Birth date";
         _birthDatePicker.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _birthDatePicker.Format = DateTimePickerFormat.Short;
-        _birthDatePicker.Location = new Point(656, 140);
+        _birthDatePicker.Location = new Point(656, 144);
         _birthDatePicker.Margin = new Padding(5);
         _birthDatePicker.Name = "_birthDatePicker";
         _birthDatePicker.Size = new Size(318, 39);
@@ -340,7 +340,7 @@ partial class CustomerEntryView
         // 
         _customerSinceLabel.Anchor = AnchorStyles.Left;
         _customerSinceLabel.AutoSize = true;
-        _customerSinceLabel.Location = new Point(0, 201);
+        _customerSinceLabel.Location = new Point(0, 205);
         _customerSinceLabel.Margin = new Padding(0);
         _customerSinceLabel.Name = "_customerSinceLabel";
         _customerSinceLabel.Size = new Size(190, 35);
@@ -352,7 +352,7 @@ partial class CustomerEntryView
         _customerSincePicker.AccessibleName = "Customer since";
         _customerSincePicker.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _customerSincePicker.Format = DateTimePickerFormat.Short;
-        _customerSincePicker.Location = new Point(195, 199);
+        _customerSincePicker.Location = new Point(195, 203);
         _customerSincePicker.Margin = new Padding(5);
         _customerSincePicker.Name = "_customerSincePicker";
         _customerSincePicker.Size = new Size(318, 39);
@@ -362,7 +362,7 @@ partial class CustomerEntryView
         // 
         _activeCustomerLabel.Anchor = AnchorStyles.Left;
         _activeCustomerLabel.AutoSize = true;
-        _activeCustomerLabel.Location = new Point(521, 201);
+        _activeCustomerLabel.Location = new Point(521, 205);
         _activeCustomerLabel.Name = "_activeCustomerLabel";
         _activeCustomerLabel.Size = new Size(86, 35);
         _activeCustomerLabel.TabIndex = 14;
@@ -376,7 +376,7 @@ partial class CustomerEntryView
         _activeCustomerCheckBox.AutoSize = true;
         _activeCustomerCheckBox.Checked = true;
         _activeCustomerCheckBox.CheckState = CheckState.Checked;
-        _activeCustomerCheckBox.Location = new Point(656, 197);
+        _activeCustomerCheckBox.Location = new Point(656, 201);
         _activeCustomerCheckBox.Margin = new Padding(5);
         _activeCustomerCheckBox.Name = "_activeCustomerCheckBox";
         _activeCustomerCheckBox.Padding = new Padding(4);
@@ -562,6 +562,7 @@ partial class CustomerEntryView
         // _preferredContactComboBox
         // 
         _preferredContactComboBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _preferredContactComboBox.FlatStyle = FlatStyle.Popup;
         _preferredContactComboBox.FormattingEnabled = true;
         _preferredContactComboBox.Location = new Point(215, 195);
         _preferredContactComboBox.Name = "_preferredContactComboBox";

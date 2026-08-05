@@ -210,15 +210,10 @@ public partial class MainForm : Form
     }
 
     /// <summary>
-    ///  Conference-demo variant that applies the visual styles mode <b>inside</b> a
+    ///  Method applies a new VisualStylesMode <b>inside</b> a
     ///  <c>SuspendPainting</c> scope. The whole target subtree is frozen
-    ///  while every control is retargeted, so the audience sees a single clean repaint.
+    ///  while every control is retargeted, so the user sees a single clean repaint.
     /// </summary>
-    /// <remarks>
-    ///  Kept byte-for-byte identical to <see cref="SetVisualStylesModeWithoutSuspendPainting"/>
-    ///  except for the <c>using</c> scope line, so the two can be shown side by side to demonstrate
-    ///  exactly what the SuspendPainting API removes.
-    /// </remarks>
     private void SetVisualStylesModeWithSuspendPainting(VisualStylesMode visualStylesMode)
     {
         _selectedVisualStylesMode = visualStylesMode;
