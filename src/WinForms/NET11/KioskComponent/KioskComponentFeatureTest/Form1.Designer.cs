@@ -36,11 +36,8 @@
             // kioskModeManager
             // 
             kioskModeManager.ContainerControl = this;
-            kioskModeManager.HideTaskbar = true;
             kioskModeManager.MousePointerAutoHideDelay = 10000;
-            kioskModeManager.SuppressPowerSaving = true;
             kioskModeManager.TopMostInFullScreen = true;
-            kioskModeManager.Wakeup += KioskModeManager_Wakeup;
             // 
             // Form1
             // 

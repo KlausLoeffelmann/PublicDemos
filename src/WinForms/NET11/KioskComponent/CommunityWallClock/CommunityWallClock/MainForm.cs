@@ -16,7 +16,7 @@ namespace CommunityWallClock
         {
             base.OnLoad(e);
 
-            Bounds = _userSettingsService.GetSetting(
+            Bounds = _userSettingsService.Get(
                 key: SettingsKey_MainFormBounds,
                 defaultValue: this.CenterToScreen(
                     horizontalFillGrade: 70,
@@ -27,11 +27,11 @@ namespace CommunityWallClock
         {
             base.OnFormClosing(e);
 
-            _userSettingsService.SaveSetting(
+            _userSettingsService.Set(
                 key: SettingsKey_MainFormBounds,
                 value: Bounds);
 
-            _userSettingsService.Save();
+            _userSettingsService.Flush();
         }
     }
 }

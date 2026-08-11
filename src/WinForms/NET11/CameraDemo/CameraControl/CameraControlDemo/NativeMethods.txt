@@ -1,0 +1,16 @@
+D3D11CreateDevice
+CreateDXGIFactory2
+D2D1CreateFactory
+ID3D11Device
+ID3D11DeviceContext
+ID3D11Texture2D
+IDXGIDevice
+IDXGIFactory2
+IDXGISwapChain1
+IDXGISurface
+ID2D1Factory1
+ID2D1Device
+ID2D1DeviceContext
+ID2D1Bitmap
+ID2D1Bitmap1
+D3D11_SDK_VERSION
