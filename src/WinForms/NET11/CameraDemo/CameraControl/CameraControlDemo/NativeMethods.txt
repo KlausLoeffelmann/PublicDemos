@@ -1,7 +1,6 @@
 D3D11CreateDevice
 CreateDXGIFactory2
 D2D1CreateFactory
-DCompositionCreateDevice
 ID3D11Device
 ID3D11DeviceContext
 ID3D11Texture2D
@@ -14,7 +13,4 @@ ID2D1Device
 ID2D1DeviceContext
 ID2D1Bitmap
 ID2D1Bitmap1
-IDCompositionDevice
-IDCompositionTarget
-IDCompositionVisual
 D3D11_SDK_VERSION

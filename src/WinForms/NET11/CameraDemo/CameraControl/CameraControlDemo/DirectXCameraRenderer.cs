@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using System.Runtime.ExceptionServices;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Graphics.Imaging;
 using Windows.Win32;
@@ -8,7 +7,6 @@ using Windows.Win32.Graphics.Direct2D;
 using Windows.Win32.Graphics.Direct2D.Common;
 using Windows.Win32.Graphics.Direct3D;
 using Windows.Win32.Graphics.Direct3D11;
-using Windows.Win32.Graphics.DirectComposition;
 using Windows.Win32.Graphics.Dxgi;
 using Windows.Win32.Graphics.Dxgi.Common;
 using WinRT;
@@ -16,8 +14,7 @@ using WinRT;
 namespace CameraControlDemo;
 
 /// <summary>
-///  Presents camera frames through Direct2D, a flip-model DXGI swap chain, and
-///  DirectComposition.
+///  Presents camera frames through Direct2D and a flip-model DXGI swap chain.
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -29,20 +26,14 @@ namespace CameraControlDemo;
 ///  <para>
 ///   Some cameras expose only a <see cref="SoftwareBitmap"/>. For those frames the
 ///   renderer creates its own D3D11 device and updates one reusable Direct2D bitmap
-///   before drawing it through the same swap-chain path. DirectComposition attaches
-///   the swap chain to the child control HWND. Hiding that visual reveals the normal
-///   WinForms surface used for status and error text.
+///   before drawing it through the same swap-chain path. The swap chain targets the
+///   child control HWND directly and is composed by the Desktop Window Manager.
+///   Releasing it reveals normal WinForms status and error painting.
 ///  </para>
 ///  <para>
 ///   Rendering, resizing, and disposal are serialized because frame callbacks do not
 ///   run on the UI thread. A non-blocking gate drops a frame when the previous one is
 ///   still rendering, which favors a current preview over queued latency.
-///  </para>
-///  <para>
-///   DirectComposition visual objects remain owned by the WinForms UI apartment.
-///   Attaching, hiding, committing, and releasing the visual tree is dispatched through
-///   the captured UI synchronization context; the per-frame Direct2D draw and swap-chain
-///   present stay off the UI thread.
 ///  </para>
 /// </remarks>
 internal sealed unsafe class DirectXCameraRenderer : IDisposable
@@ -79,16 +70,6 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
     private readonly nint _windowHandle;
 
     /// <summary>
-    ///  WinForms synchronization context that owns the DirectComposition visual tree.
-    /// </summary>
-    private readonly SynchronizationContext _uiContext;
-
-    /// <summary>
-    ///  Managed thread identifier of the WinForms UI thread.
-    /// </summary>
-    private readonly int _uiThreadId;
-
-    /// <summary>
     ///  Non-zero while a frame owns the non-blocking render gate.
     /// </summary>
     private int _rendering;
@@ -109,34 +90,9 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
     private bool _usesCameraDevice;
 
     /// <summary>
-    ///  Indicates whether the composition visual is currently visible.
-    /// </summary>
-    private bool _visualVisible;
-
-    /// <summary>
     ///  Indicates that disposal has permanently stopped this renderer.
     /// </summary>
     private bool _disposed;
-
-    /// <summary>
-    ///  Generation of the current D3D/DXGI object graph.
-    /// </summary>
-    private int _graphicsGeneration;
-
-    /// <summary>
-    ///  Generation for which a show callback is already queued.
-    /// </summary>
-    private int _queuedShowGeneration = -1;
-
-    /// <summary>
-    ///  Generation represented by the current DirectComposition object graph.
-    /// </summary>
-    private int _compositionGeneration = -1;
-
-    /// <summary>
-    ///  First failure raised by an asynchronous UI-apartment operation.
-    /// </summary>
-    private Exception? _uiFailure;
 
     /// <summary>
     ///  D3D11 device used by both Direct2D and DXGI.
@@ -194,37 +150,11 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
     private Size _softwareBitmapSize;
 
     /// <summary>
-    ///  DirectComposition device responsible for the control's visual tree.
-    /// </summary>
-    private IDCompositionDevice? _compositionDevice;
-
-    /// <summary>
-    ///  DirectComposition target bound to the control HWND.
-    /// </summary>
-    private IDCompositionTarget? _compositionTarget;
-
-    /// <summary>
-    ///  Root visual assigned to <see cref="_compositionTarget"/>.
-    /// </summary>
-    private IDCompositionVisual? _rootVisual;
-
-    /// <summary>
-    ///  Child visual whose content is <see cref="_swapChain"/>.
-    /// </summary>
-    private IDCompositionVisual? _contentVisual;
-
-    /// <summary>
     ///  Initializes a renderer for a created WinForms control handle.
     /// </summary>
     /// <param name="windowHandle">The child control HWND.</param>
     /// <param name="clientSize">The initial client size in pixels.</param>
-    /// <param name="uiContext">The WinForms synchronization context.</param>
-    /// <param name="uiThreadId">The managed identifier of the WinForms UI thread.</param>
-    public DirectXCameraRenderer(
-        nint windowHandle,
-        Size clientSize,
-        SynchronizationContext uiContext,
-        int uiThreadId)
+    public DirectXCameraRenderer(nint windowHandle, Size clientSize)
     {
         if (windowHandle == 0)
         {
@@ -233,9 +163,6 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
 
         _windowHandle = windowHandle;
         _requestedSize = clientSize;
-        _uiContext = uiContext
-            ?? throw new ArgumentNullException(nameof(uiContext));
-        _uiThreadId = uiThreadId;
     }
 
     /// <summary>
@@ -251,34 +178,19 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
     }
 
     /// <summary>
-    ///  Hides the swap-chain visual so WinForms status painting is visible.
+    ///  Releases the HWND swap chain so WinForms status painting is visible.
     /// </summary>
     public void Hide()
     {
-        RunOnUiThread(() =>
+        lock (_sync)
         {
-            lock (_sync)
+            if (_disposed || _swapChain is null)
             {
-                if (_disposed
-                    || _contentVisual is null
-                    || _compositionDevice is null
-                    || !_visualVisible)
-                {
-                    return;
-                }
-
-                try
-                {
-                    _contentVisual.SetContent(null);
-                    _compositionDevice.Commit();
-                    _visualVisible = false;
-                }
-                catch (COMException ex) when (IsDeviceLoss(ex.HResult))
-                {
-                    ReleaseGraphicsResources();
-                }
+                return;
             }
-        });
+
+            ReleaseGraphicsResources();
+        }
     }
 
     /// <summary>
@@ -304,8 +216,6 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
         out Size frameSize)
     {
         frameSize = Size.Empty;
-        bool presented = false;
-
         if (Interlocked.CompareExchange(ref _rendering, 1, 0) != 0)
         {
             return false;
@@ -315,14 +225,6 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
         {
             lock (_sync)
             {
-                Exception? uiFailure = _uiFailure;
-                _uiFailure = null;
-
-                if (uiFailure is not null)
-                {
-                    ExceptionDispatchInfo.Capture(uiFailure).Throw();
-                }
-
                 if (_disposed
                     || _requestedSize.Width <= 0
                     || _requestedSize.Height <= 0)
@@ -351,7 +253,7 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
                         return false;
                     }
 
-                    presented = true;
+                    return true;
                 }
                 catch (COMException ex) when (IsDeviceLoss(ex.HResult))
                 {
@@ -359,13 +261,6 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
                     return false;
                 }
             }
-
-            if (presented)
-            {
-                ShowVisual();
-            }
-
-            return presented;
         }
         finally
         {
@@ -515,7 +410,7 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
     }
 
     /// <summary>
-    ///  Builds the Direct2D, DXGI, swap-chain, and DirectComposition object graph.
+    ///  Builds the Direct2D, DXGI, and HWND swap-chain object graph.
     /// </summary>
     /// <param name="device">The D3D11 device at the root of the graph.</param>
     /// <param name="usesCameraDevice">
@@ -577,9 +472,11 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
             AlphaMode = DXGI_ALPHA_MODE.DXGI_ALPHA_MODE_IGNORE
         };
 
-        _dxgiFactory!.CreateSwapChainForComposition(
+        _dxgiFactory!.CreateSwapChainForHwnd(
             _d3dDevice!,
+            (HWND)_windowHandle,
             &description,
+            null,
             null,
             out _swapChain);
 
@@ -612,32 +509,6 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
         {
             ReleaseComObject(surface);
         }
-    }
-
-    /// <summary>
-    ///  Creates and commits the visual tree that places the swap chain over the HWND.
-    /// </summary>
-    private void CreateCompositionTree()
-    {
-        PInvoke.DCompositionCreateDevice(
-            _dxgiDevice!,
-            typeof(IDCompositionDevice).GUID,
-            out object compositionObject).ThrowOnFailure();
-        _compositionDevice = (IDCompositionDevice)compositionObject;
-
-        _compositionDevice!.CreateTargetForHwnd(
-            (HWND)_windowHandle,
-            true,
-            out _compositionTarget);
-        _compositionDevice.CreateVisual(out _rootVisual);
-        _compositionDevice.CreateVisual(out _contentVisual);
-
-        _contentVisual.SetContent(null);
-        _rootVisual.AddVisual(_contentVisual, true, null);
-        _compositionTarget.SetRoot(_rootVisual);
-        _compositionDevice.Commit();
-        _visualVisible = false;
-        _compositionGeneration = _graphicsGeneration;
     }
 
     /// <summary>
@@ -746,105 +617,6 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
 
         _d2dContext.EndDraw(null, null);
         _swapChain!.Present(1, 0);
-    }
-
-    /// <summary>
-    ///  Makes the swap-chain visual visible after a successful first present.
-    /// </summary>
-    private void ShowVisual()
-    {
-        int generation;
-
-        lock (_sync)
-        {
-            if (_disposed
-                || _swapChain is null
-                || (_visualVisible
-                    && _compositionGeneration == _graphicsGeneration))
-            {
-                return;
-            }
-
-            generation = _graphicsGeneration;
-
-            if (_queuedShowGeneration == generation)
-            {
-                return;
-            }
-
-            _queuedShowGeneration = generation;
-        }
-
-        RunOnUiThread(() =>
-        {
-            lock (_sync)
-            {
-                if (_queuedShowGeneration == generation)
-                {
-                    _queuedShowGeneration = -1;
-                }
-
-                if (_disposed
-                    || generation != _graphicsGeneration
-                    || _swapChain is null)
-                {
-                    return;
-                }
-
-                if (_compositionGeneration != generation)
-                {
-                    ReleaseCompositionResources();
-                    CreateCompositionTree();
-                }
-
-                if (!_visualVisible)
-                {
-                    _contentVisual!.SetContent(_swapChain);
-                    _compositionDevice!.Commit();
-                    _visualVisible = true;
-                }
-            }
-        });
-    }
-
-    /// <summary>
-    ///  Runs a visual-tree operation on its owning WinForms apartment.
-    /// </summary>
-    /// <param name="callback">The DirectComposition operation to run.</param>
-    private void RunOnUiThread(Action callback)
-    {
-        if (Environment.CurrentManagedThreadId == _uiThreadId)
-        {
-            RunUiCallback(callback);
-            return;
-        }
-
-        _uiContext.Post(
-            static state =>
-            {
-                var operation = ((DirectXCameraRenderer Renderer, Action Callback))state!;
-                operation.Renderer.RunUiCallback(operation.Callback);
-            },
-            (this, callback));
-    }
-
-    /// <summary>
-    ///  Executes a UI-apartment callback and preserves failures for the capture path.
-    /// </summary>
-    /// <param name="callback">The callback to execute.</param>
-    private void RunUiCallback(Action callback)
-    {
-        try
-        {
-            callback();
-        }
-        catch (Exception ex)
-        {
-            lock (_sync)
-            {
-                _uiFailure ??= ex;
-            }
-        }
     }
 
     /// <summary>
@@ -968,38 +740,18 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
     /// <summary>
     ///  Releases the native graphics object graph in dependency-safe order.
     /// </summary>
+    /// <remarks>
+    ///  Teardown may be initiated by the WinForms UI thread. It intentionally makes no
+    ///  typed calls on the MTA-created Direct2D context. Releasing the context first
+    ///  drops its reference to the target bitmap without a cross-apartment
+    ///  <c>SetTarget</c> call.
+    /// </remarks>
     private void ReleaseGraphicsResources()
     {
-        int releasedGeneration = ++_graphicsGeneration;
-        _queuedShowGeneration = -1;
-
-        if (Environment.CurrentManagedThreadId == _uiThreadId)
-        {
-            ReleaseCompositionResources();
-        }
-        else
-        {
-            RunOnUiThread(() =>
-            {
-                lock (_sync)
-                {
-                    if (_compositionGeneration < releasedGeneration)
-                    {
-                        ReleaseCompositionResources();
-                    }
-                }
-            });
-        }
-
-        if (_d2dContext is not null)
-        {
-            _d2dContext.SetTarget(null);
-        }
-
+        ReleaseComObject(_d2dContext);
         ReleaseComObject(_softwareBitmap);
         ReleaseComObject(_targetBitmap);
         ReleaseComObject(_swapChain);
-        ReleaseComObject(_d2dContext);
         ReleaseComObject(_d2dDevice);
         ReleaseComObject(_d2dFactory);
         ReleaseComObject(_dxgiFactory);
@@ -1020,24 +772,6 @@ internal sealed unsafe class DirectXCameraRenderer : IDisposable
         _softwareBitmapSize = Size.Empty;
         _swapChainSize = Size.Empty;
         _usesCameraDevice = false;
-    }
-
-    /// <summary>
-    ///  Releases DirectComposition objects on their owning UI apartment.
-    /// </summary>
-    private void ReleaseCompositionResources()
-    {
-        ReleaseComObject(_contentVisual);
-        ReleaseComObject(_rootVisual);
-        ReleaseComObject(_compositionTarget);
-        ReleaseComObject(_compositionDevice);
-
-        _contentVisual = null;
-        _rootVisual = null;
-        _compositionTarget = null;
-        _compositionDevice = null;
-        _compositionGeneration = -1;
-        _visualVisible = false;
     }
 
     /// <summary>

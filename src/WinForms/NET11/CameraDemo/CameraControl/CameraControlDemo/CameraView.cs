@@ -10,9 +10,9 @@ namespace CameraControlDemo;
 ///  <para>
 ///   Frames arrive on a Media Foundation callback thread rather than through
 ///   <see cref="OnPaint"/>. A GPU-backed frame is handed to Direct2D as a DXGI surface
-///   and drawn into a flip-model swap chain. DirectComposition places that swap chain
-///   over this control's HWND, so scaling and presentation happen on the GPU without
-///   a GDI bitmap or a UI-thread blit.
+///   and drawn into a flip-model swap chain targeting this control's HWND. The Desktop
+///   Window Manager composes that swap chain, so scaling and presentation happen on the
+///   GPU without a GDI bitmap or a UI-thread blit.
 ///  </para>
 ///  <para>
 ///   Cameras that provide only CPU pixels use a documented fallback: their BGRA data
@@ -21,9 +21,9 @@ namespace CameraControlDemo;
 ///   behavior instead of accumulating delayed frames.
 ///  </para>
 ///  <para>
-///   While no frame is available, the composition visual is hidden and ordinary
-///   WinForms painting displays <see cref="StatusText"/>. Native graphics resources
-///   are created lazily for the current HWND and released when that handle is destroyed.
+///   While no frame is available, the HWND swap chain is released and ordinary WinForms
+///   painting displays <see cref="StatusText"/>. Native graphics resources are created
+///   lazily for the current HWND and released when that handle is destroyed.
 ///  </para>
 /// </remarks>
 public class CameraView : Control
@@ -44,7 +44,7 @@ public class CameraView : Control
     private Size _frameSize;
 
     /// <summary>
-    ///  Non-zero after a frame has been presented and the composition visual is shown.
+    ///  Non-zero after a frame has been presented through the HWND swap chain.
     /// </summary>
     private int _hasFrame;
 
@@ -220,16 +220,7 @@ public class CameraView : Control
 
         lock (_stateLock)
         {
-            SynchronizationContext uiContext =
-                SynchronizationContext.Current
-                ?? throw new InvalidOperationException(
-                    "CameraView must create its handle on a WinForms UI thread.");
-
-            _renderer = new DirectXCameraRenderer(
-                Handle,
-                ClientSize,
-                uiContext,
-                Environment.CurrentManagedThreadId);
+            _renderer = new DirectXCameraRenderer(Handle, ClientSize);
         }
     }
 
@@ -279,7 +270,7 @@ public class CameraView : Control
     }
 
     /// <summary>
-    ///  Paints the background and status message beneath the composition visual.
+    ///  Paints the background and status message while no swap chain is active.
     /// </summary>
     /// <param name="e">The WinForms paint event data.</param>
     protected override void OnPaint(PaintEventArgs e)

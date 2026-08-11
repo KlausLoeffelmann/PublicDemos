@@ -40,6 +40,12 @@ lifecycle there:
 - commits, attachment, and detachment;
 - teardown and final COM releases.
 
+Do not call a worker-created interface from the UI merely to prepare it for release.
+For example, an MTA-created `ID2D1DeviceContext.SetTarget(null)` can fail during a
+UI-triggered `Dispose` even when the Direct2D factory is multithreaded. If ownership
+cannot be marshalled back, prefer release ordering that destroys the owning context
+before the resource it retains, without making another typed COM call.
+
 For HWND-related composition or presentation objects, prefer the WinForms UI
 apartment. Keep documented free-threaded graphics work on a render/MTA path.
 
@@ -54,6 +60,21 @@ For example:
 
 Check the native API documentation rather than assuming every DirectX or shell
 interface has the same threading model.
+
+## Prefer the smallest native object graph
+
+Do not add a DirectComposition visual tree when a single swap chain only needs to
+fill one WinForms HWND. `IDXGIFactory2.CreateSwapChainForHwnd` with a flip-model
+swap effect is already composed by the Desktop Window Manager.
+
+Use `CreateSwapChainForComposition` plus DirectComposition only when the app needs
+composition-specific behavior such as multiple visuals, transforms, opacity,
+clipping, animation, or non-HWND composition content. Avoiding unnecessary COM
+layers reduces interface casting, apartment ownership, cleanup, and failure paths.
+
+If `E_NOINTERFACE` remains after moving calls to one apartment, do not keep adding
+dispatching code. Verify the generated ABI and simplify or remove the unnecessary
+COM interface family.
 
 ## Safe WinForms pattern
 
