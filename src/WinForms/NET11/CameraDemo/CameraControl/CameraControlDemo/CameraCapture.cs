@@ -1,31 +1,8 @@
-﻿using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-using Windows.Graphics.Imaging;
-using Windows.Media.Capture;
+﻿using Windows.Media.Capture;
 using Windows.Media.Capture.Frames;
 using Windows.Media.MediaProperties;
-using WinRT;
 
 namespace CameraControlDemo;
-
-/// <summary>
-///  Raw pointer access to a <see cref="Windows.Foundation.IMemoryBufferReference"/>.
-/// </summary>
-/// <remarks>
-///  This interface is not projected by CsWinRT, so it has to be declared by hand.
-/// </remarks>
-[ComImport]
-[Guid("5B0D3235-4DBA-4D44-865E-8F1D0E4FD04D")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal unsafe interface IMemoryBufferByteAccess
-{
-    /// <summary>
-    ///  Returns the raw buffer backing the memory buffer reference.
-    /// </summary>
-    /// <param name="buffer">Receives the buffer pointer.</param>
-    /// <param name="capacity">Receives the buffer capacity in bytes.</param>
-    void GetBuffer(out byte* buffer, out uint capacity);
-}
 
 /// <summary>
 ///  A selectable camera, i.e. a <see cref="MediaFrameSourceGroup"/> that offers at
@@ -100,11 +77,19 @@ public sealed class CameraErrorEventArgs(string message, Exception? exception = 
 ///  Drives a <see cref="MediaCapture"/> based preview and pushes every frame into a
 ///  <see cref="CameraView"/>.
 /// </summary>
+/// <remarks>
+///  The frame reader asks Media Foundation for BGRA8 in realtime mode and prefers
+///  GPU-backed memory. Each callback passes the live <see cref="VideoMediaFrame"/> to
+///  the view, which can present its Direct3D surface without a CPU copy. When a device
+///  supplies only a software bitmap, the view uploads that bitmap through its DirectX
+///  fallback. Holding the frame reference until presentation returns keeps either
+///  backing store valid.
+/// </remarks>
 /// <param name="view">The view that renders the frames.</param>
 public sealed class CameraCapture(CameraView view) : IAsyncDisposable
 {
     /// <summary>
-    ///  The view frames are blitted into.
+    ///  The view that presents captured frames.
     /// </summary>
     private readonly CameraView _view = view
         ?? throw new ArgumentNullException(nameof(view));
@@ -185,7 +170,7 @@ public sealed class CameraCapture(CameraView view) : IAsyncDisposable
             MediaCaptureInitializationSettings settings = new()
             {
                 SourceGroup = device.Group,
-                MemoryPreference = MediaCaptureMemoryPreference.Cpu,
+                MemoryPreference = MediaCaptureMemoryPreference.Auto,
                 StreamingCaptureMode = StreamingCaptureMode.Video,
                 SharingMode = MediaCaptureSharingMode.ExclusiveControl
             };
@@ -356,14 +341,14 @@ public sealed class CameraCapture(CameraView view) : IAsyncDisposable
         {
             using MediaFrameReference? frame = sender.TryAcquireLatestFrame();
 
-            SoftwareBitmap? bitmap = frame?.VideoMediaFrame?.SoftwareBitmap;
+            VideoMediaFrame? videoFrame = frame?.VideoMediaFrame;
 
-            if (bitmap is null)
+            if (videoFrame is null)
             {
                 return;
             }
 
-            CopyToView(bitmap);
+            _view.TryPresentFrame(videoFrame);
         }
         catch (Exception ex)
         {
@@ -374,49 +359,6 @@ public sealed class CameraCapture(CameraView view) : IAsyncDisposable
                 OnError($"The camera frame could not be processed: {ex.Message}", ex);
             }
         }
-    }
-
-    /// <summary>
-    ///  Blits a BGRA8 software bitmap into the view's back buffer row by row.
-    /// </summary>
-    /// <param name="bitmap">The frame to copy.</param>
-    private unsafe void CopyToView(SoftwareBitmap bitmap)
-    {
-        using BitmapBuffer buffer = bitmap.LockBuffer(BitmapBufferAccessMode.Read);
-        using Windows.Foundation.IMemoryBufferReference reference = buffer.CreateReference();
-
-        // The classic trap: a plain cast compiles but throws "Invalid cast from
-        // 'WinRT.IInspectable'" under CsWinRT - the .As<T>() marshalling helper
-        // is required.
-        IMemoryBufferByteAccess byteAccess = reference.As<IMemoryBufferByteAccess>();
-        byteAccess.GetBuffer(out byte* rawBuffer, out _);
-
-        BitmapPlaneDescription plane = buffer.GetPlaneDescription(0);
-
-        int width = plane.Width;
-        int height = plane.Height;
-        int sourceStride = plane.Stride;
-        int rowBytes = width * 4;
-
-        // A lambda cannot capture a pointer local, so hand the address over as nint.
-        nint sourceAddress = (nint)(rawBuffer + plane.StartIndex);
-
-        _view.TryWriteFrame(width, height, data =>
-        {
-            byte* source = (byte*)sourceAddress;
-            byte* destination = (byte*)data.Scan0;
-            int destinationStride = data.Stride;
-
-            // Source and destination strides differ; copy one row at a time.
-            for (int row = 0; row < height; row++)
-            {
-                Buffer.MemoryCopy(
-                    source + ((long)row * sourceStride),
-                    destination + ((long)row * destinationStride),
-                    rowBytes,
-                    rowBytes);
-            }
-        });
     }
 
     /// <summary>

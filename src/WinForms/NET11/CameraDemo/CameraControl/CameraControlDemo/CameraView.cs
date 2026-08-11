@@ -1,51 +1,62 @@
 ﻿using System.ComponentModel;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+using Windows.Media.Capture.Frames;
 
 namespace CameraControlDemo;
 
 /// <summary>
-///  A lightweight, flicker-free surface that displays camera frames.
+///  A WinForms control that presents live camera frames through DirectX.
 /// </summary>
 /// <remarks>
 ///  <para>
-///   This is deliberately a <see cref="Control"/> and not a <see cref="PictureBox"/>:
-///   frames arrive on a capture thread at up to 60 Hz and are blitted into a single
-///   reusable back buffer, so there is no per-frame allocation and no intermediate
-///   image assignment.
+///   Frames arrive on a Media Foundation callback thread rather than through
+///   <see cref="OnPaint"/>. A GPU-backed frame is handed to Direct2D as a DXGI surface
+///   and drawn into a flip-model swap chain. DirectComposition places that swap chain
+///   over this control's HWND, so scaling and presentation happen on the GPU without
+///   a GDI bitmap or a UI-thread blit.
+///  </para>
+///  <para>
+///   Cameras that provide only CPU pixels use a documented fallback: their BGRA data
+///   is uploaded into one reusable Direct2D bitmap and then follows the same swap-chain
+///   path. The renderer drops a frame if it is still busy, preserving real-time
+///   behavior instead of accumulating delayed frames.
+///  </para>
+///  <para>
+///   While no frame is available, the composition visual is hidden and ordinary
+///   WinForms painting displays <see cref="StatusText"/>. Native graphics resources
+///   are created lazily for the current HWND and released when that handle is destroyed.
 ///  </para>
 /// </remarks>
 public class CameraView : Control
 {
     /// <summary>
-    ///  Guards <see cref="_backBuffer"/> against concurrent access by the capture
-    ///  thread (writing pixels) and the UI thread (painting).
+    ///  Guards renderer replacement and frame-size state.
     /// </summary>
-    private readonly Lock _bufferLock = new();
+    private readonly Lock _stateLock = new();
 
     /// <summary>
-    ///  The single reusable back buffer. Re-created only when the source resolution
-    ///  changes.
+    ///  Native renderer targeting the control's current handle.
     /// </summary>
-    private Bitmap? _backBuffer;
+    private DirectXCameraRenderer? _renderer;
 
     /// <summary>
-    ///  Non-zero while an <see cref="Control.Invalidate()"/> has been requested but the
-    ///  corresponding <see cref="OnPaint"/> has not completed yet. Used to drop frames
-    ///  instead of queueing them.
+    ///  Resolution of the most recently presented frame.
     /// </summary>
-    private int _repaintPending;
+    private Size _frameSize;
 
     /// <summary>
-    ///  <see langword="true"/> once at least one frame has been written into the back
-    ///  buffer.
+    ///  Non-zero after a frame has been presented and the composition visual is shown.
     /// </summary>
-    private bool _hasFrame;
+    private int _hasFrame;
 
     /// <summary>
     ///  Backing field for <see cref="KeepAspectRatio"/>.
     /// </summary>
-    private bool _keepAspectRatio = true;
+    private volatile bool _keepAspectRatio = true;
+
+    /// <summary>
+    ///  Thread-safe ARGB snapshot of <see cref="Control.BackColor"/> for rendering.
+    /// </summary>
+    private int _backgroundArgb = Color.Black.ToArgb();
 
     /// <summary>
     ///  Backing field for <see cref="StatusText"/>.
@@ -69,9 +80,8 @@ public class CameraView : Control
     }
 
     /// <summary>
-    ///  Gets or sets a value indicating whether the frame is letterboxed into the
-    ///  client area preserving its aspect ratio (<see langword="true"/>, the default),
-    ///  or drawn unscaled 1:1 at the top-left corner (<see langword="false"/>).
+    ///  Gets or sets whether the frame is centered and scaled to fit while preserving
+    ///  its aspect ratio. When disabled, the frame is drawn 1:1 from the top-left.
     /// </summary>
     [DefaultValue(true)]
     [Category("Appearance")]
@@ -79,22 +89,11 @@ public class CameraView : Control
     public bool KeepAspectRatio
     {
         get => _keepAspectRatio;
-        set
-        {
-            if (_keepAspectRatio == value)
-            {
-                return;
-            }
-
-            _keepAspectRatio = value;
-            Invalidate();
-        }
+        set => _keepAspectRatio = value;
     }
 
     /// <summary>
-    ///  Gets or sets a message that is painted centered in the client area whenever no
-    ///  frame is available - used for "starting camera", "no camera found" and error
-    ///  text, so the control never just stays black without a clue why.
+    ///  Gets or sets the message painted while no camera frame is visible.
     /// </summary>
     [DefaultValue(null)]
     [Category("Appearance")]
@@ -111,7 +110,7 @@ public class CameraView : Control
 
             _statusText = value;
 
-            if (!_hasFrame)
+            if (Volatile.Read(ref _hasFrame) == 0)
             {
                 Invalidate();
             }
@@ -119,8 +118,8 @@ public class CameraView : Control
     }
 
     /// <summary>
-    ///  Gets the resolution of the frames currently being displayed, or
-    ///  <see cref="Size.Empty"/> when no frame has been received yet.
+    ///  Gets the resolution of the most recently presented frame, or
+    ///  <see cref="Size.Empty"/> before the first frame.
     /// </summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -128,20 +127,18 @@ public class CameraView : Control
     {
         get
         {
-            lock (_bufferLock)
+            lock (_stateLock)
             {
-                return _backBuffer is null
-                    ? Size.Empty
-                    : _backBuffer.Size;
+                return _frameSize;
             }
         }
     }
 
     /// <summary>
-    ///  Returns the native source resolution so layout can size the control optimally.
+    ///  Returns the source resolution so layout can size the control optimally.
     /// </summary>
     /// <param name="proposedSize">The size proposed by the layout engine.</param>
-    /// <returns>The source resolution, or the base implementation while unknown.</returns>
+    /// <returns>The source resolution, or the base size while it is unknown.</returns>
     public override Size GetPreferredSize(Size proposedSize)
     {
         Size frameSize = FrameSize;
@@ -152,305 +149,164 @@ public class CameraView : Control
     }
 
     /// <summary>
-    ///  Discards the current frame so the control falls back to painting
-    ///  <see cref="StatusText"/>.
+    ///  Hides the current frame and returns to WinForms status painting.
     /// </summary>
     public void ClearFrame()
     {
-        lock (_bufferLock)
+        DirectXCameraRenderer? renderer;
+
+        lock (_stateLock)
         {
-            _hasFrame = false;
+            _frameSize = Size.Empty;
+            renderer = _renderer;
         }
 
+        Interlocked.Exchange(ref _hasFrame, 0);
+        renderer?.Hide();
         Invalidate();
     }
 
     /// <summary>
-    ///  Copies a frame into the back buffer and schedules a repaint.
+    ///  Attempts to present a live video frame on the renderer's callback thread.
     /// </summary>
     /// <remarks>
-    ///  Called from the capture thread. When a repaint is still pending the frame is
-    ///  dropped rather than queued, which keeps the preview at real time even when the
-    ///  UI thread cannot keep up.
+    ///  The caller must keep the owning <see cref="MediaFrameReference"/> alive until
+    ///  this method returns because a GPU surface is borrowed directly from that frame.
     /// </remarks>
-    /// <param name="width">Frame width in pixels.</param>
-    /// <param name="height">Frame height in pixels.</param>
-    /// <param name="copy">
-    ///  Callback that performs the actual pixel copy into the locked back buffer.
-    /// </param>
+    /// <param name="frame">The video frame supplied by the media frame reader.</param>
     /// <returns>
-    ///  <see langword="true"/> when the frame was copied; <see langword="false"/> when
-    ///  it was dropped because a repaint is still outstanding.
+    ///  <see langword="true"/> when the frame was presented; otherwise
+    ///  <see langword="false"/> when no renderer exists or a busy/device-lost frame was
+    ///  intentionally dropped.
     /// </returns>
-    public bool TryWriteFrame(int width, int height, Action<BitmapData> copy)
+    internal bool TryPresentFrame(VideoMediaFrame frame)
     {
-        ArgumentNullException.ThrowIfNull(copy);
+        ArgumentNullException.ThrowIfNull(frame);
 
-        if (width <= 0 || height <= 0)
+        DirectXCameraRenderer? renderer;
+
+        lock (_stateLock)
+        {
+            renderer = _renderer;
+        }
+
+        if (renderer is null
+            || !renderer.TryPresent(
+                frame.Direct3DSurface,
+                frame.SoftwareBitmap,
+                _keepAspectRatio,
+                Color.FromArgb(Volatile.Read(ref _backgroundArgb)),
+                out Size frameSize))
         {
             return false;
         }
 
-        // Drop-don't-queue: a repaint from the previous frame is still outstanding.
-        if (Interlocked.CompareExchange(ref _repaintPending, 1, 0) != 0)
+        lock (_stateLock)
         {
-            return false;
+            _frameSize = frameSize;
         }
 
-        try
-        {
-            lock (_bufferLock)
-            {
-                Bitmap buffer = EnsureBackBuffer(width, height);
-
-                BitmapData data = buffer.LockBits(
-                    new Rectangle(0, 0, width, height),
-                    ImageLockMode.WriteOnly,
-                    PixelFormat.Format32bppPArgb);
-
-                try
-                {
-                    copy(data);
-                }
-                finally
-                {
-                    buffer.UnlockBits(data);
-                }
-
-                _hasFrame = true;
-            }
-        }
-        catch
-        {
-            Interlocked.Exchange(ref _repaintPending, 0);
-            throw;
-        }
-
-        try
-        {
-            _ = InvokeAsync(() => Invalidate());
-        }
-        catch (Exception) when (IsDisposed || Disposing || !IsHandleCreated)
-        {
-            Interlocked.Exchange(ref _repaintPending, 0);
-        }
-
+        Interlocked.Exchange(ref _hasFrame, 1);
         return true;
     }
 
     /// <summary>
-    ///  Paints the current frame, or the status text when there is none.
+    ///  Creates a renderer for the control's newly created HWND.
     /// </summary>
-    /// <param name="e">The paint event data.</param>
-    protected override void OnPaint(PaintEventArgs e)
+    /// <param name="e">Unused event data.</param>
+    protected override void OnHandleCreated(EventArgs e)
     {
-        try
-        {
-            lock (_bufferLock)
-            {
-                if (!_hasFrame || _backBuffer is null)
-                {
-                    PaintStatus(e.Graphics);
-                    return;
-                }
+        base.OnHandleCreated(e);
 
-                if (_keepAspectRatio)
-                {
-                    PaintLetterboxed(e.Graphics, _backBuffer);
-                }
-                else
-                {
-                    PaintUnscaled(e.Graphics, _backBuffer);
-                }
-            }
-        }
-        finally
+        lock (_stateLock)
         {
-            // Release the gate so the next frame is accepted.
-            Interlocked.Exchange(ref _repaintPending, 0);
+            SynchronizationContext uiContext =
+                SynchronizationContext.Current
+                ?? throw new InvalidOperationException(
+                    "CameraView must create its handle on a WinForms UI thread.");
+
+            _renderer = new DirectXCameraRenderer(
+                Handle,
+                ClientSize,
+                uiContext,
+                Environment.CurrentManagedThreadId);
         }
     }
 
     /// <summary>
-    ///  Suppressed on purpose: the control paints every pixel of its client area
-    ///  itself, so erasing the background first would only cause flicker.
+    ///  Releases graphics resources before the current HWND becomes invalid.
     /// </summary>
-    /// <param name="pevent">The paint event data.</param>
+    /// <param name="e">Unused event data.</param>
+    protected override void OnHandleDestroyed(EventArgs e)
+    {
+        DirectXCameraRenderer? renderer;
+
+        lock (_stateLock)
+        {
+            renderer = _renderer;
+            _renderer = null;
+            _frameSize = Size.Empty;
+        }
+
+        Interlocked.Exchange(ref _hasFrame, 0);
+        renderer?.Dispose();
+
+        base.OnHandleDestroyed(e);
+    }
+
+    /// <summary>
+    ///  Records a new swap-chain size after WinForms lays out the control.
+    /// </summary>
+    /// <param name="e">Unused event data.</param>
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+
+        lock (_stateLock)
+        {
+            _renderer?.Resize(ClientSize);
+        }
+    }
+
+    /// <summary>
+    ///  Snapshots the WinForms background color for the capture-thread renderer.
+    /// </summary>
+    /// <param name="e">Unused event data.</param>
+    protected override void OnBackColorChanged(EventArgs e)
+    {
+        Volatile.Write(ref _backgroundArgb, BackColor.ToArgb());
+        base.OnBackColorChanged(e);
+    }
+
+    /// <summary>
+    ///  Paints the background and status message beneath the composition visual.
+    /// </summary>
+    /// <param name="e">The WinForms paint event data.</param>
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        e.Graphics.Clear(BackColor);
+
+        if (Volatile.Read(ref _hasFrame) == 0)
+        {
+            PaintStatus(e.Graphics);
+        }
+    }
+
+    /// <summary>
+    ///  Suppresses the separate erase pass because <see cref="OnPaint"/> covers the
+    ///  complete client area.
+    /// </summary>
+    /// <param name="pevent">Unused paint event data.</param>
     protected override void OnPaintBackground(PaintEventArgs pevent)
     {
     }
 
     /// <summary>
-    ///  Releases the back buffer.
+    ///  Paints the current status message centered within the client area.
     /// </summary>
-    /// <param name="disposing">
-    ///  <see langword="true"/> to release managed resources.
-    /// </param>
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            lock (_bufferLock)
-            {
-                _backBuffer?.Dispose();
-                _backBuffer = null;
-                _hasFrame = false;
-            }
-        }
-
-        base.Dispose(disposing);
-    }
-
-    /// <summary>
-    ///  Returns the back buffer, re-creating it when the source resolution changed.
-    /// </summary>
-    /// <param name="width">Required width in pixels.</param>
-    /// <param name="height">Required height in pixels.</param>
-    /// <returns>A back buffer of exactly the requested size.</returns>
-    private Bitmap EnsureBackBuffer(int width, int height)
-    {
-        if (_backBuffer is not null
-            && _backBuffer.Width == width
-            && _backBuffer.Height == height)
-        {
-            return _backBuffer;
-        }
-
-        _backBuffer?.Dispose();
-        _backBuffer = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
-        _hasFrame = false;
-
-        return _backBuffer;
-    }
-
-    /// <summary>
-    ///  Draws the frame 1:1 at the origin without any scaling or filtering.
-    /// </summary>
-    /// <param name="graphics">The target graphics.</param>
-    /// <param name="frame">The frame to draw.</param>
-    private void PaintUnscaled(Graphics graphics, Bitmap frame)
-    {
-        // These must be set *before* drawing, otherwise GDI+ still filters.
-        graphics.CompositingMode = CompositingMode.SourceCopy;
-        graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
-        graphics.PixelOffsetMode = PixelOffsetMode.Half;
-        graphics.SmoothingMode = SmoothingMode.None;
-
-        graphics.DrawImageUnscaled(frame, 0, 0);
-
-        // Whatever the frame does not cover keeps the BackColor.
-        graphics.CompositingMode = CompositingMode.SourceOver;
-        FillAround(graphics, new Rectangle(0, 0, frame.Width, frame.Height));
-    }
-
-    /// <summary>
-    ///  Draws the frame centered and letterboxed, preserving the source aspect ratio.
-    /// </summary>
-    /// <param name="graphics">The target graphics.</param>
-    /// <param name="frame">The frame to draw.</param>
-    private void PaintLetterboxed(Graphics graphics, Bitmap frame)
-    {
-        Rectangle target = GetLetterboxRectangle(frame.Width, frame.Height);
-
-        graphics.CompositingMode = CompositingMode.SourceOver;
-        graphics.PixelOffsetMode = PixelOffsetMode.Half;
-        graphics.SmoothingMode = SmoothingMode.None;
-
-        graphics.InterpolationMode =
-            target.Width == frame.Width && target.Height == frame.Height
-                ? InterpolationMode.NearestNeighbor
-                : InterpolationMode.HighQualityBilinear;
-
-        FillAround(graphics, target);
-        graphics.DrawImage(frame, target);
-    }
-
-    /// <summary>
-    ///  Computes the centered destination rectangle that preserves the source aspect
-    ///  ratio inside the client area.
-    /// </summary>
-    /// <param name="sourceWidth">Source width in pixels.</param>
-    /// <param name="sourceHeight">Source height in pixels.</param>
-    /// <returns>The destination rectangle.</returns>
-    private Rectangle GetLetterboxRectangle(int sourceWidth, int sourceHeight)
-    {
-        Rectangle client = ClientRectangle;
-
-        if (client.Width <= 0 || client.Height <= 0 || sourceWidth <= 0 || sourceHeight <= 0)
-        {
-            return Rectangle.Empty;
-        }
-
-        double scale = Math.Min(
-            client.Width / (double)sourceWidth,
-            client.Height / (double)sourceHeight);
-
-        int width = Math.Max(1, (int)Math.Round(sourceWidth * scale));
-        int height = Math.Max(1, (int)Math.Round(sourceHeight * scale));
-
-        return new Rectangle(
-            client.X + ((client.Width - width) / 2),
-            client.Y + ((client.Height - height) / 2),
-            width,
-            height);
-    }
-
-    /// <summary>
-    ///  Fills the part of the client area that the frame does not cover with
-    ///  <see cref="Control.BackColor"/>.
-    /// </summary>
-    /// <param name="graphics">The target graphics.</param>
-    /// <param name="covered">The rectangle covered by the frame.</param>
-    private void FillAround(Graphics graphics, Rectangle covered)
-    {
-        Rectangle client = ClientRectangle;
-
-        if (covered.Contains(client))
-        {
-            return;
-        }
-
-        using SolidBrush brush = new(BackColor);
-
-        // Top, bottom, left, right bands around the covered area.
-        if (covered.Top > client.Top)
-        {
-            graphics.FillRectangle(
-                brush,
-                client.X, client.Y, client.Width, covered.Top - client.Top);
-        }
-
-        if (covered.Bottom < client.Bottom)
-        {
-            graphics.FillRectangle(
-                brush,
-                client.X, covered.Bottom, client.Width, client.Bottom - covered.Bottom);
-        }
-
-        if (covered.Left > client.Left)
-        {
-            graphics.FillRectangle(
-                brush,
-                client.X, covered.Y, covered.Left - client.Left, covered.Height);
-        }
-
-        if (covered.Right < client.Right)
-        {
-            graphics.FillRectangle(
-                brush,
-                covered.Right, covered.Y, client.Right - covered.Right, covered.Height);
-        }
-    }
-
-    /// <summary>
-    ///  Paints the background and the current <see cref="StatusText"/>.
-    /// </summary>
-    /// <param name="graphics">The target graphics.</param>
+    /// <param name="graphics">The target WinForms graphics surface.</param>
     private void PaintStatus(Graphics graphics)
     {
-        graphics.CompositingMode = CompositingMode.SourceOver;
-        graphics.Clear(BackColor);
-
         if (string.IsNullOrWhiteSpace(_statusText))
         {
             return;
@@ -462,7 +318,6 @@ public class CameraView : Control
             LineAlignment = StringAlignment.Center,
             Trimming = StringTrimming.EllipsisWord
         };
-
         using SolidBrush brush = new(ForeColor);
 
         Rectangle bounds = Rectangle.Inflate(ClientRectangle, -16, -16);
