@@ -16,6 +16,7 @@ public partial class FormMain : Form
     private readonly ThemePluginLoader _pluginLoader;
     private FileSystemWatcher? _pluginWatcher;
     private ThemeEntry? _current;
+    private Font? _stripFont;
 
     // Serializes every plug-in discovery pass. The initial load runs on a worker thread
     // (see OnLoad) while the FileSystemWatcher can fire a hot-reload at any time; both go
@@ -30,6 +31,7 @@ public partial class FormMain : Form
         _pluginLoader = new ThemePluginLoader(Path.Combine(AppContext.BaseDirectory, "plugins"));
         _clock.GraceSeconds = 5;
 
+        ApplySystemTextScaleToStrips();
         RefreshGraceChecks();
         RefreshSpeedChecks();
         RefreshKioskChecks();
@@ -61,6 +63,7 @@ public partial class FormMain : Form
     protected override async void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
+        RestoreWindowSettings();
 
         try
         {
@@ -80,6 +83,54 @@ public partial class FormMain : Form
         }
     }
 
+    protected override void OnSystemVisualSettingsChanged(SystemVisualSettingsChangedEventArgs e)
+    {
+        base.OnSystemVisualSettingsChanged(e);
+
+        if (e.Changed == SystemVisualSettingsCategories.TextScale)
+        {
+            ApplySystemTextScaleToStrips();
+        }
+    }
+
+    private void ApplySystemTextScaleToStrips()
+    {
+        Font baseFont = Font;
+        float scaledSize = baseFont.SizeInPoints
+            * (float)Application.SystemVisualSettings.TextScaleFactor;
+        Font newFont = new(baseFont.FontFamily, scaledSize, baseFont.Style, GraphicsUnit.Point);
+        Font? oldFont = _stripFont;
+
+        _stripFont = newFont;
+        _menuStrip.Font = newFont;
+        _statusStrip.Font = newFont;
+
+        oldFont?.Dispose();
+    }
+
+    /// <summary>
+    ///  Persists the last sane windowed bounds, presentation mode, and kiosk options.
+    /// </summary>
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        base.OnFormClosing(e);
+
+        if (!e.Cancel)
+        {
+            SaveWindowSettings();
+        }
+    }
+
+    /// <summary>
+    ///  Tracks only completed, normal window resizes; fullscreen, no-chrome, minimized,
+    ///  and off-screen rectangles are intentionally excluded from persisted bounds.
+    /// </summary>
+    protected override void OnResizeEnd(EventArgs e)
+    {
+        base.OnResizeEnd(e);
+        CaptureWindowedBounds();
+    }
+
     /// <summary>
     ///  Disposes the runtime resources that were created in regular code (not by the
     ///  Designer), so they live outside the Designer's <c>Dispose(bool)</c>.
@@ -88,6 +139,8 @@ public partial class FormMain : Form
     {
         _pluginWatcher?.Dispose();
         _loadGate.Dispose();
+        _stripFont?.Dispose();
+        _stripFont = null;
         base.OnFormClosed(e);
     }
 
@@ -327,28 +380,92 @@ public partial class FormMain : Form
 
     private void OnKioskClick(object? sender, EventArgs e) => _kioskModeManager.ToggleFullScreen();
 
-    private void OnHideTaskbarClick(object? sender, EventArgs e)
-    {
-        _kioskModeManager.HideTaskbar = !_kioskModeManager.HideTaskbar;
-        _miHideTaskbar.Checked = _kioskModeManager.HideTaskbar;
-        _statusInfo.Text = $"Hide taskbar: {(_kioskModeManager.HideTaskbar ? "On" : "Off")}";
-    }
-
     /// <summary>
-    ///  Syncs the View-menu check marks with the live kiosk-manager state so they are
-    ///  correct at startup (the Designer sets <c>HideTaskbar = true</c>) and never drift.
+    ///  Syncs all kiosk menu check marks with the live manager and presentation state.
     /// </summary>
     private void RefreshKioskChecks()
     {
-        _miHideTaskbar.Checked = _kioskModeManager.HideTaskbar;
-        _miPreventSleep.Checked = _kioskModeManager.SuppressPowerSaving;
+        _miKiosk.Checked = _kioskModeManager.FullScreen;
+        _miAlwaysOn.Checked = _kioskModeManager.AlwaysOn;
+        _miAllowEscape.Checked = _kioskModeManager.EscapeExitsFullScreen;
+        _miTopMostInFullScreen.Checked = _kioskModeManager.TopMostInFullScreen;
+        _miHideWindowsChrome.Checked = _presentationMode == WindowPresentationMode.NoChrome;
+
+        Keys keys = _kioskModeManager.ToggleFullScreenKeys;
+        _miToggleControlEnter.Checked = keys == (Keys.Control | Keys.Return);
+        _miToggleControlShiftEnter.Checked = keys == (Keys.Control | Keys.Shift | Keys.Return);
+        _miToggleF11.Checked = keys == Keys.F11;
+        _miToggleF12.Checked = keys == Keys.F12;
+
+        int delay = _kioskModeManager.MousePointerAutoHideDelay;
+        _miMouseHideNever.Checked = delay == 0;
+        _miMouseHide1000.Checked = delay == 1_000;
+        _miMouseHide2000.Checked = delay == 2_000;
+        _miMouseHide5000.Checked = delay == 5_000;
+        _miMouseHide10000.Checked = delay == 10_000;
     }
 
-    private void OnPreventSleepClick(object? sender, EventArgs e)
+    private void OnKioskMenuOpening(object? sender, EventArgs e) => RefreshKioskChecks();
+
+    private void OnFullScreenToggleKeysClick(object? sender, EventArgs e)
     {
-        _kioskModeManager.SuppressPowerSaving = !_kioskModeManager.SuppressPowerSaving;
-        _miPreventSleep.Checked = _kioskModeManager.SuppressPowerSaving;
-        _statusInfo.Text = $"Prevent sleep: {(_kioskModeManager.SuppressPowerSaving ? "On" : "Off")}";
+        if (sender is ToolStripMenuItem { Tag: Keys keys })
+        {
+            _kioskModeManager.ToggleFullScreenKeys = keys;
+            RefreshKioskChecks();
+            _statusInfo.Text = $"Full-screen toggle keys: {keys}";
+        }
+    }
+
+    private void OnAlwaysOnClick(object? sender, EventArgs e)
+    {
+        _kioskModeManager.AlwaysOn = !_kioskModeManager.AlwaysOn;
+        _miAlwaysOn.Checked = _kioskModeManager.AlwaysOn;
+        _statusInfo.Text = $"Always on: {(_kioskModeManager.AlwaysOn ? "On" : "Off")}";
+    }
+
+    private void OnAllowEscapeClick(object? sender, EventArgs e)
+    {
+        _kioskModeManager.EscapeExitsFullScreen = !_kioskModeManager.EscapeExitsFullScreen;
+        _miAllowEscape.Checked = _kioskModeManager.EscapeExitsFullScreen;
+        _statusInfo.Text = $"Escape exits kiosk mode: {(_kioskModeManager.EscapeExitsFullScreen ? "On" : "Off")}";
+    }
+
+    private void OnMousePointerHideDelayClick(object? sender, EventArgs e)
+    {
+        if (sender is ToolStripMenuItem { Tag: int delay })
+        {
+            _kioskModeManager.MousePointerAutoHideDelay = delay;
+            RefreshKioskChecks();
+            _statusInfo.Text = delay == 0
+                ? "Mouse pointer auto-hide: Off"
+                : $"Mouse pointer auto-hide: {delay:N0} ms";
+        }
+    }
+
+    private void OnTopMostInFullScreenClick(object? sender, EventArgs e)
+    {
+        _kioskModeManager.TopMostInFullScreen = !_kioskModeManager.TopMostInFullScreen;
+        _miTopMostInFullScreen.Checked = _kioskModeManager.TopMostInFullScreen;
+
+        if (_presentationMode == WindowPresentationMode.NoChrome)
+        {
+            TopMost = _kioskModeManager.TopMostInFullScreen;
+        }
+
+        _statusInfo.Text = $"Topmost in full screen: {(_kioskModeManager.TopMostInFullScreen ? "On" : "Off")}";
+    }
+
+    private void OnHideWindowsChromeClick(object? sender, EventArgs e)
+    {
+        if (_presentationMode == WindowPresentationMode.NoChrome)
+        {
+            ExitNoChromeMode();
+        }
+        else
+        {
+            EnterNoChromeMode();
+        }
     }
 
     private void OnMagneticClick(object? sender, EventArgs e)
@@ -517,11 +634,61 @@ public partial class FormMain : Form
     private void OnKioskFullScreenChanged(object? sender, EventArgs e)
     {
         bool fullscreen = _kioskModeManager.FullScreen;
+
+        if (fullscreen)
+        {
+            _modeBeforeFullScreen = _presentationMode;
+
+            if (_presentationMode == WindowPresentationMode.Windowed)
+            {
+                Rectangle windowedBounds = RestoreBounds;
+                if (IsSaneWindowedBounds(windowedBounds))
+                {
+                    _lastWindowedBounds = windowedBounds;
+                }
+            }
+
+            _presentationMode = WindowPresentationMode.FullScreen;
+        }
+        else
+        {
+            _presentationMode = _modeBeforeFullScreen;
+
+            if (_presentationMode == WindowPresentationMode.NoChrome)
+            {
+                WindowState = FormWindowState.Normal;
+                FormBorderStyle = FormBorderStyle.None;
+                Bounds = Screen.FromControl(this).WorkingArea;
+                TopMost = _kioskModeManager.TopMostInFullScreen;
+            }
+            else
+            {
+                _presentationMode = WindowPresentationMode.Windowed;
+            }
+        }
+
         _menuStrip.Visible = !fullscreen;
         _statusStrip.Visible = !fullscreen;
-        _statusMode.Text = fullscreen ? "Kiosk" : "Windowed";
+        _statusMode.Text = fullscreen
+            ? "Kiosk"
+            : _presentationMode == WindowPresentationMode.NoChrome
+                ? "No chrome"
+                : "Windowed";
+        RefreshKioskChecks();
     }
 
-    private void OnKioskWakeup(object? sender, KioskModeWakeupEventArgs e)
-        => _statusInfo.Text = $"Wakeup: {e.Source}";
+    /// <summary>
+    ///  Ensures Escape always restores the normal window from no-chrome mode; fullscreen
+    ///  Escape handling remains controlled by <see cref="KioskModeManager"/>.
+    /// </summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (keyData == Keys.Escape && _presentationMode == WindowPresentationMode.NoChrome)
+        {
+            ExitNoChromeMode();
+            return true;
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
 }
