@@ -35,10 +35,6 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>false</Private>
     </ProjectReference>
-    <ProjectReference Include="..\WarpClock.Themes.EmberClock\WarpClock.Themes.EmberClock.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <Private>false</Private>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
@@ -59,7 +55,6 @@
       <PluginAssembly Include="..\WarpClock.Themes.Nerd\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.Nerd.dll" />
       <PluginAssembly Include="..\WarpClock.Themes.Scatter\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.Scatter.dll" />
       <PluginAssembly Include="..\WarpClock.Themes.SunFlower\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.SunFlower.dll" />
-      <PluginAssembly Include="..\WarpClock.Themes.EmberClock\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.EmberClock.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(PluginAssembly)" DestinationFolder="$(OutDir)plugins" SkipUnchangedFiles="true" Condition="Exists('%(PluginAssembly.Identity)')" />
   </Target>
