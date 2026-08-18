@@ -74,7 +74,7 @@ internal sealed class ThemeInfoOverlay : IDisposable
     }
 
     /// <summary>Draws the overlay for this frame.</summary>
-    public void Render(ID2DGraphics g, Size client, RenderThemeInfo mode, ThemeInfoPlacement placement)
+    public void Render(ID2DGraphics g, Size client, RenderThemeInfo mode, ThemeInfoPlacement placement, RectangleF faceBounds)
     {
         if (mode == RenderThemeInfo.Never || client.Width < 8 || client.Height < 8)
         {
@@ -89,7 +89,13 @@ internal sealed class ThemeInfoOverlay : IDisposable
         bool twoLines = placement == ThemeInfoPlacement.OnClockFace
             && mode != RenderThemeInfo.FadeAlternateScreenSides;
 
-        EnsureLayout(g, client, twoLines);
+        Size layoutArea = twoLines ? Size.Ceiling(faceBounds.Size) : client;
+        if (layoutArea.Width < 8 || layoutArea.Height < 8)
+        {
+            return;
+        }
+
+        EnsureLayout(g, layoutArea, twoLines);
         if (_glyphs.Count == 0 || _font is null)
         {
             return;
@@ -101,7 +107,7 @@ internal sealed class ThemeInfoOverlay : IDisposable
         Span<float> alpha = _glyphs.Count <= 128 ? stackalloc float[_glyphs.Count] : new float[_glyphs.Count];
         ComputeAlpha(mode, alpha);
 
-        Draw(g, client, kind, alpha);
+        Draw(g, client, kind, alpha, faceBounds);
     }
 
     private DrawKind ResolveDrawKind(RenderThemeInfo mode, ThemeInfoPlacement placement)
@@ -140,7 +146,7 @@ internal sealed class ThemeInfoOverlay : IDisposable
                 break;
 
             case Phase.Gap:
-                alpha.Fill(0f);
+                alpha.Clear();
                 break;
 
             case Phase.FadeIn:
@@ -401,25 +407,25 @@ internal sealed class ThemeInfoOverlay : IDisposable
 
     // ── Drawing ────────────────────────────────────────────────────────────────────────
 
-    private void Draw(ID2DGraphics g, Size client, DrawKind kind, ReadOnlySpan<float> alpha)
+    private void Draw(ID2DGraphics g, Size client, DrawKind kind, ReadOnlySpan<float> alpha, RectangleF faceBounds)
     {
         if (kind == DrawKind.Face)
         {
-            DrawFace(g, client, alpha);
+            DrawFace(g, faceBounds, alpha);
             return;
         }
 
         DrawRotatedSide(g, client, kind == DrawKind.RightRotated, alpha);
     }
 
-    private void DrawFace(ID2DGraphics g, Size client, ReadOnlySpan<float> alpha)
+    private void DrawFace(ID2DGraphics g, RectangleF faceBounds, ReadOnlySpan<float> alpha)
     {
         float totalHeight = _lineHeight * _lineCount;
-        float topY = client.Height / 2f - totalHeight / 2f;
+        float topY = faceBounds.Top + faceBounds.Height / 2f - totalHeight / 2f;
 
         foreach (Glyph glyph in _glyphs)
         {
-            float startX = client.Width / 2f - _lineWidths[glyph.Line] / 2f;
+            float startX = faceBounds.Left + faceBounds.Width / 2f - _lineWidths[glyph.Line] / 2f;
             float x = startX + glyph.Along;
             float y = topY + glyph.Line * _lineHeight;
             DrawGlyph(g, glyph.Ch, x, y, alpha[glyph.Index]);

@@ -1,3 +1,5 @@
+using System.Drawing;
+
 namespace WarpClock.Abstractions;
 
 /// <summary>
@@ -15,6 +17,12 @@ public interface IClockTickContext
 
     /// <summary>The full set of elements the active theme declared.</summary>
     IReadOnlyList<ClockElementDescriptor> Elements { get; }
+
+    /// <summary>
+    ///  The current logical render-surface size in pixels. Existing context
+    ///  implementations default to a square design surface.
+    /// </summary>
+    SizeF SurfaceSize => new(1000f, 1000f);
 
     /// <summary>
     ///  The global face rotation in degrees (clockwise). Rotates non-hand elements

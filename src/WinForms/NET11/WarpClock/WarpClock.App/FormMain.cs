@@ -1,85 +1,130 @@
+using System.ComponentModel;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using WarpClock.Abstractions;
 using WarpClock.Engine;
-using WarpClock.Themes.Builtin;
 
 namespace WarpClock.App;
 
 /// <summary>
 ///  The kiosk demo host: shows a <see cref="WarpClockControl"/> filling the window,
-///  drives it with built-in and drop-in plug-in themes, and demonstrates the .NET 11
+///  drives it with stock and drop-in plug-in themes, and demonstrates the .NET 11
 ///  <see cref="KioskModeManager"/> component for fullscreen / power / wake handling.
 /// </summary>
 public partial class FormMain : Form
 {
+    private readonly bool _designMode = LicenseManager.UsageMode == LicenseUsageMode.Designtime;
     private readonly List<ThemeEntry> _themes = [];
-    private readonly Dictionary<ThemeEntry, ToolStripMenuItem> _themeItems = [];
-    private readonly ThemePluginLoader _pluginLoader;
+    private readonly List<ThemeMenuBinding> _themeMenuItems = [];
+    private readonly ClockSettingsView _clockSettings;
+    private readonly SemaphoreSlim _loadGate = new(1, 1);
+
+    private AppPaths _appPaths;
+    private ThemePluginLoader _pluginLoader;
+    private AppStateStore? _appStateStore;
+    private ThemeListStore? _themeListStore;
+    private AppExceptionRouter? _exceptionRouter;
+    private StartupOptions _startupOptions = StartupOptions.Empty;
+    private ILogger<FormMain> _logger = NullLogger<FormMain>.Instance;
     private FileSystemWatcher? _pluginWatcher;
     private ThemeEntry? _current;
+    private ThemeSelection? _currentSelection;
+    private ClockThemeVariantKind _currentResolvedVariant = ClockThemeVariantKind.Day;
     private Font? _stripFont;
-
-    // Serializes every plug-in discovery pass. The initial load runs on a worker thread
-    // (see OnLoad) while the FileSystemWatcher can fire a hot-reload at any time; both go
-    // through this gate so they can never call the non-thread-safe ThemePluginLoader
-    // concurrently (which would corrupt its internal state and double-load assemblies).
-    private readonly SemaphoreSlim _loadGate = new(1, 1);
 
     public FormMain()
     {
+        _appPaths = new AppPaths();
+        _pluginLoader = new ThemePluginLoader(_appPaths.PluginDirectory, NullLogger<ThemePluginLoader>.Instance);
+
         InitializeComponent();
 
-        _pluginLoader = new ThemePluginLoader(Path.Combine(AppContext.BaseDirectory, "plugins"));
+        _clockSettings = new ClockSettingsView(this, _clock);
+        _themeScheduleTimer = new System.Windows.Forms.Timer();
+        _themeScheduleTimer.Tick += OnThemeScheduleTimerTick;
+        _propertyGrid.PropertyValueChanged += OnClockSettingsPropertyValueChanged;
+        _splitContainer.SplitterMoved += OnSplitContainerSplitterMoved;
+
+        if (_designMode)
+        {
+            return;
+        }
+
         _clock.GraceSeconds = 5;
-
         ApplySystemTextScaleToStrips();
-        RefreshGraceChecks();
-        RefreshSpeedChecks();
-        RefreshKioskChecks();
-
-        _miVSync.Checked = _clock.VSyncEnabled;
-        _fpsTimer.Start();
-
-        // Built-in themes are in-memory and instantaneous, so loading them and selecting
-        // the first one here keeps the clock populated the moment the window appears.
-        LoadBuiltInThemes();
+        RefreshAllSettingChecks();
+        LoadStockThemes();
 
         if (_themes.Count > 0)
         {
-            SelectTheme(_themes[0]);
+            SelectTheme(new ThemeSelection(_themes[0], explicitVariant: null), ThemeSelectionReason.DefaultStartup, applyThemeDefaults: true);
         }
 
-        // NOTE: plug-in discovery (disk enumeration + assembly loading + reflection) and
-        // the FileSystemWatcher are deliberately NOT started here. Doing that work in the
-        // constructor would block startup, cannot be awaited, and would run before this
-        // form owns a window handle (so progress reporting via InvokeAsync would throw).
-        // It is deferred to OnLoad instead — see below.
+        _fpsTimer.Start();
+    }
+
+    public FormMain(
+        AppPaths appPaths,
+        ThemePluginLoader pluginLoader,
+        AppStateStore appStateStore,
+        ThemeListStore themeListStore,
+        AppExceptionRouter exceptionRouter,
+        StartupOptions startupOptions,
+        ILogger<FormMain> logger)
+        : this()
+    {
+        ArgumentNullException.ThrowIfNull(appPaths);
+        ArgumentNullException.ThrowIfNull(pluginLoader);
+        ArgumentNullException.ThrowIfNull(appStateStore);
+        ArgumentNullException.ThrowIfNull(themeListStore);
+        ArgumentNullException.ThrowIfNull(exceptionRouter);
+        ArgumentNullException.ThrowIfNull(startupOptions);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        _appPaths = appPaths;
+        _pluginLoader = pluginLoader;
+        _appStateStore = appStateStore;
+        _themeListStore = themeListStore;
+        _exceptionRouter = exceptionRouter;
+        _startupOptions = startupOptions;
+        _logger = logger;
+
+        _exceptionRouter.Start(this, ReportRecoverableExceptionStatus);
     }
 
     /// <summary>
     ///  Deferred, awaitable initialization. By the time <see cref="OnLoad"/> runs the
-    ///  window handle exists, so we can run the heavy plug-in discovery on a worker
-    ///  thread and safely marshal status/UI updates back via <c>InvokeAsync</c>.
+    ///  window handle exists, so heavy plug-in discovery can happen on a worker thread
+    ///  and UI updates can be marshaled safely back through <see cref="Control.InvokeAsync"/>.
     /// </summary>
     protected override async void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
-        RestoreWindowSettings();
+
+        if (_designMode)
+        {
+            return;
+        }
 
         try
         {
-            // Heavy work off the constructor / UI thread …
+            RestorePersistedState();
             await LoadPluginsAsync(initial: true);
+            LoadThemeSchedule();
+            ApplyLoadedClockState();
 
-            // … and only AFTER the initial load completes do we start watching the folder.
-            // Enabling the watcher earlier would let a file drop during startup trigger a
-            // reload that races the worker-thread initial load.
+            ThemeSelection startupSelection = ResolveStartupThemeSelection(out ThemeSelectionReason reason);
+            SelectTheme(
+                startupSelection,
+                reason,
+                applyThemeDefaults: !HasLoadedClockState && ShouldApplyThemeDefaultsOnThemeChange());
+            StartDiagnosticsIfRequested();
             EnablePluginWatcher();
         }
         catch (Exception ex)
         {
-            // OnLoad is an `async void` override: just like an async void event handler it
-            // MUST catch, otherwise an exception here would crash the application.
-            _statusInfo.Text = $"Plug-in load failed: {ex.Message}";
+            _logger.LogError(ex, "WarpClock startup failed.");
+            _statusInfo.Text = $"Startup failed: {ex.Message}";
         }
     }
 
@@ -108,77 +153,312 @@ public partial class FormMain : Form
         oldFont?.Dispose();
     }
 
-    /// <summary>
-    ///  Persists the last sane windowed bounds, presentation mode, and kiosk options.
-    /// </summary>
+    private void ReportRecoverableExceptionStatus(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        _statusInfo.Text = message;
+    }
+
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
         base.OnFormClosing(e);
 
         if (!e.Cancel)
         {
-            SaveWindowSettings();
+            PersistCurrentAppState();
         }
     }
 
-    /// <summary>
-    ///  Tracks only completed, normal window resizes; fullscreen, no-chrome, minimized,
-    ///  and off-screen rectangles are intentionally excluded from persisted bounds.
-    /// </summary>
     protected override void OnResizeEnd(EventArgs e)
     {
         base.OnResizeEnd(e);
         CaptureWindowedBounds();
     }
 
-    /// <summary>
-    ///  Disposes the runtime resources that were created in regular code (not by the
-    ///  Designer), so they live outside the Designer's <c>Dispose(bool)</c>.
-    /// </summary>
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         _pluginWatcher?.Dispose();
+        _themeScheduleTimer?.Dispose();
         _loadGate.Dispose();
+        StopDiagnostics();
+        _exceptionRouter?.Stop();
         _stripFont?.Dispose();
         _stripFont = null;
         base.OnFormClosed(e);
     }
 
-    private void LoadBuiltInThemes()
+    private void LoadStockThemes()
     {
-        foreach (IClockTheme theme in BuiltInThemes.All())
+        foreach (Func<IClockTheme> factory in s_stockThemeFactories)
         {
-            AddThemeEntry(new ThemeEntry(theme, theme.Name, "built-in"));
+            AddThemeEntry(factory(), StockThemeSource);
+        }
+
+        RebuildThemeMenuItems();
+    }
+
+    private void AddThemeEntry(IClockTheme familyTheme, string source)
+    {
+        string familyName = GetThemeFamilyName(familyTheme);
+        ThemeCatalogInfo catalog = new()
+        {
+            ThemeKey = ThemeCatalogInfo.CreateThemeKey(source, familyName, familyTheme.GetType()),
+            FamilyName = familyName,
+            Source = source,
+            SupportedVariants = familyTheme.SupportedVariants,
+        };
+
+        ThemeEntry? existing = _themes.FirstOrDefault(candidate =>
+            ThemeCatalogInfo.ThemeKeysMatch(candidate.Catalog.ThemeKey, catalog.ThemeKey));
+
+        if (existing is not null)
+        {
+            if (string.Equals(existing.Catalog.Source, StockThemeSource, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(source, StockThemeSource, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogDebug(
+                    "Ignoring plug-in theme family {ThemeKey} from {Source} because the stock theme already owns that logical id.",
+                    catalog.ThemeKey,
+                    source);
+                return;
+            }
+
+            existing.Update(familyTheme, catalog);
+            _logger.LogDebug("Updated theme family {ThemeKey}.", catalog.ThemeKey);
+            return;
+        }
+
+        ThemeEntry entry = new(familyTheme, catalog);
+        _themes.Add(entry);
+    }
+
+    private void RebuildThemeMenuItems()
+    {
+        int separatorIndex = _themeMenu.DropDownItems.IndexOf(_themeMenuSeparator);
+        if (separatorIndex < 0)
+        {
+            separatorIndex = _themeMenu.DropDownItems.Count;
+        }
+
+        while (separatorIndex > 0)
+        {
+            _themeMenu.DropDownItems.RemoveAt(0);
+            separatorIndex--;
+        }
+
+        _themeMenuItems.Clear();
+
+        foreach (ThemeEntry entry in _themes)
+        {
+            AddThemeMenuItems(entry);
+        }
+
+        if (_current is not null)
+        {
+            UpdateThemeChecks(_current, _currentResolvedVariant);
         }
     }
 
-    /// <summary>
-    ///  Runs one plug-in discovery pass. Discovery (folder scan + assembly load +
-    ///  reflection) happens on a worker thread; the resulting UI mutation (menu items,
-    ///  status text) is marshaled back to the UI thread. All passes are serialized via
-    ///  <see cref="_loadGate"/> so the worker-thread initial load and a watcher-triggered
-    ///  hot-reload can never enter the non-thread-safe loader at the same time.
-    /// </summary>
-    /// <param name="initial">
-    ///  <see langword="true"/> for the one-time startup load (stays quiet when nothing is
-    ///  found); <see langword="false"/> for an explicit/hot reload (reports "none found").
-    /// </param>
+    private void AddThemeMenuItems(ThemeEntry entry)
+    {
+        int insertIndex = _themeMenu.DropDownItems.IndexOf(_themeMenuSeparator);
+        if (insertIndex < 0)
+        {
+            insertIndex = _themeMenu.DropDownItems.Count;
+        }
+
+        if (entry.Catalog.SupportedVariants.Count > 1)
+        {
+            ToolStripMenuItem familyMenu = new(entry.Catalog.FamilyName);
+
+            foreach (ClockThemeVariantKind variant in entry.Catalog.SupportedVariants)
+            {
+                ToolStripMenuItem variantItem = new(ClockThemeVariants.GetLabel(variant))
+                {
+                    Tag = new ThemeSelection(entry, variant),
+                };
+
+                variantItem.Click += OnThemeSelected;
+                familyMenu.DropDownItems.Add(variantItem);
+                _themeMenuItems.Add(new ThemeMenuBinding((ThemeSelection)variantItem.Tag, variantItem));
+            }
+
+            _themeMenu.DropDownItems.Insert(insertIndex, familyMenu);
+            return;
+        }
+
+        ToolStripMenuItem item = new(entry.Catalog.FamilyName)
+        {
+            Tag = new ThemeSelection(entry, explicitVariant: null),
+        };
+        item.Click += OnThemeSelected;
+        _themeMenu.DropDownItems.Insert(insertIndex, item);
+        _themeMenuItems.Add(new ThemeMenuBinding((ThemeSelection)item.Tag, item));
+    }
+
+    private void OnThemeSelected(object? sender, EventArgs e)
+    {
+        if (sender is ToolStripMenuItem { Tag: ThemeSelection selection })
+        {
+            SelectTheme(selection, ThemeSelectionReason.Manual, ShouldApplyThemeDefaultsOnThemeChange());
+        }
+    }
+
+    private void SelectTheme(ThemeSelection selection, ThemeSelectionReason reason, bool applyThemeDefaults)
+    {
+        ThemeSchedulePeriod period = GetCurrentThemePeriod();
+        bool preferOledVariants = GetOledViewEnabled();
+        ClockThemeVariantKind resolvedVariant = selection.Entry.Catalog.ResolveVariant(selection.ExplicitVariant, period, preferOledVariants);
+        IClockTheme concreteTheme = selection.Entry.ResolveTheme(selection.ExplicitVariant, period, preferOledVariants);
+        bool themeChanged = !ReferenceEquals(_current, selection.Entry)
+            || _currentResolvedVariant != resolvedVariant;
+
+        _current = selection.Entry;
+        _currentSelection = selection;
+        _currentResolvedVariant = resolvedVariant;
+        _clock.Theme = concreteTheme;
+        ApplyEffectiveThemeInfoMode();
+
+        if (applyThemeDefaults)
+        {
+            _clock.MagneticNumerals = concreteTheme.Capabilities.MagneticByDefault;
+        }
+
+        _miMagnetic.Checked = _clock.MagneticNumerals;
+        UpdateThemeChecks(selection.Entry, _currentResolvedVariant);
+
+        _propertyGrid.Refresh();
+
+        _statusInfo.Text = $"Theme: {concreteTheme.Name} ({selection.Entry.Catalog.Source})"
+            + (concreteTheme.Capabilities.FreeFloating ? " — free-floating" : string.Empty)
+            + (_clock.MagneticNumerals ? " — magnetic" : string.Empty);
+
+        _logger.LogInformation(
+            "Selected theme {ThemeName} from {Source}. Reason={Reason}",
+            concreteTheme.Name,
+            selection.Entry.Catalog.Source,
+            reason);
+
+        if (themeChanged)
+        {
+            RestartFrameRateRecordingForThemeChange(reason);
+        }
+    }
+
+    private void UpdateThemeChecks(ThemeEntry selectedEntry, ClockThemeVariantKind resolvedVariant)
+    {
+        foreach (ThemeMenuBinding binding in _themeMenuItems)
+        {
+            bool sameEntry = ReferenceEquals(binding.Selection.Entry, selectedEntry);
+            bool shouldCheck = sameEntry
+                && (selectedEntry.Catalog.SupportedVariants.Count == 1
+                    || binding.Selection.ExplicitVariant == resolvedVariant);
+
+            binding.Item.Checked = shouldCheck;
+        }
+    }
+
+    private static string GetThemeFamilyName(IClockTheme theme)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+
+        if (theme.SupportedVariants.Count > 1)
+        {
+            foreach (ClockThemeVariantKind variant in theme.SupportedVariants)
+            {
+                string suffix = " - " + ClockThemeVariants.GetLabel(variant);
+                if (theme.Name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return theme.Name[..^suffix.Length];
+                }
+            }
+        }
+
+        return theme.Name;
+    }
+
+    private IReadOnlyList<ThemeCatalogInfo> GetThemeCatalogSnapshot()
+        => _themes.Select(entry => entry.Catalog).ToList();
+
+    private bool TryResolveThemeReference(ThemeReference? reference, out ThemeSelection? selection)
+    {
+        selection = null;
+        if (reference is null || string.IsNullOrWhiteSpace(reference.ThemeKey))
+        {
+            return false;
+        }
+
+        ThemeReferenceUtility.Normalize(reference);
+        ThemeEntry? entry = _themes.FirstOrDefault(candidate =>
+            ThemeCatalogInfo.ThemeKeysMatch(candidate.Catalog.ThemeKey, reference.ThemeKey));
+
+        if (entry is null)
+        {
+            return false;
+        }
+
+        ClockThemeVariantKind? explicitVariant = reference.Variant;
+        if (explicitVariant is ClockThemeVariantKind variant && !entry.Catalog.SupportsVariant(variant))
+        {
+            explicitVariant = null;
+        }
+
+        selection = new ThemeSelection(entry, explicitVariant);
+        return true;
+    }
+
+    private bool TryResolveThemeToken(string token, out ThemeSelection? selection)
+    {
+        selection = null;
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return false;
+        }
+
+        string trimmed = token.Trim();
+        string normalizedToken = ThemeCatalogInfo.NormalizeThemeKey(trimmed);
+        foreach (ThemeEntry entry in _themes)
+        {
+            if (ThemeCatalogInfo.ThemeKeysMatch(entry.Catalog.ThemeKey, normalizedToken)
+                || string.Equals(entry.Catalog.FamilyName, trimmed, StringComparison.OrdinalIgnoreCase))
+            {
+                selection = new ThemeSelection(entry, explicitVariant: null);
+                return true;
+            }
+
+            foreach (ClockThemeVariantKind variant in entry.Catalog.SupportedVariants)
+            {
+                string display = entry.Catalog.GetConcreteDisplayName(variant, ThemeSchedulePeriod.Day);
+                if (string.Equals(display, trimmed, StringComparison.OrdinalIgnoreCase))
+                {
+                    selection = new ThemeSelection(entry, variant);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // ── Plug-in loading / hot-loading ──
+
     private async Task LoadPluginsAsync(bool initial)
     {
         await _loadGate.WaitAsync();
 
         try
         {
-            // Status reporting is best-effort: only marshal when a handle exists, because
-            // InvokeAsync throws if the control has no window handle (e.g. during teardown).
             if (IsHandleCreated)
             {
                 await InvokeAsync(() => _statusInfo.Text = "Scanning for plug-in themes…");
             }
 
-            // The expensive part runs on the thread pool and touches no controls.
-            IReadOnlyList<DiscoveredTheme> found =
-                await Task.Run(() => _pluginLoader.LoadNew());
+            IReadOnlyList<DiscoveredTheme> found = await Task.Run(_pluginLoader.LoadNew);
 
             if (found.Count == 0)
             {
@@ -190,19 +470,39 @@ public partial class FormMain : Form
                 return;
             }
 
-            // UI-bound collections (the theme menu and backing lists) may only be touched
-            // on the UI thread, so the additions are marshaled back here.
             if (IsHandleCreated)
             {
                 await InvokeAsync(() =>
                 {
+                    bool changed = false;
                     foreach (DiscoveredTheme discovered in found)
                     {
-                        AddThemeEntry(new ThemeEntry(discovered.Theme, discovered.DisplayName, discovered.SourceFile));
+                        AddThemeEntry(discovered.Theme, discovered.SourceFile);
+                        changed = true;
+                    }
+
+                    if (changed)
+                    {
+                        RebuildThemeMenuItems();
+                    }
+
+                    if (_themeSchedule is not null)
+                    {
+                        ThemeSelection? scheduled = TryGetScheduledThemeSelection();
+                        if (scheduled is not null)
+                        {
+                            SelectTheme(scheduled, ThemeSelectionReason.PluginReload, ShouldApplyThemeDefaultsOnThemeChange());
+                        }
+
+                        ScheduleNextThemeRotation();
+                    }
+                    else if (_currentSelection is not null)
+                    {
+                        SelectTheme(_currentSelection, ThemeSelectionReason.PluginReload, applyThemeDefaults: false);
                     }
 
                     int added = found.Count;
-                    _statusInfo.Text = $"Loaded {added} new plug-in theme{(added == 1 ? string.Empty : "s")}.";
+                    _statusInfo.Text = $"Loaded or reloaded {added} plug-in theme family{(added == 1 ? string.Empty : "s")}.";
                 });
             }
         }
@@ -212,42 +512,52 @@ public partial class FormMain : Form
         }
     }
 
-    private void AddThemeEntry(ThemeEntry entry)
-    {
-        var item = new ToolStripMenuItem(entry.Display) { Tag = entry };
-        item.Click += OnThemeSelected;
-        _themes.Add(entry);
-        _themeItems[entry] = item;
-        _themeMenu.DropDownItems.Add(item);
-    }
+    private void OnReloadPluginsClick(object? sender, EventArgs e) => _ = ReloadPluginsAsync();
 
-    private void OnThemeSelected(object? sender, EventArgs e)
+    private void EnablePluginWatcher()
     {
-        if (sender is ToolStripMenuItem { Tag: ThemeEntry entry })
+        try
         {
-            SelectTheme(entry);
+            Directory.CreateDirectory(_pluginLoader.PluginDirectory);
+
+            _pluginWatcher = new FileSystemWatcher(_pluginLoader.PluginDirectory, "*.dll")
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite,
+            };
+            _pluginWatcher.Created += OnPluginFileChanged;
+            _pluginWatcher.Changed += OnPluginFileChanged;
+            _pluginWatcher.EnableRaisingEvents = true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not enable the plug-in watcher for {Path}.", _pluginLoader.PluginDirectory);
         }
     }
 
-    private void SelectTheme(ThemeEntry entry)
+    private void OnPluginFileChanged(object sender, FileSystemEventArgs e) => _ = ReloadPluginsAsync();
+
+    private async Task ReloadPluginsAsync()
     {
-        _current = entry;
-        _clock.Theme = entry.Theme;
-
-        // A theme may ask the host to start in Magnetic-numerals mode (e.g. the Scatter
-        // demo). Magnetism stays a clock-control property; this just sets a sensible
-        // default on selection, and the user can still toggle it from the View menu.
-        _clock.MagneticNumerals = entry.Theme.Capabilities.MagneticByDefault;
-        _miMagnetic.Checked = _clock.MagneticNumerals;
-
-        foreach ((ThemeEntry candidate, ToolStripMenuItem item) in _themeItems)
+        try
         {
-            item.Checked = ReferenceEquals(candidate, entry);
+            await LoadPluginsAsync(initial: false);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Plug-in reload failed.");
 
-        _statusInfo.Text = $"Theme: {entry.Display} ({entry.Source})" +
-            (entry.Theme.Capabilities.FreeFloating ? " — free-floating" : string.Empty) +
-            (_clock.MagneticNumerals ? " — magnetic" : string.Empty);
+            if (IsHandleCreated)
+            {
+                try
+                {
+                    await InvokeAsync(() => _statusInfo.Text = $"Plug-in reload failed: {ex.Message}");
+                }
+                catch (Exception invokeEx)
+                {
+                    _logger.LogWarning(invokeEx, "Could not report the plug-in reload failure on the UI thread.");
+                }
+            }
+        }
     }
 
     // ── Motion menu handlers ──
@@ -264,18 +574,21 @@ public partial class FormMain : Form
     private void SetSecondMotion(ClockHandMotion motion)
     {
         _clock.SecondMotion = motion;
+        MarkClockSettingsCustomized();
         _statusInfo.Text = $"Second hand: {motion}";
     }
 
     private void SetMinuteMotion(ClockHandMotion motion)
     {
         _clock.MinuteMotion = motion;
+        MarkClockSettingsCustomized();
         _statusInfo.Text = $"Minute hand: {motion}";
     }
 
     private void SetHourMotion(ClockHandMotion motion)
     {
         _clock.HourMotion = motion;
+        MarkClockSettingsCustomized();
         _statusInfo.Text = $"Hour hand: {motion}";
     }
 
@@ -321,8 +634,7 @@ public partial class FormMain : Form
         ToolStripMenuItem fastTick,
         ToolStripMenuItem tick)
     {
-        // A free-floating theme cannot crawl; reflect that in the menu.
-        bool freeFloating = _current?.Theme.Capabilities.FreeFloating == true;
+        bool freeFloating = _current?.FamilyTheme.Capabilities.FreeFloating == true;
         crawling.Enabled = !freeFloating;
         crawling.Checked = current == ClockHandMotion.Crawling;
         sweep.Checked = current == ClockHandMotion.Sweep;
@@ -337,7 +649,7 @@ public partial class FormMain : Form
         if (sender is ToolStripMenuItem { Tag: int seconds })
         {
             _clock.GraceSeconds = seconds;
-            RefreshGraceChecks();
+            MarkClockSettingsCustomized();
             _statusInfo.Text = $"Grace catch-up: {seconds}s";
         }
     }
@@ -363,7 +675,7 @@ public partial class FormMain : Form
             }
 
             _clock.SpeedMultiplier = speed;
-            RefreshSpeedChecks();
+            MarkClockSettingsCustomized();
             _statusInfo.Text = $"Speed: {speed:0}x";
         }
     }
@@ -380,9 +692,6 @@ public partial class FormMain : Form
 
     private void OnKioskClick(object? sender, EventArgs e) => _kioskModeManager.ToggleFullScreen();
 
-    /// <summary>
-    ///  Syncs all kiosk menu check marks with the live manager and presentation state.
-    /// </summary>
     private void RefreshKioskChecks()
     {
         _miKiosk.Checked = _kioskModeManager.FullScreen;
@@ -471,29 +780,31 @@ public partial class FormMain : Form
     private void OnMagneticClick(object? sender, EventArgs e)
     {
         _clock.MagneticNumerals = !_clock.MagneticNumerals;
-        _miMagnetic.Checked = _clock.MagneticNumerals;
+        MarkClockSettingsCustomized();
         _statusInfo.Text = $"Magnetic numerals: {(_clock.MagneticNumerals ? "On" : "Off")}";
     }
 
     private void OnVSyncClick(object? sender, EventArgs e)
     {
         _clock.VSyncEnabled = !_clock.VSyncEnabled;
-        _miVSync.Checked = _clock.VSyncEnabled;
+        MarkClockSettingsCustomized();
         _statusInfo.Text = $"VSync: {(_clock.VSyncEnabled ? "On" : "Off")}";
     }
 
-    // Polls the clock's smoothed frame rate at the timer's 200 ms cadence so the readout
-    // updates a few times a second without churning the status bar every frame.
     private void OnFpsTimerTick(object? sender, EventArgs e)
-        => _statusFps.Text = $"{_clock.CurrentFramesPerSecond:0} fps";
+    {
+        _statusFps.Text = $"{_clock.CurrentFramesPerSecond:0} fps";
+        RecordCurrentFrameRateSample();
+    }
 
     // ── Theme-info overlay menu ──
 
     private void OnThemeInfoModeClick(object? sender, EventArgs e)
     {
-        RenderThemeInfo mode = ThemeInfoModeFor(sender);
-        _clock.RenderThemeInfo = mode;
-        _statusInfo.Text = $"Theme info: {mode}";
+        _preferredThemeInfoMode = ThemeInfoModeFor(sender);
+        ApplyEffectiveThemeInfoMode();
+        MarkClockSettingsCustomized();
+        _statusInfo.Text = $"Theme info preference: {_preferredThemeInfoMode}";
     }
 
     private RenderThemeInfo ThemeInfoModeFor(object? sender)
@@ -506,20 +817,14 @@ public partial class FormMain : Form
 
     private void OnThemeInfoOpening(object? sender, EventArgs e)
     {
-        RenderThemeInfo mode = _clock.RenderThemeInfo;
-        _miInfoNever.Checked = mode == RenderThemeInfo.Never;
-        _miInfoFixed.Checked = mode == RenderThemeInfo.FixedPosition;
-        _miInfoFadeFixed.Checked = mode == RenderThemeInfo.FadeInAndOutAtFixedPosition;
-        _miInfoFadeSides.Checked = mode == RenderThemeInfo.FadeAlternateScreenSides;
-
-        // Placement only applies to the fixed-position render modes.
-        _placementMenu.Enabled = mode is RenderThemeInfo.FixedPosition or RenderThemeInfo.FadeInAndOutAtFixedPosition;
+        RefreshThemeInfoMenuState();
     }
 
     private void OnThemeInfoPlacementClick(object? sender, EventArgs e)
     {
         ThemeInfoPlacement placement = ThemeInfoPlacementFor(sender);
         _clock.ThemeInfoPlacement = placement;
+        MarkClockSettingsCustomized();
         _statusInfo.Text = $"Theme info placement: {placement}";
     }
 
@@ -540,94 +845,31 @@ public partial class FormMain : Form
 
     private void OnTogglePropertiesClick(object? sender, EventArgs e)
     {
-        if (_splitContainer.Panel2Collapsed && _propertyGrid.Parent is null)
+        if (_splitContainer.Panel2Collapsed)
         {
-            _splitContainer.Panel2.Controls.Add(_propertyGrid);
-            _propertyGrid.SelectedObject = _clock;
+            if (_propertyGrid.Parent is null)
+            {
+                _splitContainer.Panel2.Controls.Add(_propertyGrid);
+            }
+
+            _propertyGrid.SelectedObject = _clockSettings;
+            _splitContainer.Panel2Collapsed = false;
+            ApplyPropertyPanelWidth();
+        }
+        else
+        {
+            if (_splitContainer.Panel2.Width > 0)
+            {
+                _propertyPanelWidth = _splitContainer.Panel2.Width;
+            }
+
+            _splitContainer.Panel2Collapsed = true;
         }
 
-        _splitContainer.Panel2Collapsed = !_splitContainer.Panel2Collapsed;
         _miProperties.Checked = !_splitContainer.Panel2Collapsed;
     }
 
     private void OnExitClick(object? sender, EventArgs e) => Close();
-
-    // ── Plug-in menu handlers + hot-loading ──
-
-    private void OnReloadPluginsClick(object? sender, EventArgs e) => _ = ReloadPluginsAsync();
-
-    private void OnOpenPluginsFolderClick(object? sender, EventArgs e) => OpenPluginFolder();
-
-    private void EnablePluginWatcher()
-    {
-        try
-        {
-            Directory.CreateDirectory(_pluginLoader.PluginDirectory);
-
-            _pluginWatcher = new FileSystemWatcher(_pluginLoader.PluginDirectory, "*.dll")
-            {
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite,
-            };
-            _pluginWatcher.Created += OnPluginFileChanged;
-            _pluginWatcher.Changed += OnPluginFileChanged;
-
-            // Enabled only now — after the initial load — so a DLL dropped during startup
-            // cannot trigger a reload that overlaps the worker-thread initial load.
-            _pluginWatcher.EnableRaisingEvents = true;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Hot-loading is best-effort; the menu's Reload command still works.
-        }
-    }
-
-    private void OnPluginFileChanged(object sender, FileSystemEventArgs e)
-    {
-        // This fires on a thread-pool thread. We do NOT marshal here: LoadPluginsAsync
-        // does its own UI marshaling and is serialized via _loadGate, so it is safe to
-        // kick off from any thread and cannot race the initial load.
-        _ = ReloadPluginsAsync();
-    }
-
-    private async Task ReloadPluginsAsync()
-    {
-        try
-        {
-            await LoadPluginsAsync(initial: false);
-        }
-        catch (Exception ex)
-        {
-            // Fire-and-forget entry point: swallow nothing silently, but never let an
-            // exception escape an unobserved Task.
-            if (IsHandleCreated)
-            {
-                try
-                {
-                    await InvokeAsync(() => _statusInfo.Text = $"Plug-in reload failed: {ex.Message}");
-                }
-                catch
-                {
-                    // The handle may have gone away during shutdown; nothing to report to.
-                }
-            }
-        }
-    }
-
-    private void OpenPluginFolder()
-    {
-        Directory.CreateDirectory(_pluginLoader.PluginDirectory);
-
-        using var process = new System.Diagnostics.Process
-        {
-            StartInfo = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = _pluginLoader.PluginDirectory,
-                UseShellExecute = true,
-            },
-        };
-
-        process.Start();
-    }
 
     // ── Kiosk component events ──
 
@@ -641,6 +883,11 @@ public partial class FormMain : Form
 
             if (_presentationMode == WindowPresentationMode.Windowed)
             {
+                if (WindowState != FormWindowState.Minimized)
+                {
+                    _windowedWindowState = WindowState;
+                }
+
                 Rectangle windowedBounds = RestoreBounds;
                 if (IsSaneWindowedBounds(windowedBounds))
                 {
@@ -664,6 +911,11 @@ public partial class FormMain : Form
             else
             {
                 _presentationMode = WindowPresentationMode.Windowed;
+
+                if (_windowedWindowState == FormWindowState.Maximized)
+                {
+                    WindowState = FormWindowState.Maximized;
+                }
             }
         }
 

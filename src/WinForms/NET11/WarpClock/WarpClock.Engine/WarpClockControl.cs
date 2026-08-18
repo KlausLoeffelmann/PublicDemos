@@ -1,10 +1,7 @@
 using System.ComponentModel;
-using System.Drawing;
-
 using WarpClock.Abstractions;
 using WarpToolkit.WinForms.DirectX.Controls;
 using WarpToolkit.WinForms.DirectX.D2D;
-using WarpToolkit.Windows.Interop.PrecisionTimer;
 
 namespace WarpClock.Engine;
 
@@ -21,16 +18,12 @@ public sealed class WarpClockControl : D2DPanel
     private readonly ClockTimeModel _timeModel = new();
     private readonly HandPointingSolver _solver = new();
     private readonly MagneticNumeralSolver _magneticSolver = new();
+    private readonly OledViewTransformController _oledViewTransform = new();
     private readonly DefaultClockLayout _defaultLayout = new();
     private readonly Dictionary<ClockElementId, ElementRuntime> _runtime = [];
-    private readonly Action _frameAction;
-
-    private readonly HighPrecisionTimer _timer = new();
-    private TimerRegistration? _registration;
-    private int _framePending;
-    private long _lastFrameTimestamp;
 
     private IClockTheme? _theme;
+    private bool _themeChangePending;
     private IClockLayout? _activeLayout;
     private IClockElementRenderer? _renderer;
     private IThemeAnimator? _animator;
@@ -40,10 +33,17 @@ public sealed class WarpClockControl : D2DPanel
     private readonly ThemeInfoOverlay _themeInfoOverlay = new();
 
     private SizeF _surface = new(2, 2);
+    private ClockGeometry _sceneGeometry = ClockGeometry.ForSurface(new SizeF(2, 2));
     private float _faceRotation;
     private int _graceSeconds = 5;
     private float _glideDurationSeconds = 0.5f;
+    private ClockHandMotion _secondMotion = ClockHandMotion.Crawling;
+    private ClockHandMotion _minuteMotion = ClockHandMotion.Crawling;
+    private ClockHandMotion _hourMotion = ClockHandMotion.Crawling;
     private bool _magneticNumerals;
+    private OledViewMode _oledView;
+    private float _currentOledViewScale = 1f;
+    private Point _currentOledViewOffset;
     private RenderThemeInfo _renderThemeInfo = RenderThemeInfo.FadeAlternateScreenSides;
     private ThemeInfoPlacement _themeInfoPlacement = ThemeInfoPlacement.LeftScreenSide;
     private bool _sceneBuilt;
@@ -54,14 +54,11 @@ public sealed class WarpClockControl : D2DPanel
     {
         DoubleBuffered = false;
         BackColor = Color.Black;
-        RenderMode = RenderMode.D2DWinFormsClassic;
+        RenderMode = RenderMode.D2DDedicatedRenderThread;
         PreserveLastFrame = true;
+        VSyncEnabled = true;
+        TargetFrameRate = 60d;
 
-        // VSync is off by default; the high-precision frame loop paces presentation. The
-        // host exposes this as a View-menu toggle.
-        VSyncEnabled = false;
-
-        _frameAction = RenderFrameOnUiThread;
         RenderBackground += OnRenderBackground;
         Render += OnRenderForeground;
     }
@@ -69,15 +66,27 @@ public sealed class WarpClockControl : D2DPanel
     /// <summary>The most recent smoothed render frame rate (frames per second).</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public double CurrentFramesPerSecond => _framesPerSecond;
+    public double CurrentFramesPerSecond => Volatile.Read(ref _framesPerSecond);
 
     /// <summary>How (and whether) the "{theme} - {author}" info overlay is rendered.</summary>
     [Browsable(true)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public RenderThemeInfo RenderThemeInfo
     {
-        get => _renderThemeInfo;
-        set => _renderThemeInfo = value;
+        get
+        {
+            lock (_sync)
+            {
+                return _renderThemeInfo;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _renderThemeInfo = value;
+            }
+        }
     }
 
     /// <summary>Where the info overlay sits for the fixed-position render modes.</summary>
@@ -85,8 +94,76 @@ public sealed class WarpClockControl : D2DPanel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public ThemeInfoPlacement ThemeInfoPlacement
     {
-        get => _themeInfoPlacement;
-        set => _themeInfoPlacement = value;
+        get
+        {
+            lock (_sync)
+            {
+                return _themeInfoPlacement;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _themeInfoPlacement = value;
+            }
+        }
+    }
+
+    /// <summary>
+    ///  Applies a scene-wide anti-burn-in view transform independently of the active theme.
+    /// </summary>
+    [Browsable(true)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public OledViewMode OledView
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _oledView;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                if (_oledView == value)
+                {
+                    return;
+                }
+
+                _oledView = value;
+            }
+        }
+    }
+
+    /// <summary>The scene-wide scale currently applied by <see cref="OledView"/>.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public float CurrentOledViewScale
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _currentOledViewScale;
+            }
+        }
+    }
+
+    /// <summary>The pixel offset currently applied by <see cref="OledView"/>.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Point CurrentOledViewOffset
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _currentOledViewOffset;
+            }
+        }
     }
 
     // ── Public configuration ──
@@ -96,16 +173,25 @@ public sealed class WarpClockControl : D2DPanel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IClockTheme? Theme
     {
-        get => _theme;
+        get
+        {
+            lock (_sync)
+            {
+                return _theme;
+            }
+        }
         set
         {
-            if (ReferenceEquals(_theme, value))
+            lock (_sync)
             {
-                return;
-            }
+                if (ReferenceEquals(_theme, value))
+                {
+                    return;
+                }
 
-            _theme = value;
-            ActivateTheme();
+                _theme = value;
+                _themeChangePending = true;
+            }
         }
     }
 
@@ -114,24 +200,84 @@ public sealed class WarpClockControl : D2DPanel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public int GraceSeconds
     {
-        get => _graceSeconds;
-        set => _graceSeconds = Math.Clamp(value, 1, 30);
+        get
+        {
+            lock (_sync)
+            {
+                return _graceSeconds;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _graceSeconds = Math.Clamp(value, 1, 30);
+            }
+        }
     }
 
     /// <summary>Second-hand motion in a radial layout. <see cref="ClockHandMotion.Crawling"/> is disabled when the theme is free-floating.</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public ClockHandMotion SecondMotion { get; set; } = ClockHandMotion.Crawling;
+    public ClockHandMotion SecondMotion
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _secondMotion;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _secondMotion = value;
+            }
+        }
+    }
 
     /// <summary>Minute-hand motion in a radial layout.</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public ClockHandMotion MinuteMotion { get; set; } = ClockHandMotion.Crawling;
+    public ClockHandMotion MinuteMotion
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _minuteMotion;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _minuteMotion = value;
+            }
+        }
+    }
 
     /// <summary>Hour-hand motion in a radial layout.</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public ClockHandMotion HourMotion { get; set; } = ClockHandMotion.Crawling;
+    public ClockHandMotion HourMotion
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _hourMotion;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _hourMotion = value;
+            }
+        }
+    }
 
     /// <summary>
     ///  The ease-in-out glide duration (seconds) used by <see cref="ClockHandMotion.Sweep"/>
@@ -142,8 +288,20 @@ public sealed class WarpClockControl : D2DPanel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public float GlideDurationSeconds
     {
-        get => _glideDurationSeconds;
-        set => _glideDurationSeconds = Math.Clamp(value, 0.1f, 5f);
+        get
+        {
+            lock (_sync)
+            {
+                return _glideDurationSeconds;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _glideDurationSeconds = Math.Clamp(value, 0.1f, 5f);
+            }
+        }
     }
 
     /// <summary>A demo time offset added to the real wall clock.</summary>
@@ -151,8 +309,20 @@ public sealed class WarpClockControl : D2DPanel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public TimeSpan TimeOffset
     {
-        get => _timeModel.TimeOffset;
-        set => _timeModel.TimeOffset = value;
+        get
+        {
+            lock (_sync)
+            {
+                return _timeModel.TimeOffset;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _timeModel.TimeOffset = value;
+            }
+        }
     }
 
     /// <summary>A demo speed multiplier. 1.0 is real time.</summary>
@@ -160,8 +330,20 @@ public sealed class WarpClockControl : D2DPanel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public double SpeedMultiplier
     {
-        get => _timeModel.SpeedMultiplier;
-        set => _timeModel.SpeedMultiplier = value;
+        get
+        {
+            lock (_sync)
+            {
+                return _timeModel.SpeedMultiplier;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _timeModel.SpeedMultiplier = value;
+            }
+        }
     }
 
     /// <summary>
@@ -176,28 +358,52 @@ public sealed class WarpClockControl : D2DPanel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool MagneticNumerals
     {
-        get => _magneticNumerals;
+        get
+        {
+            lock (_sync)
+            {
+                return _magneticNumerals;
+            }
+        }
         set
         {
-            if (_magneticNumerals == value)
+            lock (_sync)
             {
-                return;
+                if (_magneticNumerals == value)
+                {
+                    return;
+                }
+
+                _magneticNumerals = value;
+
+                // Drop stale per-hand state so the hands don't jump from an old solver's pose.
+                _magneticSolver.Reset();
+                _solver.Reset();
             }
-
-            _magneticNumerals = value;
-
-            // Drop stale per-hand state so the hands don't jump from an old solver's pose.
-            _magneticSolver.Reset();
-            _solver.Reset();
         }
     }
 
     /// <summary>Whether the active theme uses a free-floating (non-radial) layout.</summary>
     [Browsable(false)]
-    public bool FreeFloating => _theme?.Capabilities.FreeFloating ?? false;
+    public bool FreeFloating
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _theme?.Capabilities.FreeFloating ?? false;
+            }
+        }
+    }
 
     /// <summary>Resets accumulated fast-forward time (call when returning to 1× speed).</summary>
-    public void ResetTimeAcceleration() => _timeModel.ResetAccumulatedOffset();
+    public void ResetTimeAcceleration()
+    {
+        lock (_sync)
+        {
+            _timeModel.ResetAccumulatedOffset();
+        }
+    }
 
     // ── Lifecycle ──
 
@@ -206,8 +412,6 @@ public sealed class WarpClockControl : D2DPanel
     {
         base.OnHandleCreated(e);
         CacheSurface();
-        BuildSceneIfReady();
-        StartLoop();
     }
 
     /// <inheritdoc/>
@@ -225,72 +429,26 @@ public sealed class WarpClockControl : D2DPanel
         }
     }
 
-    private SizeF Surface
-    {
-        get
-        {
-            lock (_sync)
-            {
-                return _surface;
-            }
-        }
-    }
-
-    private void StartLoop()
-    {
-        if (_registration is not null)
-        {
-            return;
-        }
-
-        _lastFrameTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
-
-        _registration = _timer.Register(
-            this,
-            static control => control.OnTimerTick(),
-            new PeriodicTimerOptions
-            {
-                Interval = TimeSpan.FromMilliseconds(1000d / 60d),
-                InitialDelay = TimeSpan.FromMilliseconds(1),
-                MaxConcurrency = 1,
-                OverloadPolicy = OverloadPolicy.SkipAndLog,
-            });
-    }
-
-    private void StopLoop()
-    {
-        if (_registration is not null)
-        {
-            _timer.Unregister(_registration.Value);
-            _registration = null;
-        }
-    }
-
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
+        base.Dispose(disposing);
+
         if (disposing)
         {
-            StopLoop();
-            _timer.Dispose();
             _themeInfoOverlay.Dispose();
         }
-
-        base.Dispose(disposing);
     }
 
     // ── Theme activation / scene build ──
 
     private void ActivateTheme()
     {
+        TeardownScene();
         _solver.Reset();
         _magneticSolver.Reset();
         _faceRotation = 0f;
-
-        if (IsHandleCreated)
-        {
-            TeardownScene();
-        }
+        _themeChangePending = false;
 
         if (_theme is null)
         {
@@ -299,6 +457,9 @@ public sealed class WarpClockControl : D2DPanel
             _animator = null;
             _descriptors = [];
             _tickContext = null;
+            _sceneGeometry = ClockGeometry.ForSurface(_surface);
+            _currentOledViewScale = 1f;
+            _currentOledViewOffset = Point.Empty;
             return;
         }
 
@@ -316,7 +477,6 @@ public sealed class WarpClockControl : D2DPanel
         }
 
         _tickContext = new ThemeTickContext(_descriptors, GetParametersFor);
-        BuildSceneIfReady();
     }
 
     private ClockElementParameters GetParametersFor(ClockElementId id)
@@ -326,7 +486,7 @@ public sealed class WarpClockControl : D2DPanel
 
     private void BuildSceneIfReady()
     {
-        if (_sceneBuilt || !IsHandleCreated || _theme is null)
+        if (_sceneBuilt || _theme is null)
         {
             return;
         }
@@ -334,11 +494,14 @@ public sealed class WarpClockControl : D2DPanel
         foreach (ClockElementDescriptor descriptor in _descriptors.OrderBy(d => d.ZOrder))
         {
             D2DVisual visual = Visuals.AddNew(new Rectangle(0, 0, 1, 1));
-            _runtime[descriptor.Id] = new ElementRuntime
+            var runtime = new ElementRuntime
             {
                 Descriptor = descriptor,
                 Visual = visual,
             };
+
+            visual.PaintContent += (_, e) => RedrawElement(runtime, e.Graphics);
+            _runtime[descriptor.Id] = runtime;
         }
 
         _animator?.Initialize(_tickContext!);
@@ -361,72 +524,49 @@ public sealed class WarpClockControl : D2DPanel
 
     // ── Frame loop ──
 
-    private void OnTimerTick()
+    private void RenderFrame(TimeSpan frameDelta)
     {
-        if (IsDisposed || Disposing || !IsHandleCreated)
+        if (_themeChangePending)
         {
-            return;
+            ActivateTheme();
         }
 
-        if (Interlocked.CompareExchange(ref _framePending, 1, 0) != 0)
-        {
-            return;
-        }
-
-        try
-        {
-            BeginInvoke(_frameAction);
-        }
-        catch (InvalidOperationException)
-        {
-            Interlocked.Exchange(ref _framePending, 0);
-        }
-    }
-
-    private void RenderFrameOnUiThread()
-    {
-        Interlocked.Exchange(ref _framePending, 0);
-
-        if (IsDisposed || Disposing || !IsHandleCreated || _theme is null)
+        if (_theme is null)
         {
             return;
         }
 
         BuildSceneIfReady();
-        RenderFrame();
-    }
 
-    private void RenderFrame()
-    {
-        long now = System.Diagnostics.Stopwatch.GetTimestamp();
-        float dt = (float)System.Diagnostics.Stopwatch.GetElapsedTime(_lastFrameTimestamp).TotalSeconds;
-        _lastFrameTimestamp = now;
+        float dt = (float)frameDelta.TotalSeconds;
 
         // Smooth the instantaneous frame rate with an exponential moving average so the
         // status-bar readout doesn't jitter frame to frame.
         if (dt > 0f)
         {
             double instantaneous = 1.0 / dt;
-            _framesPerSecond = _framesPerSecond <= 0.0
+            double smoothed = _framesPerSecond <= 0.0
                 ? instantaneous
                 : _framesPerSecond * 0.9 + instantaneous * 0.1;
+            Volatile.Write(ref _framesPerSecond, smoothed);
         }
 
         ClockTimeSnapshot time = _timeModel.CreateSnapshot();
-        ClockGeometry geometry = ClockGeometry.ForSurface(Surface);
+        OledSceneTransform sceneTransform = _oledViewTransform.Advance(frameDelta, _surface, _oledView);
+        ClockGeometry geometry = ClockGeometry.ForSurface(_surface, sceneTransform);
+        _sceneGeometry = geometry;
+        _currentOledViewScale = sceneTransform.Scale;
+        _currentOledViewOffset = sceneTransform.Offset;
 
-        RunAnimator(time, dt);
+        RunAnimator(time, dt, geometry.Surface);
 
         foreach (ElementRuntime runtime in _runtime.Values)
         {
             UpdateElement(runtime, time, geometry, dt);
         }
-
-        CommitVisualsAsync(false).GetAwaiter().GetResult();
-        Invalidate();
     }
 
-    private void RunAnimator(ClockTimeSnapshot time, float dt)
+    private void RunAnimator(ClockTimeSnapshot time, float dt, SizeF surfaceSize)
     {
         if (_animator is null || _tickContext is null)
         {
@@ -438,6 +578,7 @@ public sealed class WarpClockControl : D2DPanel
         // engine-driven hands, which are also recomputed every frame.
         _tickContext.Time = time;
         _tickContext.FrameDelta = TimeSpan.FromSeconds(dt);
+        _tickContext.SurfaceSize = surfaceSize;
         _tickContext.FaceRotationDegrees = _faceRotation;
         _animator.OnTick(_tickContext);
         _faceRotation = _tickContext.FaceRotationDegrees;
@@ -498,8 +639,8 @@ public sealed class WarpClockControl : D2DPanel
             runtime.ContentPixelSize = new Size(bounds.Width, bounds.Height);
             runtime.PivotPixels = pivotPixels;
             runtime.ContentScale = scale;
-            RedrawElement(runtime, contentSize, pivotPixels, scale, time);
-            runtime.ContentDrawn = true;
+            runtime.ContentTime = time;
+            runtime.Visual.InvalidateContent();
             parameters.RedrawRequested = false;
         }
     }
@@ -579,7 +720,11 @@ public sealed class WarpClockControl : D2DPanel
 
     private PointF ResolveAnchor(ClockElementId id, ClockGeometry geometry)
     {
-        if (_activeLayout is null || !_activeLayout.TryGetAnchor(id, geometry.Surface, out PointF anchor))
+        if (_activeLayout is not null && _activeLayout.TryGetAnchor(id, geometry.Surface, out PointF anchor))
+        {
+            anchor = new PointF(anchor.X + geometry.Origin.X, anchor.Y + geometry.Origin.Y);
+        }
+        else
         {
             anchor = DefaultClockLayout.ResolveAnchor(id, geometry);
         }
@@ -603,41 +748,25 @@ public sealed class WarpClockControl : D2DPanel
         return anchor;
     }
 
-    private void RedrawElement(
-        ElementRuntime runtime,
-        SizeF contentSize,
-        PointF pivotPixels,
-        float scale,
-        ClockTimeSnapshot time)
+    private void RedrawElement(ElementRuntime runtime, ID2DGraphics graphics)
     {
-        if (_renderer is null || runtime.Visual is null)
+        if (_renderer is null)
         {
             return;
         }
 
         _renderContext.Id = runtime.Descriptor.Id;
-        _renderContext.ContentSize = contentSize;
-        _renderContext.Pivot = pivotPixels;
+        _renderContext.ContentSize = runtime.ContentPixelSize;
+        _renderContext.Pivot = runtime.PivotPixels;
         _renderContext.Parameters = runtime.Parameters;
-        _renderContext.Time = time;
-        _renderContext.Scale = scale;
-
-        using ID2DGraphics graphics = runtime.Visual.GetGraphics();
-        graphics.BeginDraw();
-
-        try
-        {
-            graphics.Clear(Color.Transparent);
-            _renderer.DrawElement(graphics, _renderContext);
-        }
-        finally
-        {
-            graphics.EndDraw();
-        }
+        _renderContext.Time = runtime.ContentTime;
+        _renderContext.Scale = runtime.ContentScale;
+        _renderer.DrawElement(graphics, _renderContext);
+        runtime.ContentDrawn = true;
     }
 
-    private void OnRenderBackground(object? sender, D2DRenderEventArgs e)
-        => e.Graphics.Clear(BackColor);
+    private static void OnRenderBackground(object? sender, D2DRenderEventArgs e)
+        => e.Graphics.Clear(Color.Black);
 
     /// <summary>
     ///  Foreground pass (composited on top of the element visuals): draws the theme-info
@@ -648,14 +777,25 @@ public sealed class WarpClockControl : D2DPanel
     /// </summary>
     private void OnRenderForeground(object? sender, D2DRenderEventArgs e)
     {
-        e.Graphics.Clear(Color.Transparent);
-
-        if (_renderThemeInfo == RenderThemeInfo.Never || _theme is null)
+        lock (_sync)
         {
-            return;
-        }
+            RenderFrame(e.FrameDelta);
+            e.Graphics.Clear(Color.Transparent);
 
-        _themeInfoOverlay.Configure(_theme.Name, _theme.Author);
-        _themeInfoOverlay.Render(e.Graphics, ClientSize, _renderThemeInfo, _themeInfoPlacement);
+            if (_oledView != OledViewMode.Off
+                || _renderThemeInfo == RenderThemeInfo.Never
+                || _theme is null)
+            {
+                return;
+            }
+
+            _themeInfoOverlay.Configure(_theme.Name, _theme.Author);
+            _themeInfoOverlay.Render(
+                e.Graphics,
+                Size.Round(_surface),
+                _renderThemeInfo,
+                _themeInfoPlacement,
+                _sceneGeometry.Bounds);
+        }
     }
 }

@@ -6,14 +6,32 @@ namespace WarpClock.Themes.Builtin;
 
 /// <summary>
 ///  A classic radial analog clock theme parameterized by a <see cref="StandardClockDesign"/>.
-///  Used for all built-in themes; demonstrates that the plug-in contract is rich enough to
-///  express the original GDI+ clock's looks.
+///  Used for the radial stock-theme families; demonstrates that the plug-in contract is
+///  rich enough to express the original GDI+ clock's looks.
 /// </summary>
 public sealed class StandardClockTheme : IClockTheme
 {
     private readonly StandardClockDesign _design;
+    private readonly ClockThemeVariantKind _variant;
+    private readonly IReadOnlyList<ClockThemeVariantKind> _supportedVariants;
+    private readonly Func<ClockThemeVariantKind, IClockTheme>? _resolver;
 
-    public StandardClockTheme(StandardClockDesign design) => _design = design;
+    public StandardClockTheme(StandardClockDesign design)
+        : this(design, ClockThemeVariantKind.Day, ClockThemeVariants.DayOnly, resolver: null)
+    {
+    }
+
+    internal StandardClockTheme(
+        StandardClockDesign design,
+        ClockThemeVariantKind variant,
+        IReadOnlyList<ClockThemeVariantKind> supportedVariants,
+        Func<ClockThemeVariantKind, IClockTheme>? resolver)
+    {
+        _design = design;
+        _variant = variant;
+        _supportedVariants = supportedVariants;
+        _resolver = resolver;
+    }
 
     /// <inheritdoc/>
     public string Name => _design.Name;
@@ -26,6 +44,23 @@ public sealed class StandardClockTheme : IClockTheme
 
     /// <inheritdoc/>
     public ThemeCapabilities Capabilities { get; } = ThemeCapabilities.Default;
+
+    /// <inheritdoc/>
+    public IReadOnlyList<ClockThemeVariantKind> SupportedVariants => _supportedVariants;
+
+    /// <inheritdoc/>
+    public IClockTheme ResolveVariant(ClockThemeVariantKind variant)
+    {
+        if (!ClockThemeVariants.Supports(_supportedVariants, variant))
+        {
+            throw ClockThemeVariants.CreateUnsupportedVariantException(Name, _supportedVariants, variant);
+        }
+
+        return variant == _variant
+            ? this
+            : _resolver?.Invoke(variant)
+                ?? throw new InvalidOperationException($"Theme '{Name}' cannot resolve sibling variants.");
+    }
 
     /// <inheritdoc/>
     public IReadOnlyList<ClockElementDescriptor> CreateElements()

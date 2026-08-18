@@ -1,9 +1,10 @@
 <Solution>
   <Project Path="WarpClock.Abstractions/WarpClock.Abstractions.csproj" />
   <Project Path="WarpClock.Engine/WarpClock.Engine.csproj" />
+  <Project Path="WarpClock.Engine.Tests/WarpClock.Engine.Tests.csproj" />
   <Project Path="WarpClock.Themes.Builtin/WarpClock.Themes.Builtin.csproj" />
+  <Project Path="WarpClock.Tests/WarpClock.Tests.csproj" />
   <Project Path="WarpClock.App/WarpClock.App.csproj" />
-  <Project Path="WarpClock.Themes.Nerd/WarpClock.Themes.Nerd.csproj" />
-  <Project Path="WarpClock.Themes.Scatter/WarpClock.Themes.Scatter.csproj" />
+  <Project Path="WarpClock.App.Tests/WarpClock.App.Tests.csproj" />
   <Project Path="WarpClock.Themes.SunFlower/WarpClock.Themes.SunFlower.csproj" />
 </Solution>

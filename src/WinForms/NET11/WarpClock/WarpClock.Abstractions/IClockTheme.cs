@@ -21,6 +21,25 @@ public interface IClockTheme
     ThemeCapabilities Capabilities { get; }
 
     /// <summary>
+    ///  The logical visual variants this theme family supports. Legacy single-palette
+    ///  implementations remain source- and binary-compatible because the default
+    ///  interface implementation reports a Day-only family.
+    /// </summary>
+    IReadOnlyList<ClockThemeVariantKind> SupportedVariants => ClockThemeVariants.DayOnly;
+
+    /// <summary>
+    ///  Resolves a logical variant to a concrete theme instance. Legacy themes map
+    ///  <see cref="ClockThemeVariantKind.Day"/> to <see langword="this"/> and reject
+    ///  all other variants by default.
+    /// </summary>
+    /// <param name="variant">The requested logical variant.</param>
+    /// <returns>The concrete theme instance for <paramref name="variant"/>.</returns>
+    IClockTheme ResolveVariant(ClockThemeVariantKind variant)
+        => variant == ClockThemeVariantKind.Day
+            ? this
+            : throw ClockThemeVariants.CreateUnsupportedVariantException(Name, SupportedVariants, variant);
+
+    /// <summary>
     ///  Returns the set of elements the engine should materialize, each as its own
     ///  visual. Called once when the theme is activated.
     /// </summary>

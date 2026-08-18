@@ -25,7 +25,15 @@ partial class FormMain
         _clock = new WarpClockControl();
         _propertyGrid = new PropertyGrid();
         _menuStrip = new MenuStrip();
+        _fileMenu = new ToolStripMenuItem();
+        _miCreateNewThemeList = new ToolStripMenuItem();
+        _miLoadThemeList = new ToolStripMenuItem();
+        _miSaveThemeList = new ToolStripMenuItem();
+        _fileReloadSeparator = new ToolStripSeparator();
+        _fileExitSeparator = new ToolStripSeparator();
         _themeMenu = new ToolStripMenuItem();
+        _themeMenuSeparator = new ToolStripSeparator();
+        _miEditCurrentThemeList = new ToolStripMenuItem();
         _motionMenu = new ToolStripMenuItem();
         _secondMotionMenu = new ToolStripMenuItem();
         _miSecondCrawling = new ToolStripMenuItem();
@@ -55,6 +63,8 @@ partial class FormMain
         _miSpeed600 = new ToolStripMenuItem();
         _viewMenu = new ToolStripMenuItem();
         _miKiosk = new ToolStripMenuItem();
+        _miOledView = new ToolStripMenuItem();
+        _miRecordFramerate = new ToolStripMenuItem();
         _miMagnetic = new ToolStripMenuItem();
         _miVSync = new ToolStripMenuItem();
         _themeInfoMenu = new ToolStripMenuItem();
@@ -68,7 +78,6 @@ partial class FormMain
         _miPlaceRight = new ToolStripMenuItem();
         _miPlaceFace = new ToolStripMenuItem();
         _miProperties = new ToolStripMenuItem();
-        _viewSeparator = new ToolStripSeparator();
         _miExit = new ToolStripMenuItem();
         _kioskMenu = new ToolStripMenuItem();
         _fullScreenToggleKeysMenu = new ToolStripMenuItem();
@@ -87,9 +96,7 @@ partial class FormMain
         _miTopMostInFullScreen = new ToolStripMenuItem();
         _kioskChromeSeparator = new ToolStripSeparator();
         _miHideWindowsChrome = new ToolStripMenuItem();
-        _pluginsMenu = new ToolStripMenuItem();
         _miReloadPlugins = new ToolStripMenuItem();
-        _miOpenPluginsFolder = new ToolStripMenuItem();
         _statusStrip = new StatusStrip();
         _statusInfo = new ToolStripStatusLabel();
         _statusFps = new ToolStripStatusLabel();
@@ -144,18 +151,64 @@ partial class FormMain
         // _menuStrip
         // 
         _menuStrip.ImageScalingSize = new Size(32, 32);
-        _menuStrip.Items.AddRange(new ToolStripItem[] { _themeMenu, _motionMenu, _graceMenu, _speedMenu, _viewMenu, _kioskMenu, _pluginsMenu });
+        _menuStrip.Items.AddRange(new ToolStripItem[] { _fileMenu, _themeMenu, _motionMenu, _graceMenu, _speedMenu, _viewMenu, _kioskMenu });
         _menuStrip.Location = new Point(0, 0);
         _menuStrip.Name = "_menuStrip";
         _menuStrip.Padding = new Padding(11, 4, 0, 4);
         _menuStrip.Size = new Size(1411, 44);
         _menuStrip.TabIndex = 1;
+        //
+        // _fileMenu
+        //
+        _fileMenu.DropDownItems.AddRange(new ToolStripItem[] { _miCreateNewThemeList, _miLoadThemeList, _miSaveThemeList, _fileReloadSeparator, _miReloadPlugins, _fileExitSeparator, _miExit });
+        _fileMenu.Name = "_fileMenu";
+        _fileMenu.Size = new Size(73, 36);
+        _fileMenu.Text = "&File";
+        //
+        // _miCreateNewThemeList
+        //
+        _miCreateNewThemeList.Name = "_miCreateNewThemeList";
+        _miCreateNewThemeList.Size = new Size(347, 44);
+        _miCreateNewThemeList.Text = "Create &New Themelist...";
+        _miCreateNewThemeList.Click += OnCreateNewThemeListClick;
+        //
+        // _miLoadThemeList
+        //
+        _miLoadThemeList.Name = "_miLoadThemeList";
+        _miLoadThemeList.Size = new Size(347, 44);
+        _miLoadThemeList.Text = "&Load Themelist...";
+        _miLoadThemeList.Click += OnLoadThemeListClick;
+        //
+        // _miSaveThemeList
+        //
+        _miSaveThemeList.Name = "_miSaveThemeList";
+        _miSaveThemeList.Size = new Size(347, 44);
+        _miSaveThemeList.Text = "&Save Themelist";
+        _miSaveThemeList.Click += OnSaveThemeListClick;
+        //
+        // _fileReloadSeparator
+        //
+        _fileReloadSeparator.Name = "_fileReloadSeparator";
+        _fileReloadSeparator.Size = new Size(344, 6);
         // 
         // _themeMenu
         // 
+        _themeMenu.DropDownItems.AddRange(new ToolStripItem[] { _themeMenuSeparator, _miEditCurrentThemeList });
         _themeMenu.Name = "_themeMenu";
         _themeMenu.Size = new Size(108, 36);
         _themeMenu.Text = "&Theme";
+        //
+        // _themeMenuSeparator
+        //
+        _themeMenuSeparator.Name = "_themeMenuSeparator";
+        _themeMenuSeparator.Size = new Size(287, 6);
+        //
+        // _miEditCurrentThemeList
+        //
+        _miEditCurrentThemeList.Name = "_miEditCurrentThemeList";
+        _miEditCurrentThemeList.Size = new Size(290, 44);
+        _miEditCurrentThemeList.Text = "&Edit current themelist...";
+        _miEditCurrentThemeList.Click += OnEditCurrentThemeListClick;
         // 
         // _motionMenu
         // 
@@ -360,7 +413,7 @@ partial class FormMain
         // 
         // _viewMenu
         // 
-        _viewMenu.DropDownItems.AddRange(new ToolStripItem[] { _miProperties, _miKiosk, toolStripSeparator1, _miVSync, _miMagnetic, _themeInfoMenu, _viewSeparator, _miExit });
+        _viewMenu.DropDownItems.AddRange(new ToolStripItem[] { _miProperties, _miKiosk, toolStripSeparator1, _miOledView, _miRecordFramerate, _miVSync, _miMagnetic, _themeInfoMenu });
         _viewMenu.Name = "_viewMenu";
         _viewMenu.Size = new Size(85, 36);
         _viewMenu.Text = "&View";
@@ -371,6 +424,20 @@ partial class FormMain
         _miKiosk.Size = new Size(352, 44);
         _miKiosk.Text = "&Toggle full screen";
         _miKiosk.Click += OnKioskClick;
+        //
+        // _miOledView
+        //
+        _miOledView.Name = "_miOledView";
+        _miOledView.Size = new Size(352, 44);
+        _miOledView.Text = "&OLED view";
+        _miOledView.Click += OnOledViewClick;
+        //
+        // _miRecordFramerate
+        //
+        _miRecordFramerate.Name = "_miRecordFramerate";
+        _miRecordFramerate.Size = new Size(352, 44);
+        _miRecordFramerate.Text = "&Record frame rate";
+        _miRecordFramerate.Click += OnRecordFramerateClick;
         // 
         // _miMagnetic
         // 
@@ -463,16 +530,11 @@ partial class FormMain
         _miProperties.Text = "&Properties panel";
         _miProperties.Click += OnTogglePropertiesClick;
         // 
-        // _viewSeparator
-        // 
-        _viewSeparator.Name = "_viewSeparator";
-        _viewSeparator.Size = new Size(349, 6);
-        // 
         // _miExit
         // 
         _miExit.Name = "_miExit";
         _miExit.ShortcutKeys = Keys.Alt | Keys.F4;
-        _miExit.Size = new Size(352, 44);
+        _miExit.Size = new Size(347, 44);
         _miExit.Text = "E&xit";
         _miExit.Click += OnExitClick;
         // 
@@ -603,26 +665,17 @@ partial class FormMain
         _miHideWindowsChrome.Text = "&Hide Windows chrome (ESC exits)";
         _miHideWindowsChrome.Click += OnHideWindowsChromeClick;
         // 
-        // _pluginsMenu
-        // 
-        _pluginsMenu.DropDownItems.AddRange(new ToolStripItem[] { _miReloadPlugins, _miOpenPluginsFolder });
-        _pluginsMenu.Name = "_pluginsMenu";
-        _pluginsMenu.Size = new Size(121, 36);
-        _pluginsMenu.Text = "&Plug-ins";
-        // 
         // _miReloadPlugins
         // 
         _miReloadPlugins.Name = "_miReloadPlugins";
-        _miReloadPlugins.Size = new Size(371, 44);
-        _miReloadPlugins.Text = "&Reload plug-ins";
+        _miReloadPlugins.Size = new Size(347, 44);
+        _miReloadPlugins.Text = "&Reload Plug-Ins";
         _miReloadPlugins.Click += OnReloadPluginsClick;
         // 
-        // _miOpenPluginsFolder
+        // _fileExitSeparator
         // 
-        _miOpenPluginsFolder.Name = "_miOpenPluginsFolder";
-        _miOpenPluginsFolder.Size = new Size(371, 44);
-        _miOpenPluginsFolder.Text = "&Open plug-ins folder";
-        _miOpenPluginsFolder.Click += OnOpenPluginsFolderClick;
+        _fileExitSeparator.Name = "_fileExitSeparator";
+        _fileExitSeparator.Size = new Size(344, 6);
         // 
         // _statusStrip
         // 
@@ -705,7 +758,15 @@ partial class FormMain
     private PropertyGrid _propertyGrid;
 
     private MenuStrip _menuStrip;
+    private ToolStripMenuItem _fileMenu;
+    private ToolStripMenuItem _miCreateNewThemeList;
+    private ToolStripMenuItem _miLoadThemeList;
+    private ToolStripMenuItem _miSaveThemeList;
+    private ToolStripSeparator _fileReloadSeparator;
+    private ToolStripSeparator _fileExitSeparator;
     private ToolStripMenuItem _themeMenu;
+    private ToolStripSeparator _themeMenuSeparator;
+    private ToolStripMenuItem _miEditCurrentThemeList;
 
     private ToolStripMenuItem _motionMenu;
     private ToolStripMenuItem _secondMotionMenu;
@@ -739,6 +800,8 @@ partial class FormMain
 
     private ToolStripMenuItem _viewMenu;
     private ToolStripMenuItem _miKiosk;
+    private ToolStripMenuItem _miOledView;
+    private ToolStripMenuItem _miRecordFramerate;
     private ToolStripMenuItem _miMagnetic;
     private ToolStripMenuItem _miVSync;
     private ToolStripMenuItem _themeInfoMenu;
@@ -752,7 +815,6 @@ partial class FormMain
     private ToolStripMenuItem _miPlaceRight;
     private ToolStripMenuItem _miPlaceFace;
     private ToolStripMenuItem _miProperties;
-    private ToolStripSeparator _viewSeparator;
     private ToolStripMenuItem _miExit;
 
     private ToolStripMenuItem _kioskMenu;
@@ -772,10 +834,7 @@ partial class FormMain
     private ToolStripMenuItem _miTopMostInFullScreen;
     private ToolStripSeparator _kioskChromeSeparator;
     private ToolStripMenuItem _miHideWindowsChrome;
-
-    private ToolStripMenuItem _pluginsMenu;
     private ToolStripMenuItem _miReloadPlugins;
-    private ToolStripMenuItem _miOpenPluginsFolder;
 
     private StatusStrip _statusStrip;
     private ToolStripStatusLabel _statusInfo;

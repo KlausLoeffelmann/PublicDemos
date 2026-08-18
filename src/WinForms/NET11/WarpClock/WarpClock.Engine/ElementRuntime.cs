@@ -29,4 +29,7 @@ internal sealed class ElementRuntime
 
     /// <summary>The scale used to render the current content.</summary>
     public float ContentScale { get; set; } = 1f;
+
+    /// <summary>The clock-time snapshot used when the current content is drawn.</summary>
+    public ClockTimeSnapshot ContentTime { get; set; }
 }

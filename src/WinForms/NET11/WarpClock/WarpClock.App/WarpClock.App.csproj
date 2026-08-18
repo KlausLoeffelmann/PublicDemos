@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -10,27 +10,21 @@
     <RootNamespace>WarpClock.App</RootNamespace>
     <AssemblyName>WarpClock</AssemblyName>
     <ApplicationDefaultFont>Segoe UI, 9pt</ApplicationDefaultFont>
+    <WarpToolkitVersion>0.9.232-preview.g249e043a41</WarpToolkitVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="WarpToolkit.WinForms.AppServices" Version="$(WarpToolkitVersion)" />
     <ProjectReference Include="..\WarpClock.Abstractions\WarpClock.Abstractions.csproj" />
     <ProjectReference Include="..\WarpClock.Engine\WarpClock.Engine.csproj" />
     <ProjectReference Include="..\WarpClock.Themes.Builtin\WarpClock.Themes.Builtin.csproj" />
   </ItemGroup>
 
-  <!-- Sample plug-in themes are loaded at runtime from the plugins directory.
+  <!-- Sample plug-in theme assemblies are loaded at runtime from the plugins directory.
        They are referenced only to sequence the build and copy their output into
        plugins\; ReferenceOutputAssembly=false keeps them out of the app's
        compile-time closure so they behave like real drop-in assemblies. -->
   <ItemGroup>
-    <ProjectReference Include="..\WarpClock.Themes.Nerd\WarpClock.Themes.Nerd.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <Private>false</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\WarpClock.Themes.Scatter\WarpClock.Themes.Scatter.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <Private>false</Private>
-    </ProjectReference>
     <ProjectReference Include="..\WarpClock.Themes.SunFlower\WarpClock.Themes.SunFlower.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>false</Private>
@@ -52,10 +46,12 @@
 
   <Target Name="CopyClockPlugins" AfterTargets="Build">
     <ItemGroup>
-      <PluginAssembly Include="..\WarpClock.Themes.Nerd\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.Nerd.dll" />
-      <PluginAssembly Include="..\WarpClock.Themes.Scatter\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.Scatter.dll" />
+      <RetiredPluginAssembly Include="$(OutDir)plugins\WarpClock.Themes.LoseHour.dll" />
+      <RetiredPluginAssembly Include="$(OutDir)plugins\WarpClock.Themes.Nerd.dll" />
+      <RetiredPluginAssembly Include="$(OutDir)plugins\WarpClock.Themes.Scatter.dll" />
       <PluginAssembly Include="..\WarpClock.Themes.SunFlower\bin\$(Configuration)\$(TargetFramework)\WarpClock.Themes.SunFlower.dll" />
     </ItemGroup>
+    <Delete Files="@(RetiredPluginAssembly)" />
     <Copy SourceFiles="@(PluginAssembly)" DestinationFolder="$(OutDir)plugins" SkipUnchangedFiles="true" Condition="Exists('%(PluginAssembly.Identity)')" />
   </Target>
 

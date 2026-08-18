@@ -1,3 +1,5 @@
+using System.Drawing;
+
 using WarpClock.Abstractions;
 
 namespace WarpClock.Engine;
@@ -25,6 +27,8 @@ internal sealed class ThemeTickContext : IClockTickContext
     public TimeSpan FrameDelta { get; set; }
 
     public IReadOnlyList<ClockElementDescriptor> Elements => _elements;
+
+    public SizeF SurfaceSize { get; set; } = new(1000f, 1000f);
 
     public float FaceRotationDegrees { get; set; }
 

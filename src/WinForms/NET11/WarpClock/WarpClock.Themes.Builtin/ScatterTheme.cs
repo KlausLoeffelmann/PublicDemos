@@ -2,7 +2,16 @@ using System.Drawing;
 
 using WarpClock.Abstractions;
 
-namespace WarpClock.Themes.Scatter;
+namespace WarpClock.Themes.Builtin;
+
+internal sealed record ScatterThemePalette(
+    Color Face,
+    Color MagnetFill,
+    Color MagnetRim,
+    Color Label,
+    Color Hand,
+    Color Second,
+    Color Arbour);
 
 /// <summary>
 ///  A demo for the engine's <b>Magnetic numerals</b> mode (which this theme turns on by
@@ -16,19 +25,36 @@ namespace WarpClock.Themes.Scatter;
 /// </summary>
 public sealed class ScatterTheme : IClockTheme
 {
-    // Authoring reference radius (matches the engine's design space).
+    private const string BaseName = "Scatter (Magnetic)";
+    private const string BaseDescription =
+        "Numerals start home, then wander (max 4 at a time) while the hands magnetically chase them.";
     private const float DesignRadius = 500f;
-
-    // The engine's default hour-marker ring sits at this fraction of the radius; we treat
-    // that as each numeral's "home" so movement is expressed as an offset away from it.
     private const float HomeRadius = DesignRadius * 0.78f;
 
-    /// <inheritdoc/>
-    public string Name => "Scatter (Magnetic)";
+    private readonly ClockThemeVariantKind _variant;
+    private readonly ScatterThemePalette _palette;
+
+    public ScatterTheme()
+        : this(ClockThemeVariantKind.Day)
+    {
+    }
+
+    internal ScatterTheme(ClockThemeVariantKind variant)
+    {
+        if (!ClockThemeVariants.Supports(ClockThemeVariants.DayNight, variant))
+        {
+            throw ClockThemeVariants.CreateUnsupportedVariantException(BaseName, ClockThemeVariants.DayNight, variant);
+        }
+
+        _variant = variant;
+        _palette = CreatePalette(variant);
+    }
 
     /// <inheritdoc/>
-    public string Description =>
-        "Numerals start home, then wander (max 4 at a time) while the hands magnetically chase them.";
+    public string Name => ClockThemeVariants.FormatDisplayName(BaseName, _variant);
+
+    /// <inheritdoc/>
+    public string Description => BaseDescription;
 
     /// <inheritdoc/>
     public string Author => "Klaus Loeffelmann";
@@ -38,9 +64,22 @@ public sealed class ScatterTheme : IClockTheme
     {
         FreeFloating = true,
         HandsFollowFaceRotation = true,
-        // Ask the host to start in magnetic mode so the hands point at the numerals.
         MagneticByDefault = true,
     };
+
+    /// <inheritdoc/>
+    public IReadOnlyList<ClockThemeVariantKind> SupportedVariants => ClockThemeVariants.DayNight;
+
+    /// <inheritdoc/>
+    public IClockTheme ResolveVariant(ClockThemeVariantKind variant)
+    {
+        if (!ClockThemeVariants.Supports(SupportedVariants, variant))
+        {
+            throw ClockThemeVariants.CreateUnsupportedVariantException(BaseName, SupportedVariants, variant);
+        }
+
+        return variant == _variant ? this : new ScatterTheme(variant);
+    }
 
     /// <inheritdoc/>
     public IReadOnlyList<ClockElementDescriptor> CreateElements()
@@ -73,10 +112,32 @@ public sealed class ScatterTheme : IClockTheme
     public IClockLayout CreateLayout() => new HomeLayout();
 
     /// <inheritdoc/>
-    public IClockElementRenderer CreateRenderer() => new ScatterRenderer();
+    public IClockElementRenderer CreateRenderer() => new ScatterRenderer(_palette);
 
     /// <inheritdoc/>
     public IThemeAnimator CreateAnimator() => new ScatterAnimator();
+
+    private static ScatterThemePalette CreatePalette(ClockThemeVariantKind variant)
+        => variant switch
+        {
+            ClockThemeVariantKind.Day => new ScatterThemePalette(
+                Face: Color.FromArgb(244, 244, 240),
+                MagnetFill: Color.FromArgb(176, 94, 88),
+                MagnetRim: Color.FromArgb(214, 184, 132),
+                Label: Color.FromArgb(43, 45, 50),
+                Hand: Color.FromArgb(68, 73, 82),
+                Second: Color.FromArgb(181, 116, 71),
+                Arbour: Color.FromArgb(196, 167, 120)),
+            ClockThemeVariantKind.Night => new ScatterThemePalette(
+                Face: Color.FromArgb(18, 20, 26),
+                MagnetFill: Color.FromArgb(146, 82, 96),
+                MagnetRim: Color.FromArgb(110, 126, 148),
+                Label: Color.FromArgb(226, 229, 236),
+                Hand: Color.FromArgb(214, 216, 221),
+                Second: Color.FromArgb(176, 106, 126),
+                Arbour: Color.FromArgb(132, 141, 156)),
+            _ => throw ClockThemeVariants.CreateUnsupportedVariantException(BaseName, ClockThemeVariants.DayNight, variant),
+        };
 
     /// <summary>
     ///  Defers to the engine's default radial placement, so every numeral starts in its
@@ -101,17 +162,17 @@ public sealed class ScatterTheme : IClockTheme
     private sealed class ScatterAnimator : IThemeAnimator
     {
         private const int MaxConcurrentMoves = 4;
-        private const int InvisibleNumeral = 9; // periodically hidden+skipped to show the rule
+        private const int InvisibleNumeral = 9;
 
         private sealed class NumeralState
         {
-            public PointF Offset;        // current offset from home (design units)
-            public PointF MoveStart;     // offset at the start of the current move
-            public PointF MoveTarget;    // offset to ease toward
+            public PointF Offset;
+            public PointF MoveStart;
+            public PointF MoveTarget;
             public bool Moving;
-            public float Elapsed;        // seconds into the current move
-            public float Duration;       // total seconds for the current move
-            public float Dwell;          // seconds to wait before the next move
+            public float Elapsed;
+            public float Duration;
+            public float Dwell;
         }
 
         private readonly NumeralState[] _numerals = new NumeralState[12];
@@ -122,8 +183,6 @@ public sealed class ScatterTheme : IClockTheme
         {
             for (int i = 0; i < 12; i++)
             {
-                // Start at home (no offset) with a staggered first dwell so they don't all
-                // set off together.
                 _numerals[i] = new NumeralState { Dwell = 1.5f + (float)_rng.NextDouble() * 6f };
             }
         }
@@ -133,7 +192,6 @@ public sealed class ScatterTheme : IClockTheme
             float dt = (float)context.FrameDelta.TotalSeconds;
             int movingCount = 0;
 
-            // Advance any in-flight moves and update offsets.
             for (int i = 0; i < 12; i++)
             {
                 NumeralState n = _numerals[i];
@@ -161,7 +219,6 @@ public sealed class ScatterTheme : IClockTheme
                 context.GetParameters(ClockElementId.HourMarker(i)).AnchorOffset = n.Offset;
             }
 
-            // Start new moves for idle numerals, respecting the concurrency cap.
             for (int i = 0; i < 12 && movingCount < MaxConcurrentMoves; i++)
             {
                 NumeralState n = _numerals[i];
@@ -186,17 +243,12 @@ public sealed class ScatterTheme : IClockTheme
             n.MoveStart = n.Offset;
             n.MoveTarget = PickTargetOffset(index);
             n.Elapsed = 0f;
-            n.Duration = 1.6f + (float)_rng.NextDouble() * 2.2f; // a smooth, leisurely slide
+            n.Duration = 1.6f + (float)_rng.NextDouble() * 2.2f;
             n.Moving = true;
         }
 
-        /// <summary>
-        ///  Chooses a new offset for a numeral: usually a random spot on the dial, but
-        ///  sometimes a return to its home position for variety.
-        /// </summary>
         private PointF PickTargetOffset(int index)
         {
-            // 1-in-4 moves send the numeral back home.
             if (_rng.Next(4) == 0)
             {
                 return PointF.Empty;
@@ -205,23 +257,15 @@ public sealed class ScatterTheme : IClockTheme
             float homeAngle = index * 30f;
             PointF home = Polar(HomeRadius, homeAngle);
 
-            // A random absolute position within an annulus that stays well clear of the
-            // center (so numerals are far less likely to pile up over the arbour), then
-            // expressed relative to home.
-            float radius = 230f + (float)_rng.NextDouble() * 230f; // ~230..460 of the 500 dial
+            float radius = 230f + (float)_rng.NextDouble() * 230f;
             float angle = (float)_rng.NextDouble() * 360f;
             PointF target = Polar(radius, angle);
             return new PointF(target.X - home.X, target.Y - home.Y);
         }
 
-        /// <summary>
-        ///  Cycles one numeral through Visible → Invisible → Visible so the demo also shows
-        ///  the hands skipping a missing numeral (and staying where they are).
-        /// </summary>
         private void UpdateVisibilityDemo(IClockTickContext context, float dt)
         {
             _visibilityPhase += dt;
-            // ~6s hidden out of every ~18s.
             bool hidden = (_visibilityPhase % 18.0) >= 12.0;
             context.GetParameters(ClockElementId.HourMarker(InvisibleNumeral)).Visibility =
                 hidden ? ClockNumeralVisibility.Invisible : ClockNumeralVisibility.Visible;

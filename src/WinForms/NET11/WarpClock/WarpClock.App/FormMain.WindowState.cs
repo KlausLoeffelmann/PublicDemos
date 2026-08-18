@@ -1,15 +1,7 @@
-using System.Diagnostics;
-using System.Text.Json;
-
 namespace WarpClock.App;
 
 public partial class FormMain
 {
-    private static readonly JsonSerializerOptions s_windowSettingsJsonOptions = new()
-    {
-        WriteIndented = true,
-    };
-
     private static readonly Keys[] s_supportedFullScreenKeys =
     [
         Keys.Control | Keys.Return,
@@ -24,22 +16,30 @@ public partial class FormMain
     private WindowPresentationMode _modeBeforeFullScreen;
     private Rectangle _lastWindowedBounds;
     private FormChromeState? _chromeState;
-    private bool _windowSettingsRestored;
+    private bool _windowStateApplied;
+    private FormWindowState _windowedWindowState = FormWindowState.Normal;
+    private int _propertyPanelWidth = 320;
 
-    private void RestoreWindowSettings()
+    private void ApplyWindowSettings(PersistedWindowSettings? settings)
     {
-        if (_windowSettingsRestored)
+        if (_windowStateApplied)
         {
             return;
         }
 
-        _windowSettingsRestored = true;
-        WindowSettings? settings = TryLoadWindowSettings(out string? error);
+        _windowStateApplied = true;
 
         Screen screen = Screen.PrimaryScreen ?? Screen.FromControl(this);
         Rectangle defaultBounds = GetDefaultWindowedBounds(screen.WorkingArea);
         Rectangle savedBounds = settings?.GetWindowedBounds() ?? Rectangle.Empty;
+
         _lastWindowedBounds = IsSaneWindowedBounds(savedBounds) ? savedBounds : defaultBounds;
+        _windowedWindowState = settings?.WindowState == FormWindowState.Maximized
+            ? FormWindowState.Maximized
+            : FormWindowState.Normal;
+        _propertyPanelWidth = settings?.PropertyPanelWidth > 200
+            ? settings.PropertyPanelWidth
+            : 320;
 
         StartPosition = FormStartPosition.Manual;
         WindowState = FormWindowState.Normal;
@@ -47,23 +47,60 @@ public partial class FormMain
 
         ApplyKioskSettings(settings);
 
-        if (settings?.Mode == WindowPresentationMode.NoChrome)
+        WindowPresentationMode mode = settings?.PresentationMode ?? WindowPresentationMode.Windowed;
+        _presentationMode = WindowPresentationMode.Windowed;
+
+        if (mode == WindowPresentationMode.NoChrome)
         {
             EnterNoChromeMode();
+            return;
         }
-        else if (settings?.Mode == WindowPresentationMode.FullScreen)
+
+        if (mode == WindowPresentationMode.FullScreen)
         {
             _modeBeforeFullScreen = WindowPresentationMode.Windowed;
             _kioskModeManager.FullScreen = true;
+            return;
         }
 
-        if (error is not null)
+        if (_windowedWindowState == FormWindowState.Maximized)
         {
-            _statusInfo.Text = error;
+            WindowState = FormWindowState.Maximized;
         }
+
+        RefreshKioskChecks();
     }
 
-    private void ApplyKioskSettings(WindowSettings? settings)
+    private PersistedWindowSettings CaptureWindowSettings()
+    {
+        CaptureWindowedBounds();
+
+        if (!_splitContainer.Panel2Collapsed && _splitContainer.Panel2.Width > 0)
+        {
+            _propertyPanelWidth = _splitContainer.Panel2.Width;
+        }
+
+        return new PersistedWindowSettings
+        {
+            X = _lastWindowedBounds.X,
+            Y = _lastWindowedBounds.Y,
+            Width = _lastWindowedBounds.Width,
+            Height = _lastWindowedBounds.Height,
+            WindowState = _windowedWindowState,
+            PresentationMode = _kioskModeManager.FullScreen
+                ? WindowPresentationMode.FullScreen
+                : _presentationMode,
+            ToggleFullScreenKeys = _kioskModeManager.ToggleFullScreenKeys,
+            AlwaysOn = _kioskModeManager.AlwaysOn,
+            RecordFramerate = _recordFramerateEnabled,
+            EscapeExitsFullScreen = _kioskModeManager.EscapeExitsFullScreen,
+            MousePointerAutoHideDelay = _kioskModeManager.MousePointerAutoHideDelay,
+            TopMostInFullScreen = _kioskModeManager.TopMostInFullScreen,
+            PropertyPanelWidth = _propertyPanelWidth,
+        };
+    }
+
+    private void ApplyKioskSettings(PersistedWindowSettings? settings)
     {
         Keys toggleKeys = settings is not null && s_supportedFullScreenKeys.Contains(settings.ToggleFullScreenKeys)
             ? settings.ToggleFullScreenKeys
@@ -80,62 +117,6 @@ public partial class FormMain
         _kioskModeManager.TopMostInFullScreen = settings?.TopMostInFullScreen ?? true;
         RefreshKioskChecks();
     }
-
-    private void SaveWindowSettings()
-    {
-        CaptureWindowedBounds();
-
-        WindowSettings settings = new()
-        {
-            X = _lastWindowedBounds.X,
-            Y = _lastWindowedBounds.Y,
-            Width = _lastWindowedBounds.Width,
-            Height = _lastWindowedBounds.Height,
-            Mode = _kioskModeManager.FullScreen
-                ? WindowPresentationMode.FullScreen
-                : _presentationMode,
-            ToggleFullScreenKeys = _kioskModeManager.ToggleFullScreenKeys,
-            AlwaysOn = _kioskModeManager.AlwaysOn,
-            EscapeExitsFullScreen = _kioskModeManager.EscapeExitsFullScreen,
-            MousePointerAutoHideDelay = _kioskModeManager.MousePointerAutoHideDelay,
-            TopMostInFullScreen = _kioskModeManager.TopMostInFullScreen,
-        };
-
-        try
-        {
-            string path = GetWindowSettingsPath();
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(settings, s_windowSettingsJsonOptions));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-        {
-            Debug.WriteLine($"Could not save WarpClock window settings: {ex.Message}");
-        }
-    }
-
-    private static WindowSettings? TryLoadWindowSettings(out string? error)
-    {
-        try
-        {
-            string path = GetWindowSettingsPath();
-            error = null;
-
-            return File.Exists(path)
-                ? JsonSerializer.Deserialize<WindowSettings>(File.ReadAllText(path), s_windowSettingsJsonOptions)
-                : null;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-        {
-            error = $"Window settings could not be restored: {ex.Message}";
-            return null;
-        }
-    }
-
-    private static string GetWindowSettingsPath() =>
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "WarpClock",
-            "window.json");
 
     private static Rectangle GetDefaultWindowedBounds(Rectangle workingArea)
     {
@@ -177,10 +158,35 @@ public partial class FormMain
             return;
         }
 
+        if (WindowState != FormWindowState.Minimized)
+        {
+            _windowedWindowState = WindowState;
+        }
+
         Rectangle bounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
         if (IsSaneWindowedBounds(bounds))
         {
             _lastWindowedBounds = bounds;
+        }
+    }
+
+    private void ApplyPropertyPanelWidth()
+    {
+        if (_splitContainer.Width <= 0)
+        {
+            return;
+        }
+
+        int panelWidth = Math.Clamp(_propertyPanelWidth, 200, Math.Max(200, _splitContainer.Width - 200));
+        int splitterDistance = Math.Max(100, _splitContainer.Width - panelWidth - _splitContainer.SplitterWidth);
+        _splitContainer.SplitterDistance = splitterDistance;
+    }
+
+    private void OnSplitContainerSplitterMoved(object? sender, SplitterEventArgs e)
+    {
+        if (!_splitContainer.Panel2Collapsed && _splitContainer.Panel2.Width > 0)
+        {
+            _propertyPanelWidth = _splitContainer.Panel2.Width;
         }
     }
 
@@ -212,7 +218,7 @@ public partial class FormMain
 
         FormChromeState state = _chromeState ?? new FormChromeState(
             FormBorderStyle.Sizable,
-            FormWindowState.Normal,
+            _windowedWindowState,
             _lastWindowedBounds,
             TopMost: false);
 
@@ -221,37 +227,5 @@ public partial class FormMain
         _presentationMode = WindowPresentationMode.Windowed;
         _miHideWindowsChrome.Checked = false;
         _statusMode.Text = "Windowed";
-    }
-
-    private sealed class WindowSettings
-    {
-        public int X { get; set; }
-
-        public int Y { get; set; }
-
-        public int Width { get; set; }
-
-        public int Height { get; set; }
-
-        public WindowPresentationMode Mode { get; set; }
-
-        public Keys ToggleFullScreenKeys { get; set; } = Keys.Control | Keys.Shift | Keys.Return;
-
-        public bool AlwaysOn { get; set; }
-
-        public bool EscapeExitsFullScreen { get; set; } = true;
-
-        public int MousePointerAutoHideDelay { get; set; } = 5_000;
-
-        public bool TopMostInFullScreen { get; set; } = true;
-
-        public Rectangle GetWindowedBounds() => new(X, Y, Width, Height);
-    }
-
-    private enum WindowPresentationMode
-    {
-        Windowed,
-        FullScreen,
-        NoChrome,
     }
 }
