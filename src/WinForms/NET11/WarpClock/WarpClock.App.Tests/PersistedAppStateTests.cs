@@ -1,3 +1,6 @@
+using System.Text.Json;
+using WarpClock.Engine;
+
 namespace WarpClock.App.Tests;
 
 public sealed class PersistedAppStateTests
@@ -19,5 +22,105 @@ public sealed class PersistedAppStateTests
         state.Normalize();
 
         Assert.Equal("scatter", state.Theme.CurrentTheme?.ThemeKey);
+    }
+
+    [Fact]
+    public void Normalize_MigratesLegacyCustomThemePropertyKeys()
+    {
+        PersistedAppState state = new()
+        {
+            Theme = new PersistedThemeState
+            {
+                CustomPropertyValues =
+                [
+                    new PersistedThemeCustomPropertyValue
+                    {
+                        ThemeKey = "Scatter.dll|Scatter|WarpClock.Themes.Scatter.ScatterTheme",
+                        PropertyName = " AccentColor ",
+                        Value = "Red",
+                    },
+                ],
+            },
+        };
+
+        state.Normalize();
+
+        PersistedThemeCustomPropertyValue property = Assert.Single(state.Theme.CustomPropertyValues);
+        Assert.Equal("scatter", property.ThemeKey);
+        Assert.Equal("AccentColor", property.PropertyName);
+        Assert.Equal("Red", property.Value);
+    }
+
+    [Fact]
+    public void Deserialize_MigratesLegacyThemeListPaths()
+    {
+        const string json = """
+            {
+              "Theme": {
+                "CurrentThemeListPath": "C:\\themes\\current.json",
+                "DefaultThemeListPath": "C:\\themes\\default.json"
+              }
+            }
+            """;
+
+        PersistedAppState state = JsonSerializer.Deserialize<PersistedAppState>(json)
+            ?? throw new InvalidOperationException("Could not deserialize persisted state.");
+
+        state.Normalize();
+
+        Assert.Equal("C:\\themes\\current.json", state.Theme.CurrentThemeSetPath);
+        Assert.Equal("C:\\themes\\default.json", state.Theme.DefaultThemeSetPath);
+        Assert.DoesNotContain("ThemeListPath", JsonSerializer.Serialize(state));
+    }
+
+    [Fact]
+    public void Normalize_MigratesLegacyHandSettingsIntoOptions()
+    {
+        PersistedAppState state = new()
+        {
+            SchemaVersion = 5,
+            Clock = new PersistedClockSettings
+            {
+                HourMotion = ClockHandMotion.Tick,
+                MinuteMotion = ClockHandMotion.Sweep,
+                SecondMotion = ClockHandMotion.Crawling,
+                GraceSeconds = 9,
+            },
+        };
+
+        state.Normalize();
+
+        Assert.Equal(PersistedAppState.CurrentSchemaVersion, state.SchemaVersion);
+        Assert.Equal(ClockHandMotion.Tick, state.Options.Hands.HourMotion);
+        Assert.Equal(ClockHandMotion.Sweep, state.Options.Hands.MinuteMotion);
+        Assert.Equal(ClockHandMotion.Crawling, state.Options.Hands.SecondMotion);
+        Assert.Equal(9, state.Options.Hands.GraceSeconds);
+    }
+
+    [Fact]
+    public void Normalize_PreservesCurrentOptions()
+    {
+        PersistedAppState state = new()
+        {
+            SchemaVersion = PersistedAppState.CurrentSchemaVersion,
+            Options = new WarpClockOptions
+            {
+                Hands = new HandOptions
+                {
+                    HourMotion = ClockHandMotion.Sweep,
+                },
+                Display = new DisplayOptions
+                {
+                    TickerEnabled = true,
+                    CustomTickerMessage = "Status",
+                },
+            },
+        };
+
+        state.Normalize();
+
+        Assert.Equal(ClockHandMotion.Sweep, state.Options.Hands.HourMotion);
+        Assert.True(state.Options.Display.TickerEnabled);
+        Assert.Equal("Status", state.Options.Display.CustomTickerMessage);
     }
 }

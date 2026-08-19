@@ -3,9 +3,9 @@ using WarpClock.Abstractions;
 namespace WarpClock.App;
 
 /// <summary>
-///  Provides the first-run theme-list document and per-theme default eligibility.
+///  Provides the first-run theme-set document and per-theme default eligibility.
 /// </summary>
-internal static class ThemeListDefaults
+internal static class ThemeSetDefaults
 {
     public static ThemeScheduleDocument CreateDefault(IReadOnlyList<ThemeCatalogInfo> catalog)
     {
@@ -24,7 +24,7 @@ internal static class ThemeListDefaults
 
         var document = new ThemeScheduleDocument
         {
-            Name = "WarpClock Default Themelist",
+            Name = "WarpClock Default Themeset",
             Entries = defaults.Select(CreateDefaultEntry).ToList(),
         };
 

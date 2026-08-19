@@ -51,8 +51,9 @@ internal static class Program
                 .AddSingleton(appPaths)
                 .AddSingleton(startupOptions)
                 .AddSingleton<ThemePluginLoader>()
+                .AddSingleton<PictureFolderCatalog>()
                 .AddSingleton<AppStateStore>()
-                .AddSingleton<ThemeListStore>()
+                .AddSingleton<ThemeSetStore>()
                 .AddSingleton<AppExceptionRouter>();
 
             using WinFormsApplication app = builder.Build();

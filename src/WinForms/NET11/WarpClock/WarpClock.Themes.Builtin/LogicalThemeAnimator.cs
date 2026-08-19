@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Globalization;
 
 using WarpClock.Abstractions;
 
@@ -30,6 +31,117 @@ internal readonly record struct LogicalThemeSnapshot(
     float FlashIntensity,
     int CompletedCycles);
 
+internal readonly record struct LogicalTravelWindow(float Start, float End);
+
+internal enum LogicalLabelSlot
+{
+    Left,
+    Middle,
+    Right,
+}
+
+internal sealed class LogicalDetachPlan
+{
+    private readonly LogicalTravelWindow[] _windows;
+
+    private LogicalDetachPlan(
+        IReadOnlyList<int> firstWaveNumerals,
+        IReadOnlyList<int> secondWaveNumerals,
+        IReadOnlyList<int> thirdWaveMovers,
+        IReadOnlyList<int> fourthWaveMovers,
+        LogicalTravelWindow[] windows)
+    {
+        FirstWaveNumerals = firstWaveNumerals;
+        SecondWaveNumerals = secondWaveNumerals;
+        ThirdWaveMovers = thirdWaveMovers;
+        FourthWaveMovers = fourthWaveMovers;
+        _windows = windows;
+    }
+
+    public IReadOnlyList<int> FirstWaveNumerals { get; }
+
+    public IReadOnlyList<int> SecondWaveNumerals { get; }
+
+    public IReadOnlyList<int> ThirdWaveMovers { get; }
+
+    public IReadOnlyList<int> FourthWaveMovers { get; }
+
+    internal static LogicalDetachPlan Create(Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        List<int> numerals = Enumerable.Range(1, 12).ToList();
+        Shuffle(numerals, random);
+
+        int firstCount = random.Next(1, 4);
+        int secondCount = (int)Math.Round((12 - firstCount) / 2f, MidpointRounding.AwayFromZero);
+
+        int[] first = numerals.Take(firstCount).ToArray();
+        int[] second = numerals.Skip(firstCount).Take(secondCount).ToArray();
+        int[] third =
+        [
+            .. numerals.Skip(firstCount + secondCount),
+            LogicalThemeAnimator.HourHandMoverIndex,
+            LogicalThemeAnimator.MinuteHandMoverIndex,
+            LogicalThemeAnimator.SecondHandMoverIndex,
+            LogicalThemeAnimator.ArbourMoverIndex,
+        ];
+        int[] fourth =
+        [
+            LogicalThemeAnimator.FaceMoverIndex,
+            LogicalThemeAnimator.CaseMoverIndex,
+        ];
+
+        LogicalTravelWindow[] windows = new LogicalTravelWindow[LogicalThemeAnimator.MoverCount];
+        for (int i = 0; i < windows.Length; i++)
+        {
+            windows[i] = new LogicalTravelWindow(0f, 1f);
+        }
+
+        AssignWave(windows, first, launchStart: 0.00f, launchEnd: 0.10f, arrivalStart: 0.58f, arrivalEnd: 0.72f);
+        AssignWave(windows, second, launchStart: 0.18f, launchEnd: 0.34f, arrivalStart: 0.68f, arrivalEnd: 0.82f);
+        AssignWave(windows, third, launchStart: 0.40f, launchEnd: 0.60f, arrivalStart: 0.84f, arrivalEnd: 0.94f);
+        AssignWave(windows, fourth, launchStart: 0.72f, launchEnd: 0.86f, arrivalStart: 0.98f, arrivalEnd: 1.00f);
+
+        return new LogicalDetachPlan(first, second, third, fourth, windows);
+    }
+
+    internal LogicalTravelWindow GetWindow(int moverIndex)
+        => moverIndex >= 0 && moverIndex < _windows.Length
+            ? _windows[moverIndex]
+            : new LogicalTravelWindow(0f, 1f);
+
+    private static void AssignWave(
+        LogicalTravelWindow[] windows,
+        IReadOnlyList<int> movers,
+        float launchStart,
+        float launchEnd,
+        float arrivalStart,
+        float arrivalEnd)
+    {
+        for (int i = 0; i < movers.Count; i++)
+        {
+            float rank = movers.Count <= 1 ? 0.5f : i / (float)(movers.Count - 1);
+            float start = Lerp(launchStart, launchEnd, rank);
+            float end = Lerp(arrivalStart, arrivalEnd, rank);
+            end = MathF.Max(end, start + 0.12f);
+            windows[movers[i]] = new LogicalTravelWindow(start, MathF.Min(1f, end));
+        }
+    }
+
+    private static void Shuffle(IList<int> values, Random random)
+    {
+        for (int i = values.Count - 1; i > 0; i--)
+        {
+            int swap = random.Next(i + 1);
+            (values[i], values[swap]) = (values[swap], values[i]);
+        }
+    }
+
+    private static float Lerp(float from, float to, float progress)
+        => from + ((to - from) * progress);
+}
+
 internal sealed class LogicalThemeStateMachine
 {
     internal static readonly TimeSpan CalmMinDuration = TimeSpan.FromSeconds(30);
@@ -45,6 +157,8 @@ internal sealed class LogicalThemeStateMachine
     internal const float ZoomedOutSceneScale = 0.50f;
     internal const float ViewportMargin = 32f;
     internal const float MinimumSafeMoveDistance = 36f;
+    internal const float EscalationPanLead = 0.24f;
+    internal const float EscalationZoomLead = 0.16f;
 
     internal static IReadOnlyList<PointF> SafeOffsets { get; } = Array.AsReadOnly(
     [
@@ -217,8 +331,8 @@ internal sealed class LogicalThemeStateMachine
                 _sourceStagingOffset,
                 _destinationOffset,
                 _viewportSize,
-                _currentSafeOffset,
-                BaseSceneScale,
+                Lerp(_currentSafeOffset, _sourceStagingOffset, EscalationPanLead * eased),
+                Lerp(BaseSceneScale, ZoomedOutSceneScale, EscalationZoomLead * eased),
                 StormIntensity: eased,
                 FlashIntensity: eased,
                 CompletedCycles),
@@ -233,8 +347,8 @@ internal sealed class LogicalThemeStateMachine
                 _sourceStagingOffset,
                 _destinationOffset,
                 _viewportSize,
-                Lerp(_currentSafeOffset, _sourceStagingOffset, eased),
-                Lerp(BaseSceneScale, ZoomedOutSceneScale, eased),
+                Lerp(_currentSafeOffset, _sourceStagingOffset, EscalationPanLead + ((1f - EscalationPanLead) * eased)),
+                Lerp(BaseSceneScale, ZoomedOutSceneScale, EscalationZoomLead + ((1f - EscalationZoomLead) * eased)),
                 StormIntensity: 1f,
                 FlashIntensity: 1f,
                 CompletedCycles),
@@ -267,8 +381,8 @@ internal sealed class LogicalThemeStateMachine
                 _viewportSize,
                 _destinationOffset,
                 ZoomedOutSceneScale,
-                StormIntensity: 0.85f - (0.20f * progress),
-                FlashIntensity: 0.70f - (0.35f * progress),
+                StormIntensity: 1f - (0.75f * eased),
+                FlashIntensity: 1f - (0.80f * eased),
                 CompletedCycles),
 
             _ => new LogicalThemeSnapshot(
@@ -373,22 +487,17 @@ internal sealed class LogicalThemeStateMachine
             ? 4f * value * value * value
             : 1f - (MathF.Pow(-2f * value + 2f, 3f) / 2f);
     }
-
-    private static float EaseOut(float value)
-    {
-        value = Math.Clamp(value, 0f, 1f);
-        return 1f - MathF.Pow(1f - value, 3f);
-    }
 }
 
 internal sealed class LogicalThemeAnimator : IThemeAnimator
 {
-    private const int FaceMoverIndex = 0;
-    private const int HourHandMoverIndex = 13;
-    private const int MinuteHandMoverIndex = 14;
-    private const int SecondHandMoverIndex = 15;
-    private const int ArbourMoverIndex = 16;
-    private const int MoverCount = 17;
+    internal const int FaceMoverIndex = 0;
+    internal const int HourHandMoverIndex = 13;
+    internal const int MinuteHandMoverIndex = 14;
+    internal const int SecondHandMoverIndex = 15;
+    internal const int ArbourMoverIndex = 16;
+    internal const int CaseMoverIndex = 17;
+    internal const int MoverCount = 18;
 
     private const float MaxNumeralJitter = 6.8f;
     private const float MaxHandJitter = 4.2f;
@@ -399,10 +508,20 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
     private const float MaxNumeralSkew = 4.8f;
     private const float MaxHandSkew = 2.0f;
     private const float MaxArbourSkew = 1.4f;
+    private const double LabelReturnDurationSeconds = 2.6d;
 
     private readonly LogicalThemePalette _palette;
     private readonly LogicalThemeStateMachine _stateMachine;
+    private readonly Random _random;
     private double _motionSeconds;
+    private double _labelReturnSeconds = LabelReturnDurationSeconds;
+    private LogicalDetachPlan _detachPlan;
+    private int[] _labelPermutation = [0, 1, 2];
+    private readonly PointF[] _labelWorldAnchors = new PointF[3];
+    private readonly PointF[] _labelReturnOrigins = new PointF[3];
+    private SizeF _lastViewportSize;
+    private bool _labelsPinnedToViewport = true;
+    private int _observedCompletedCycles;
 
     public LogicalThemeAnimator(LogicalThemePalette palette)
         : this(palette, new Random(Random.Shared.Next()))
@@ -415,15 +534,31 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
         ArgumentNullException.ThrowIfNull(random);
 
         _palette = palette;
+        _random = random;
         _stateMachine = new LogicalThemeStateMachine(random);
+        _detachPlan = LogicalDetachPlan.Create(random);
     }
+
+    internal LogicalDetachPlan CurrentDetachPlan => _detachPlan;
+
+    internal LogicalThemeSnapshot Snapshot => _stateMachine.Snapshot;
+
+    internal double LabelReturnSeconds => _labelReturnSeconds;
 
     public void Initialize(IClockTickContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _motionSeconds = 0d;
-        _stateMachine.SetViewport(LogicalThemeStateMachine.NormalizeViewport(context.SurfaceSize));
+        _labelPermutation = [0, 1, 2];
+        _labelReturnSeconds = LabelReturnDurationSeconds;
+        _observedCompletedCycles = 0;
+        _labelsPinnedToViewport = true;
+        _detachPlan = LogicalDetachPlan.Create(_random);
+        SizeF viewport = LogicalThemeStateMachine.NormalizeViewport(context.SurfaceSize);
+        _stateMachine.SetViewport(viewport);
+        _lastViewportSize = _stateMachine.ViewportSize;
+        InitializeLabelWorldAnchors(_stateMachine.Snapshot);
         ApplySnapshot(context, _stateMachine.Snapshot);
     }
 
@@ -432,8 +567,129 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
         ArgumentNullException.ThrowIfNull(context);
 
         _motionSeconds += Math.Max(0d, context.FrameDelta.TotalSeconds);
-        _stateMachine.SetViewport(LogicalThemeStateMachine.NormalizeViewport(context.SurfaceSize));
-        ApplySnapshot(context, _stateMachine.Advance(context.FrameDelta));
+        SizeF viewport = LogicalThemeStateMachine.NormalizeViewport(context.SurfaceSize);
+        _stateMachine.SetViewport(viewport);
+
+        LogicalThemeSnapshot beforeAdvance = _stateMachine.Snapshot;
+        LogicalThemeSnapshot snapshot = _stateMachine.Advance(context.FrameDelta);
+        if (!SameSize(viewport, _lastViewportSize))
+        {
+            HandleViewportChanged(snapshot);
+            _lastViewportSize = snapshot.ViewportSize;
+        }
+
+        if (snapshot.CompletedCycles != _observedCompletedCycles)
+        {
+            // Use pre-transition staging: after Calm begins, Source/Destination already
+            // describe the next cycle. Subtract the completed cycle's physical offset so
+            // caption world anchors keep continuous screen positions.
+            RebaseLabelWorldAnchorsAfterRecenter(beforeAdvance);
+            _observedCompletedCycles = snapshot.CompletedCycles;
+            Array.Copy(_labelWorldAnchors, _labelReturnOrigins, _labelWorldAnchors.Length);
+            _labelPermutation = PickNextLabelPermutation(_random, _labelPermutation);
+            _labelReturnSeconds = 0d;
+            _labelsPinnedToViewport = false;
+            _detachPlan = LogicalDetachPlan.Create(_random);
+        }
+
+        if (snapshot.Phase == LogicalThemePhase.Calm && _labelReturnSeconds < LabelReturnDurationSeconds)
+        {
+            _labelReturnSeconds = Math.Min(
+                LabelReturnDurationSeconds,
+                _labelReturnSeconds + Math.Max(0d, context.FrameDelta.TotalSeconds));
+
+            if (_labelReturnSeconds >= LabelReturnDurationSeconds)
+            {
+                CommitLabelWorldTargets(snapshot);
+                _labelsPinnedToViewport = true;
+            }
+        }
+
+        ApplySnapshot(context, snapshot);
+    }
+
+    internal float GetTravelProgress(LogicalThemeSnapshot snapshot, int moverIndex)
+    {
+        float combined = ComputeCombinedTravelProgress(snapshot);
+        LogicalTravelWindow window = _detachPlan.GetWindow(moverIndex);
+        float raw = Math.Clamp((combined - window.Start) / MathF.Max(0.0001f, window.End - window.Start), 0f, 1f);
+        return EaseInOut(raw);
+    }
+
+    internal LogicalLabelSlot GetAssignedLabelSlot(ClockElementId id)
+        => (LogicalLabelSlot)_labelPermutation[GetLabelIndex(id)];
+
+    internal PointF GetLabelViewportPosition(LogicalThemeSnapshot snapshot, ClockElementId id)
+    {
+        PointF worldAnchor = GetLabelSceneAnchor(snapshot, id);
+        return Add(GetCameraOffset(snapshot), Scale(worldAnchor, snapshot.SceneScale));
+    }
+
+    internal PointF GetLabelSceneAnchor(LogicalThemeSnapshot snapshot, ClockElementId id)
+    {
+        PointF worldAnchor = _labelWorldAnchors[GetLabelIndex(id)];
+        if (snapshot.Phase == LogicalThemePhase.Calm
+            && _observedCompletedCycles > 0
+            && _labelReturnSeconds < LabelReturnDurationSeconds)
+        {
+            PointF target = GetTargetLabelWorldAnchor(snapshot, id);
+            float progress = EaseInOut((float)(_labelReturnSeconds / LabelReturnDurationSeconds));
+            worldAnchor = Lerp(_labelReturnOrigins[GetLabelIndex(id)], target, progress);
+            worldAnchor.Y -= MathF.Sin(progress * MathF.PI) * 82f;
+        }
+
+        return worldAnchor;
+    }
+
+    internal static string FormatWeekdayText(DateTime value)
+        => value.ToString("dddd", CultureInfo.InvariantCulture);
+
+    internal static string FormatLongDateText(DateTime value)
+        => $"{value.ToString("MMMM", CultureInfo.InvariantCulture)}, {value.Day}{GetOrdinalSuffix(value.Day)}";
+
+    internal static string? ComposeTimeZoneText(ClockAmbientSnapshot ambient)
+    {
+        string alias = ambient.TimeZoneAlias?.Trim() ?? string.Empty;
+        string designation = ambient.TimeZoneDesignation?.Trim() ?? string.Empty;
+
+        return (alias, designation) switch
+        {
+            ("", "") => null,
+            (_, "") => alias,
+            ("", _) => designation,
+            _ when string.Equals(alias, designation, StringComparison.OrdinalIgnoreCase) => alias,
+            _ => $"{alias} · {designation}",
+        };
+    }
+
+    internal static int[] PickNextLabelPermutation(Random random, IReadOnlyList<int> current)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        ArgumentNullException.ThrowIfNull(current);
+
+        // Weekday/date alternate exclusively between the two upper corners.
+        int weekday = current[0] == (int)LogicalLabelSlot.Left
+            ? (int)LogicalLabelSlot.Right
+            : (int)LogicalLabelSlot.Left;
+        int day = weekday == (int)LogicalLabelSlot.Left
+            ? (int)LogicalLabelSlot.Right
+            : (int)LogicalLabelSlot.Left;
+
+        // Timezone may use left/center/right. Prefer center; otherwise a free corner.
+        // When it shares a corner it is stacked on a second row by GetPaddedScreenTopAnchor.
+        int[] timezoneCandidates =
+        [
+            (int)LogicalLabelSlot.Middle,
+            weekday == (int)LogicalLabelSlot.Left ? (int)LogicalLabelSlot.Right : (int)LogicalLabelSlot.Left,
+            weekday,
+        ];
+        int timeZone = timezoneCandidates[random.Next(timezoneCandidates.Length)];
+        if (timeZone == current[1] && timezoneCandidates.Length > 1)
+        {
+            timeZone = timezoneCandidates[(Array.IndexOf(timezoneCandidates, timeZone) + 1) % timezoneCandidates.Length];
+        }
+
+        return [weekday, timeZone, day];
     }
 
     private void ApplySnapshot(IClockTickContext context, LogicalThemeSnapshot snapshot)
@@ -452,19 +708,59 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
         ClockElementDescriptor element,
         ClockElementParameters parameters)
     {
-        PointF homeVector = GetHomeVector(element.Id);
-        PointF anchorOffset = Add(snapshot.SceneOffset, Scale(homeVector, snapshot.SceneScale - 1f));
+        PointF home = GetHomeVector(element.Id);
         float scale = snapshot.SceneScale;
         float skewDegrees = 0f;
         float extraRotationDegrees = 0f;
         float opacity = 1f;
         float progress = 0f;
         bool needsRedraw = false;
+        bool visible = true;
+        ClockNumeralVisibility visibility = ClockNumeralVisibility.Visible;
+        string? text = null;
+        PointF screenDesign;
+        PointF jitter = PointF.Empty;
 
         int moverIndex = GetMoverIndex(element.Id);
+        if (IsLabelElement(element.Id))
+        {
+            // Layout returns the pixel center; AnchorOffset is the full design-space
+            // screen position so DesignScale is applied exactly once by the engine.
+            screenDesign = GetLabelViewportPosition(snapshot, element.Id);
+            ApplyLabelScenery(
+                context,
+                element.Id,
+                ref opacity,
+                ref progress,
+                ref visible,
+                ref text);
+        }
+        else if (moverIndex >= 0
+            && snapshot.Phase is LogicalThemePhase.FlyingOff or LogicalThemePhase.Reassembling)
+        {
+            float travel = GetTravelProgress(snapshot, moverIndex);
+            screenDesign = SampleFlightScreenPosition(element, snapshot, moverIndex, travel);
+            float settle = EaseOut(travel);
+            opacity = 0.76f + (0.24f * (0.35f + (0.65f * settle)));
+            scale *= 0.94f + (0.06f * settle);
+        }
+        else
+        {
+            PointF world = home;
+            if (moverIndex >= 0 && snapshot.Phase == LogicalThemePhase.ZoomingIn)
+            {
+                // Reconstructed dial stays rigid at the destination-relative world offset
+                // while only the camera recenters.
+                world = Add(GetPhysicalClockOffset(snapshot), home);
+            }
+
+            screenDesign = Add(GetCameraOffset(snapshot), Scale(world, scale));
+        }
+
         if (moverIndex >= 0)
         {
-            float storm = snapshot.StormIntensity * _palette.MotionCeiling;
+            float activity = GetTravelActivity(snapshot, moverIndex);
+            float storm = snapshot.StormIntensity * _palette.MotionCeiling * activity;
             float seed = moverIndex + 1;
             float waveA = MathF.Sin((float)(_motionSeconds * 7.4d + (seed * 0.91d)));
             float waveB = MathF.Cos((float)(_motionSeconds * 5.9d + (seed * 1.37d)));
@@ -478,79 +774,78 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
             };
 
             float jitterMagnitude = storm * maxJitter * (0.35f + (0.65f * pulse));
-            anchorOffset = Add(anchorOffset, new PointF(waveA * jitterMagnitude, waveB * jitterMagnitude * 0.72f));
+            jitter = new PointF(waveA * jitterMagnitude, waveB * jitterMagnitude * 0.72f);
             extraRotationDegrees = storm * maxRock * MathF.Sin((float)(_motionSeconds * 6.2d + (seed * 0.82d)));
             skewDegrees = storm * maxSkew * MathF.Cos((float)(_motionSeconds * 4.6d + (seed * 1.11d)));
             scale *= 1f + (storm * 0.03f * MathF.Sin((float)(_motionSeconds * 4d + (seed * 0.48d))));
 
-            progress = snapshot.FlashIntensity;
+            progress = snapshot.FlashIntensity * (0.28f + (0.72f * activity));
             needsRedraw = snapshot.FlashIntensity > 0.001f
-                || snapshot.Phase is LogicalThemePhase.ZoomingOut or LogicalThemePhase.FlyingOff or LogicalThemePhase.Reassembling or LogicalThemePhase.ZoomingIn;
-
-            ApplyTravelMotion(snapshot, moverIndex, element, ref anchorOffset, ref opacity, ref scale);
+                || snapshot.Phase is LogicalThemePhase.ZoomingOut
+                    or LogicalThemePhase.FlyingOff
+                    or LogicalThemePhase.Reassembling
+                    or LogicalThemePhase.ZoomingIn;
         }
 
-        parameters.Visible = true;
-        parameters.Visibility = ClockNumeralVisibility.Visible;
-        SetParameters(parameters, anchorOffset, scale, skewDegrees, extraRotationDegrees, opacity, progress, needsRedraw);
+        PointF anchorOffset = IsLabelElement(element.Id)
+            ? Add(screenDesign, jitter)
+            : Add(Subtract(screenDesign, home), jitter);
+
+        SetParameters(
+            parameters,
+            visible,
+            visibility,
+            text,
+            anchorOffset,
+            scale,
+            skewDegrees,
+            extraRotationDegrees,
+            opacity,
+            progress,
+            needsRedraw);
     }
 
-    private void ApplyTravelMotion(
-        LogicalThemeSnapshot snapshot,
-        int moverIndex,
-        ClockElementDescriptor element,
-        ref PointF anchorOffset,
+    private void ApplyLabelScenery(
+        IClockTickContext context,
+        ClockElementId id,
         ref float opacity,
-        ref float scale)
+        ref float progress,
+        ref bool visible,
+        ref string? text)
     {
-        if (snapshot.Phase is not LogicalThemePhase.FlyingOff and not LogicalThemePhase.Reassembling)
+        text = id.Kind switch
         {
+            ClockElementKind.Weekday => FormatWeekdayText(context.Time.Now),
+            ClockElementKind.Day => FormatLongDateText(context.Time.Now),
+            ClockElementKind.TimeZone => ComposeTimeZoneText(context.Ambient),
+            _ => null,
+        };
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            visible = false;
+            opacity = 0f;
+            progress = 0f;
             return;
         }
 
-        if (snapshot.Phase == LogicalThemePhase.Reassembling)
-        {
-            float settle = EaseOut(snapshot.PhaseProgress);
-            opacity = 0.80f + (0.20f * settle);
-            scale *= 0.96f + (0.04f * settle);
-        }
-        else
-        {
-            float orderedProgress = ComputeOrderedProgress(snapshot.PhaseProgress, moverIndex);
-            float travel = EaseIn(orderedProgress);
-            PointF homeVector = GetHomeVector(element.Id);
-            PointF sourceOffset = Add(
-                snapshot.SourceStagingOffset,
-                Scale(homeVector, snapshot.SceneScale - 1f));
-            PointF jitter = Subtract(anchorOffset, sourceOffset);
-            anchorOffset = Add(
-                SampleFlightAnchorOffset(element, snapshot, moverIndex, travel),
-                jitter);
-            opacity = 0.78f + (0.22f * MathF.Abs((2f * travel) - 1f));
-            scale *= 1f - (0.06f * MathF.Sin(travel * MathF.PI));
-        }
+        progress = 0f;
+        visible = true;
+        opacity = 1f;
     }
 
-    private static float ComputeOrderedProgress(float phaseProgress, int moverIndex)
-    {
-        const float delaySpan = 0.52f;
-        float delay = MoverCount <= 1
-            ? 0f
-            : (moverIndex / (float)(MoverCount - 1)) * delaySpan;
-
-        return Math.Clamp((phaseProgress - delay) / (1f - delay), 0f, 1f);
-    }
-
-    internal static PointF SampleFlightAnchorOffset(
+    internal static PointF SampleFlightScreenPosition(
         ClockElementDescriptor element,
         LogicalThemeSnapshot snapshot,
         int moverIndex,
         float progress)
     {
         PointF homeVector = GetHomeVector(element.Id);
-        PointF sourceWorld = Add(snapshot.SourceStagingOffset, Scale(homeVector, snapshot.SceneScale));
-        PointF destinationWorld = Add(snapshot.DestinationOffset, Scale(homeVector, snapshot.SceneScale));
-        PointF route = Subtract(destinationWorld, sourceWorld);
+        // Flight paths are authored in screen/design space while the camera is frozen
+        // at SourceStagingOffset. Destination is the reconstructed dial corner.
+        PointF sourceScreen = Add(snapshot.SourceStagingOffset, Scale(homeVector, LogicalThemeStateMachine.ZoomedOutSceneScale));
+        PointF destinationScreen = Add(snapshot.DestinationOffset, Scale(homeVector, LogicalThemeStateMachine.ZoomedOutSceneScale));
+        PointF route = Subtract(destinationScreen, sourceScreen);
         float routeLength = MathF.Sqrt(LengthSquared(route));
         PointF perpendicular = routeLength <= 0.001f
             ? PointF.Empty
@@ -563,20 +858,28 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
         float direction = (hash & 1) == 0 ? -1f : 1f;
         float bend = MathF.Min(routeLength * 0.22f, 180f) * variation * direction;
 
-        PointF control1 = Add(Lerp(sourceWorld, destinationWorld, 0.26f), Scale(perpendicular, bend));
-        PointF control2 = Add(Lerp(sourceWorld, destinationWorld, 0.72f), Scale(perpendicular, -bend * 0.58f));
+        PointF control1 = Add(Lerp(sourceScreen, destinationScreen, 0.26f), Scale(perpendicular, bend));
+        PointF control2 = Add(Lerp(sourceScreen, destinationScreen, 0.72f), Scale(perpendicular, -bend * 0.58f));
         control1 = ClampWorldAnchor(control1, element, snapshot);
         control2 = ClampWorldAnchor(control2, element, snapshot);
 
-        PointF worldAnchor = CubicBezier(
-            sourceWorld,
+        return CubicBezier(
+            sourceScreen,
             control1,
             control2,
-            destinationWorld,
+            destinationScreen,
             Math.Clamp(progress, 0f, 1f));
-
-        return Subtract(worldAnchor, homeVector);
     }
+
+    /// <summary>Design-space AnchorOffset for a flight sample (screen − home).</summary>
+    internal static PointF SampleFlightAnchorOffset(
+        ClockElementDescriptor element,
+        LogicalThemeSnapshot snapshot,
+        int moverIndex,
+        float progress)
+        => Subtract(
+            SampleFlightScreenPosition(element, snapshot, moverIndex, progress),
+            GetHomeVector(element.Id));
 
     private static PointF ClampWorldAnchor(
         PointF point,
@@ -657,13 +960,231 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
             ClockElementKind.MinuteHand => MinuteHandMoverIndex,
             ClockElementKind.SecondHand => SecondHandMoverIndex,
             ClockElementKind.Arbour => ArbourMoverIndex,
+            ClockElementKind.Case => CaseMoverIndex,
             _ => -1,
         };
 
     internal static PointF GetHomeVector(ClockElementId id)
-        => id.Kind == ClockElementKind.HourMarker
-            ? Polar(LogicalTheme.HourMarkerRadius, NormalizeIndex(id.Index, 12) * 30f)
-            : PointF.Empty;
+        => id.Kind switch
+        {
+            ClockElementKind.HourMarker => Polar(LogicalTheme.HourMarkerRadius, NormalizeIndex(id.Index, 12) * 30f),
+            // Captions are laid out from the pixel center; their design home is origin.
+            ClockElementKind.Weekday or ClockElementKind.TimeZone or ClockElementKind.Day => PointF.Empty,
+            _ => PointF.Empty,
+        };
+
+    internal static PointF GetLabelSlotVector(LogicalLabelSlot slot)
+        => slot switch
+        {
+            LogicalLabelSlot.Left => new PointF(-350f, -470f),
+            LogicalLabelSlot.Middle => new PointF(0f, -470f),
+            _ => new PointF(350f, -470f),
+        };
+
+    internal static PointF GetLabelSlotVector(ClockElementId id, LogicalLabelSlot slot)
+        => id.Kind == ClockElementKind.TimeZone
+            ? slot switch
+            {
+                LogicalLabelSlot.Left => new PointF(-350f, -525f),
+                LogicalLabelSlot.Middle => new PointF(0f, -525f),
+                _ => new PointF(350f, -525f),
+            }
+            : GetLabelSlotVector(slot);
+
+    internal static float ComputeCombinedTravelProgress(LogicalThemeSnapshot snapshot)
+    {
+        float flightShare = (float)(
+            LogicalThemeStateMachine.FlyOutDuration.TotalSeconds
+            / (LogicalThemeStateMachine.FlyOutDuration.TotalSeconds + LogicalThemeStateMachine.ReassemblyDuration.TotalSeconds));
+
+        return snapshot.Phase switch
+        {
+            LogicalThemePhase.FlyingOff => snapshot.PhaseProgress * flightShare,
+            LogicalThemePhase.Reassembling => flightShare + (snapshot.PhaseProgress * (1f - flightShare)),
+            LogicalThemePhase.ZoomingIn or LogicalThemePhase.Calm when snapshot.CompletedCycles > 0 => 1f,
+            _ => 0f,
+        };
+    }
+
+    private float GetTravelActivity(LogicalThemeSnapshot snapshot, int moverIndex)
+    {
+        if (snapshot.Phase is LogicalThemePhase.FlyingOff or LogicalThemePhase.Reassembling)
+        {
+            float travel = GetTravelProgress(snapshot, moverIndex);
+            return 0.04f + (0.96f * (1f - EaseOut(travel)));
+        }
+
+        if (snapshot.Phase == LogicalThemePhase.ZoomingIn)
+        {
+            return 0.04f * (1f - EaseInOut(snapshot.PhaseProgress));
+        }
+
+        return 1f;
+    }
+
+    private void InitializeLabelWorldAnchors(LogicalThemeSnapshot snapshot)
+    {
+        foreach (ClockElementId id in LabelIds)
+        {
+            int index = GetLabelIndex(id);
+            _labelWorldAnchors[index] = GetTargetLabelWorldAnchor(snapshot, id);
+            _labelReturnOrigins[index] = _labelWorldAnchors[index];
+        }
+
+        _labelsPinnedToViewport = true;
+    }
+
+    private void CommitLabelWorldTargets(LogicalThemeSnapshot snapshot)
+    {
+        foreach (ClockElementId id in LabelIds)
+        {
+            _labelWorldAnchors[GetLabelIndex(id)] = GetTargetLabelWorldAnchor(snapshot, id);
+        }
+    }
+
+    private void RebaseLabelWorldAnchorsAfterRecenter(LogicalThemeSnapshot completedCycleSnapshot)
+    {
+        // completedCycleSnapshot must still carry the cycle's Source/Destination (i.e. the
+        // pre-Calm-transition snapshot). Subtracting P maps world anchors into the rebased
+        // clock origin without depending on the last rendered frame's PhaseProgress.
+        PointF physical = GetPhysicalClockOffset(completedCycleSnapshot);
+
+        for (int i = 0; i < _labelWorldAnchors.Length; i++)
+        {
+            _labelWorldAnchors[i] = Subtract(_labelWorldAnchors[i], physical);
+        }
+    }
+
+    private void HandleViewportChanged(LogicalThemeSnapshot snapshot)
+    {
+        if (snapshot.Phase == LogicalThemePhase.Calm
+            && (_labelsPinnedToViewport || _observedCompletedCycles == 0)
+            && _labelReturnSeconds >= LabelReturnDurationSeconds)
+        {
+            InitializeLabelWorldAnchors(snapshot);
+        }
+    }
+
+    /// <summary>
+    ///  Camera translation in design units. Independent from the reconstructed clock's
+    ///  world offset: during Reassembling the camera stays at the source staging corner
+    ///  while parts occupy destination-relative screen positions.
+    /// </summary>
+    internal static PointF GetCameraOffset(LogicalThemeSnapshot snapshot)
+    {
+        if (snapshot.Phase is LogicalThemePhase.FlyingOff or LogicalThemePhase.Reassembling)
+        {
+            return snapshot.SourceStagingOffset;
+        }
+
+        if (snapshot.Phase is not LogicalThemePhase.ZoomingIn)
+        {
+            return snapshot.SceneOffset;
+        }
+
+        PointF physicalClockOffset = GetPhysicalClockOffset(snapshot);
+        return Subtract(
+            snapshot.SceneOffset,
+            Scale(physicalClockOffset, snapshot.SceneScale));
+    }
+
+    internal static PointF GetPhysicalClockOffset(LogicalThemeSnapshot snapshot)
+        => Scale(
+            Subtract(snapshot.DestinationOffset, snapshot.SourceStagingOffset),
+            1f / LogicalThemeStateMachine.ZoomedOutSceneScale);
+
+    private PointF GetTargetLabelWorldAnchor(LogicalThemeSnapshot snapshot, ClockElementId id)
+    {
+        PointF screenAnchor = GetPaddedScreenTopAnchor(
+            snapshot.ViewportSize,
+            id,
+            GetAssignedLabelSlot(id),
+            _labelPermutation);
+        PointF camera = GetCameraOffset(snapshot);
+        return Scale(
+            Subtract(screenAnchor, camera),
+            1f / LogicalThemeStateMachine.BaseSceneScale);
+    }
+
+    internal static PointF GetPaddedScreenTopAnchor(
+        SizeF viewport,
+        ClockElementId id,
+        LogicalLabelSlot slot)
+        => GetPaddedScreenTopAnchor(viewport, id, slot, permutation: null);
+
+    internal static PointF GetPaddedScreenTopAnchor(
+        SizeF viewport,
+        ClockElementId id,
+        LogicalLabelSlot slot,
+        IReadOnlyList<int>? permutation)
+    {
+        const float padding = 28f;
+        const float rowGap = 10f;
+        SizeF contentSize = GetLabelContentSize(id);
+        float renderedWidth = contentSize.Width * LogicalThemeStateMachine.BaseSceneScale;
+        float renderedHeight = contentSize.Height * LogicalThemeStateMachine.BaseSceneScale;
+        float x = slot switch
+        {
+            LogicalLabelSlot.Left => (-viewport.Width / 2f) + padding + (renderedWidth / 2f),
+            LogicalLabelSlot.Middle => 0f,
+            _ => (viewport.Width / 2f) - padding - (renderedWidth / 2f),
+        };
+
+        int row = 0;
+        if (id.Kind == ClockElementKind.TimeZone
+            && slot is LogicalLabelSlot.Left or LogicalLabelSlot.Right
+            && permutation is not null
+            && (permutation[0] == (int)slot || permutation[2] == (int)slot))
+        {
+            // Stack timezone under the weekday/date that already owns this corner.
+            row = 1;
+        }
+
+        float y = (-viewport.Height / 2f)
+            + padding
+            + (renderedHeight / 2f)
+            + (row * (renderedHeight + rowGap));
+        return new PointF(x, y);
+    }
+
+    internal static SizeF GetLabelContentSize(ClockElementId id)
+        => id.Kind switch
+        {
+            ClockElementKind.Weekday => new SizeF(276f, 54f),
+            ClockElementKind.Day => new SizeF(296f, 54f),
+            ClockElementKind.TimeZone => new SizeF(320f, 46f),
+            _ => throw new ArgumentOutOfRangeException(nameof(id)),
+        };
+
+    private static bool SameSize(SizeF left, SizeF right)
+        => MathF.Abs(left.Width - right.Width) <= 0.01f
+            && MathF.Abs(left.Height - right.Height) <= 0.01f;
+
+    private static ClockElementId[] LabelIds { get; } =
+        [ClockElementId.Weekday, ClockElementId.TimeZone, ClockElementId.Day];
+
+    private static bool IsLabelElement(ClockElementId id)
+        => id.Kind is ClockElementKind.Weekday or ClockElementKind.Day or ClockElementKind.TimeZone;
+
+    private static int GetLabelIndex(ClockElementId id)
+        => id.Kind switch
+        {
+            ClockElementKind.Weekday => 0,
+            ClockElementKind.TimeZone => 1,
+            ClockElementKind.Day => 2,
+            _ => throw new ArgumentOutOfRangeException(nameof(id)),
+        };
+
+    private static string GetOrdinalSuffix(int day)
+        => day % 100 is 11 or 12 or 13
+            ? "th"
+            : (day % 10) switch
+            {
+                1 => "st",
+                2 => "nd",
+                3 => "rd",
+                _ => "th",
+            };
 
     private static int NormalizeIndex(int index, int count)
     {
@@ -679,6 +1200,9 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
 
     private static void SetParameters(
         ClockElementParameters parameters,
+        bool visible,
+        ClockNumeralVisibility visibility,
+        string? text,
         PointF anchorOffset,
         float scale,
         float skewDegrees,
@@ -688,6 +1212,22 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
         bool needsRedraw)
     {
         bool redraw = needsRedraw;
+
+        if (parameters.Visible != visible)
+        {
+            parameters.Visible = visible;
+        }
+
+        if (parameters.Visibility != visibility)
+        {
+            parameters.Visibility = visibility;
+        }
+
+        if (!string.Equals(parameters.Text, text, StringComparison.Ordinal))
+        {
+            parameters.Text = text;
+            redraw = true;
+        }
 
         if (!NearlyEqual(parameters.AnchorOffset, anchorOffset))
         {
@@ -727,16 +1267,18 @@ internal sealed class LogicalThemeAnimator : IThemeAnimator
         parameters.RedrawRequested = redraw;
     }
 
-    private static float EaseIn(float value)
-    {
-        value = Math.Clamp(value, 0f, 1f);
-        return value * value * value;
-    }
-
     private static float EaseOut(float value)
     {
         value = Math.Clamp(value, 0f, 1f);
         return 1f - MathF.Pow(1f - value, 3f);
+    }
+
+    private static float EaseInOut(float value)
+    {
+        value = Math.Clamp(value, 0f, 1f);
+        return value < 0.5f
+            ? 4f * value * value * value
+            : 1f - (MathF.Pow(-2f * value + 2f, 3f) / 2f);
     }
 
     private static bool NearlyEqual(float left, float right)

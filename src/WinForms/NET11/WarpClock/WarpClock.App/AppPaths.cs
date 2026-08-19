@@ -15,7 +15,8 @@ public sealed class AppPaths
 
         RootDirectory = root;
         SettingsPath = Path.Combine(root, "settings.json");
-        ThemeListPath = Path.Combine(root, "themelist.json");
+        ThemeSetPath = Path.Combine(root, "default.themeset.json");
+        LegacyThemeListPath = Path.Combine(root, "themelist.json");
         LegacyWindowSettingsPath = Path.Combine(root, "window.json");
         LogDirectory = Path.Combine(root, "Logs");
         DiagnosticsDirectory = Path.Combine(root, "Diagnostics");
@@ -28,8 +29,11 @@ public sealed class AppPaths
     /// <summary>The versioned persisted UI-state file.</summary>
     public string SettingsPath { get; }
 
-    /// <summary>The persisted theme-list/scheduler file.</summary>
-    public string ThemeListPath { get; }
+    /// <summary>The persisted theme-set/scheduler file.</summary>
+    public string ThemeSetPath { get; }
+
+    /// <summary>The legacy persisted theme-list/scheduler file.</summary>
+    public string LegacyThemeListPath { get; }
 
     /// <summary>The legacy pre-migration window settings file.</summary>
     public string LegacyWindowSettingsPath { get; }

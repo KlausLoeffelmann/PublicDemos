@@ -14,6 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="WarpToolkit.WinForms" Version="$(WarpToolkitVersion)" />
     <PackageReference Include="WarpToolkit.WinForms.AppServices" Version="$(WarpToolkitVersion)" />
     <ProjectReference Include="..\WarpClock.Abstractions\WarpClock.Abstractions.csproj" />
     <ProjectReference Include="..\WarpClock.Engine\WarpClock.Engine.csproj" />

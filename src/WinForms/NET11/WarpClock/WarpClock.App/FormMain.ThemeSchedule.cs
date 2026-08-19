@@ -6,33 +6,105 @@ public partial class FormMain
 {
     private ThemeScheduleDocument? _themeSchedule;
     private System.Windows.Forms.Timer? _themeScheduleTimer;
-    private string? _currentThemeListPath;
-    private string? _defaultThemeListPath;
+    private string? _currentThemeSetPath;
+    private string? _defaultThemeSetPath;
 
     private void LoadThemeSchedule()
     {
         IReadOnlyList<ThemeCatalogInfo> catalog = GetThemeCatalogSnapshot();
-        _defaultThemeListPath = NormalizeThemeListPath(_loadedAppState?.Theme.DefaultThemeListPath) ?? _appPaths.ThemeListPath;
-        _currentThemeListPath = NormalizeThemeListPath(_loadedAppState?.Theme.CurrentThemeListPath) ?? _defaultThemeListPath;
+        _defaultThemeSetPath = NormalizeThemeSetPath(_loadedAppState?.Theme.DefaultThemeSetPath) ?? _appPaths.ThemeSetPath;
+        _currentThemeSetPath = NormalizeThemeSetPath(_loadedAppState?.Theme.CurrentThemeSetPath) ?? _defaultThemeSetPath;
 
-        if (_themeListStore is null)
+        if (_themeSetStore is null)
         {
-            _themeSchedule = ThemeListDefaults.CreateDefault(catalog);
+            _themeSchedule = ThemeSetDefaults.CreateDefault(catalog);
             ScheduleNextThemeRotation();
             return;
         }
 
-        EnsureDefaultThemeListExists(catalog);
+        MigrateLegacyDefaultThemeSetIfNeeded(catalog);
+        EnsureDefaultThemeSetExists(catalog);
 
-        ThemeScheduleDocument? document = TryLoadThemeListForStartup(_currentThemeListPath, catalog);
+        ThemeScheduleDocument? document = TryLoadThemeSetForStartup(_currentThemeSetPath, catalog);
         if (document is null)
         {
-            _currentThemeListPath = _defaultThemeListPath;
-            document = _themeListStore.EnsureDefaultAtPath(_defaultThemeListPath!, catalog);
+            _currentThemeSetPath = _defaultThemeSetPath;
+            document = _themeSetStore.EnsureDefaultAtPath(_defaultThemeSetPath!, catalog);
         }
 
         _themeSchedule = document;
         ScheduleNextThemeRotation();
+    }
+
+    private void MigrateLegacyDefaultThemeSetIfNeeded(IReadOnlyList<ThemeCatalogInfo> catalog)
+    {
+        if (_themeSetStore is null)
+        {
+            return;
+        }
+
+        string legacyPath = NormalizeThemeSetPath(_appPaths.LegacyThemeListPath)
+            ?? _appPaths.LegacyThemeListPath;
+        string canonicalPath = NormalizeThemeSetPath(_appPaths.ThemeSetPath)
+            ?? _appPaths.ThemeSetPath;
+
+        bool legacyExists = File.Exists(legacyPath);
+        bool canonicalExists = File.Exists(canonicalPath);
+        bool currentUsesLegacy = string.Equals(_currentThemeSetPath, legacyPath, StringComparison.OrdinalIgnoreCase);
+        bool defaultUsesLegacy = string.Equals(_defaultThemeSetPath, legacyPath, StringComparison.OrdinalIgnoreCase);
+
+        if (!legacyExists)
+        {
+            if (defaultUsesLegacy)
+            {
+                _defaultThemeSetPath = canonicalPath;
+            }
+
+            if (currentUsesLegacy)
+            {
+                _currentThemeSetPath = canonicalPath;
+            }
+
+            return;
+        }
+
+        if (!canonicalExists)
+        {
+            try
+            {
+                _themeSetStore.MigrateLegacyDefaultFile(legacyPath, canonicalPath, catalog);
+                _logger.LogInformation(
+                    "Migrated the legacy WarpClock themelist at {LegacyPath} to the canonical themeset path {Path}.",
+                    legacyPath,
+                    canonicalPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException)
+            {
+                _logger.LogWarning(ex, "Could not migrate the legacy WarpClock themelist at {Path}.", legacyPath);
+
+                if (string.Equals(_defaultThemeSetPath, _appPaths.ThemeSetPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    _defaultThemeSetPath = legacyPath;
+                }
+
+                if (string.Equals(_currentThemeSetPath, _appPaths.ThemeSetPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    _currentThemeSetPath = legacyPath;
+                }
+
+                return;
+            }
+        }
+
+        if (defaultUsesLegacy || string.Equals(_defaultThemeSetPath, canonicalPath, StringComparison.OrdinalIgnoreCase))
+        {
+            _defaultThemeSetPath = canonicalPath;
+        }
+
+        if (currentUsesLegacy)
+        {
+            _currentThemeSetPath = canonicalPath;
+        }
     }
 
     private ThemeSchedulePeriod GetCurrentThemePeriod()
@@ -108,98 +180,98 @@ public partial class FormMain
         }
     }
 
-    private void OnCreateNewThemeListClick(object? sender, EventArgs e)
+    private void OnCreateNewThemeSetClick(object? sender, EventArgs e)
     {
-        ThemeScheduleDocument document = ThemeListDefaults.CreateDefault(GetThemeCatalogSnapshot());
-        document.Name = "WarpClock Theme List";
-        EditAndSaveThemeList(document, currentPath: null, requireSaveAs: true);
+        ThemeScheduleDocument document = ThemeSetDefaults.CreateDefault(GetThemeCatalogSnapshot());
+        document.Name = "WarpClock Themeset";
+        EditAndSaveThemeSet(document, currentPath: null, requireSaveAs: true);
     }
 
-    private void OnEditCurrentThemeListClick(object? sender, EventArgs e)
+    private void OnEditCurrentThemeSetClick(object? sender, EventArgs e)
     {
-        ThemeScheduleDocument document = (_themeSchedule ?? ThemeListDefaults.CreateDefault(GetThemeCatalogSnapshot())).Clone();
-        EditAndSaveThemeList(document, _currentThemeListPath, requireSaveAs: false);
+        ThemeScheduleDocument document = (_themeSchedule ?? ThemeSetDefaults.CreateDefault(GetThemeCatalogSnapshot())).Clone();
+        EditAndSaveThemeSet(document, _currentThemeSetPath, requireSaveAs: false);
     }
 
-    private void OnLoadThemeListClick(object? sender, EventArgs e)
+    private void OnLoadThemeSetClick(object? sender, EventArgs e)
     {
-        using OpenFileDialog dialog = CreateThemeListOpenDialog();
+        using OpenFileDialog dialog = CreateThemeSetOpenDialog();
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;
         }
 
-        string path = NormalizeThemeListPath(dialog.FileName)
+        string path = NormalizeThemeSetPath(dialog.FileName)
             ?? dialog.FileName;
 
         try
         {
-            ThemeScheduleDocument document = _themeListStore is null
-                ? ThemeListDefaults.CreateDefault(GetThemeCatalogSnapshot())
-                : _themeListStore.LoadFromPath(path, GetThemeCatalogSnapshot());
+            ThemeScheduleDocument document = _themeSetStore is null
+                ? ThemeSetDefaults.CreateDefault(GetThemeCatalogSnapshot())
+                : _themeSetStore.LoadFromPath(path, GetThemeCatalogSnapshot());
 
-            ApplyAndPersistThemeList(document, path, useAsDefaultPath: string.Equals(path, _defaultThemeListPath, StringComparison.OrdinalIgnoreCase));
-            _statusInfo.Text = $"Loaded themelist '{document.Name}'.";
+            ApplyAndPersistThemeSet(document, path, useAsDefaultPath: string.Equals(path, _defaultThemeSetPath, StringComparison.OrdinalIgnoreCase));
+            _statusInfo.Text = $"Loaded themeset '{document.Name}'.";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException)
         {
-            _logger.LogWarning(ex, "Could not load WarpClock themelist from {Path}.", path);
-            _statusInfo.Text = $"Themelist load failed: {ex.Message}";
+            _logger.LogWarning(ex, "Could not load WarpClock themeset from {Path}.", path);
+            _statusInfo.Text = $"Themeset load failed: {ex.Message}";
             AppMessageDialog.ShowMessage(
                 this,
-                "WarpClock - Themelist load failed",
-                "WarpClock could not load the selected themelist.",
+                "WarpClock - Themeset load failed",
+                "WarpClock could not load the selected themeset.",
                 ex.Message + Environment.NewLine + Environment.NewLine + path);
         }
     }
 
-    private void OnSaveThemeListClick(object? sender, EventArgs e)
+    private void OnSaveThemeSetClick(object? sender, EventArgs e)
     {
         if (_themeSchedule is null)
         {
-            _statusInfo.Text = "There is no themelist to save.";
+            _statusInfo.Text = "There is no themeset to save.";
             return;
         }
 
-        if (TrySaveThemeListDocument(_themeSchedule.Clone(), _currentThemeListPath, IsCurrentThemeListDefault(), requireSaveAs: true, out string? savedPath))
+        if (TrySaveThemeSetDocument(_themeSchedule.Clone(), _currentThemeSetPath, IsCurrentThemeSetDefault(), requireSaveAs: true, out string? savedPath))
         {
-            _currentThemeListPath = savedPath;
+            _currentThemeSetPath = savedPath;
             PersistCurrentAppState();
-            _statusInfo.Text = $"Saved themelist '{_themeSchedule.Name}'.";
+            _statusInfo.Text = $"Saved themeset '{_themeSchedule.Name}'.";
         }
     }
 
-    private void EditAndSaveThemeList(ThemeScheduleDocument document, string? currentPath, bool requireSaveAs)
+    private void EditAndSaveThemeSet(ThemeScheduleDocument document, string? currentPath, bool requireSaveAs)
     {
-        using ThemeListEditorDialog dialog = new(document, GetThemeCatalogSnapshot(), currentPath, _defaultThemeListPath);
+        using ThemeSetEditorDialog dialog = new(document, GetThemeCatalogSnapshot(), currentPath, _defaultThemeSetPath);
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;
         }
 
-        if (!TrySaveThemeListDocument(dialog.EditedDocument.Clone(), currentPath, dialog.UseAsDefaultOnStartup, requireSaveAs, out string? savedPath))
+        if (!TrySaveThemeSetDocument(dialog.EditedDocument.Clone(), currentPath, dialog.UseAsDefaultOnStartup, requireSaveAs, out string? savedPath))
         {
             return;
         }
 
-        ApplyAndPersistThemeList(dialog.EditedDocument, savedPath, dialog.UseAsDefaultOnStartup);
-        _statusInfo.Text = $"Saved themelist '{dialog.EditedDocument.Name}'.";
+        ApplyAndPersistThemeSet(dialog.EditedDocument, savedPath, dialog.UseAsDefaultOnStartup);
+        _statusInfo.Text = $"Saved themeset '{dialog.EditedDocument.Name}'.";
     }
 
-    private void ApplyAndPersistThemeList(ThemeScheduleDocument document, string? currentPath, bool useAsDefaultPath)
+    private void ApplyAndPersistThemeSet(ThemeScheduleDocument document, string? currentPath, bool useAsDefaultPath)
     {
         _themeSchedule = document.Clone();
-        _currentThemeListPath = currentPath;
+        _currentThemeSetPath = currentPath;
 
         if (useAsDefaultPath)
         {
-            _defaultThemeListPath = currentPath;
+            _defaultThemeSetPath = currentPath;
         }
         else if (!string.IsNullOrWhiteSpace(currentPath)
-            && string.Equals(currentPath, _defaultThemeListPath, StringComparison.OrdinalIgnoreCase))
+            && string.Equals(currentPath, _defaultThemeSetPath, StringComparison.OrdinalIgnoreCase))
         {
-            _defaultThemeListPath = _appPaths.ThemeListPath;
-            EnsureDefaultThemeListExists(GetThemeCatalogSnapshot());
+            _defaultThemeSetPath = _appPaths.ThemeSetPath;
+            EnsureDefaultThemeSetExists(GetThemeCatalogSnapshot());
         }
 
         ScheduleNextThemeRotation();
@@ -218,138 +290,140 @@ public partial class FormMain
         _propertyGrid.Refresh();
     }
 
-    private bool TrySaveThemeListDocument(
+    private bool TrySaveThemeSetDocument(
         ThemeScheduleDocument document,
         string? currentPath,
         bool useAsDefaultPath,
         bool requireSaveAs,
         out string? savedPath)
     {
-        savedPath = NormalizeThemeListPath(currentPath);
-        if (requireSaveAs || string.IsNullOrWhiteSpace(savedPath))
+        savedPath = NormalizeThemeSetPath(currentPath);
+        if (requireSaveAs
+            || string.IsNullOrWhiteSpace(savedPath)
+            || !HasThemeSetFileExtension(savedPath))
         {
-            using SaveFileDialog dialog = CreateThemeListSaveDialog(document, savedPath);
+            using SaveFileDialog dialog = CreateThemeSetSaveDialog(document, savedPath);
             if (dialog.ShowDialog(this) != DialogResult.OK)
             {
-                _statusInfo.Text = "Themelist save canceled.";
+                _statusInfo.Text = "Themeset save canceled.";
                 return false;
             }
 
-            savedPath = NormalizeThemeListPath(dialog.FileName) ?? dialog.FileName;
+            savedPath = NormalizeThemeSetPath(dialog.FileName) ?? dialog.FileName;
         }
 
         try
         {
-            if (_themeListStore is null)
+            if (_themeSetStore is null)
             {
                 document.Normalize();
             }
             else
             {
-                _themeListStore.SaveToPath(savedPath!, document);
+                _themeSetStore.SaveToPath(savedPath!, document);
             }
 
             if (useAsDefaultPath)
             {
-                _defaultThemeListPath = savedPath;
+                _defaultThemeSetPath = savedPath;
             }
 
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException)
         {
-            _logger.LogWarning(ex, "Could not save WarpClock themelist to {Path}.", savedPath);
-            _statusInfo.Text = $"Themelist save failed: {ex.Message}";
+            _logger.LogWarning(ex, "Could not save WarpClock themeset to {Path}.", savedPath);
+            _statusInfo.Text = $"Themeset save failed: {ex.Message}";
             AppMessageDialog.ShowMessage(
                 this,
-                "WarpClock - Themelist save failed",
-                "WarpClock could not save the current themelist.",
+                "WarpClock - Themeset save failed",
+                "WarpClock could not save the current themeset.",
                 ex.Message + Environment.NewLine + Environment.NewLine + savedPath);
             return false;
         }
     }
 
-    private ThemeScheduleDocument? TryLoadThemeListForStartup(string? path, IReadOnlyList<ThemeCatalogInfo> catalog)
+    private ThemeScheduleDocument? TryLoadThemeSetForStartup(string? path, IReadOnlyList<ThemeCatalogInfo> catalog)
     {
-        if (_themeListStore is null || string.IsNullOrWhiteSpace(path))
+        if (_themeSetStore is null || string.IsNullOrWhiteSpace(path))
         {
             return null;
         }
 
         try
         {
-            return _themeListStore.LoadFromPath(path, catalog);
+            return _themeSetStore.LoadFromPath(path, catalog);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException)
         {
-            _logger.LogWarning(ex, "Could not restore themelist from {Path}; falling back to the default themelist.", path);
+            _logger.LogWarning(ex, "Could not restore themeset from {Path}; falling back to the default themeset.", path);
             return null;
         }
     }
 
-    private void EnsureDefaultThemeListExists(IReadOnlyList<ThemeCatalogInfo> catalog)
+    private void EnsureDefaultThemeSetExists(IReadOnlyList<ThemeCatalogInfo> catalog)
     {
-        if (_themeListStore is null)
+        if (_themeSetStore is null)
         {
             return;
         }
 
-        _defaultThemeListPath ??= _appPaths.ThemeListPath;
+        _defaultThemeSetPath ??= _appPaths.ThemeSetPath;
 
         try
         {
-            _themeListStore.EnsureDefaultAtPath(_defaultThemeListPath, catalog);
+            _themeSetStore.EnsureDefaultAtPath(_defaultThemeSetPath, catalog);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException)
         {
-            _logger.LogWarning(ex, "Could not ensure the default themelist at {Path}.", _defaultThemeListPath);
+            _logger.LogWarning(ex, "Could not ensure the default themeset at {Path}.", _defaultThemeSetPath);
         }
     }
 
-    private bool IsCurrentThemeListDefault()
-        => !string.IsNullOrWhiteSpace(_currentThemeListPath)
-            && string.Equals(_currentThemeListPath, _defaultThemeListPath, StringComparison.OrdinalIgnoreCase);
+    private bool IsCurrentThemeSetDefault()
+        => !string.IsNullOrWhiteSpace(_currentThemeSetPath)
+            && string.Equals(_currentThemeSetPath, _defaultThemeSetPath, StringComparison.OrdinalIgnoreCase);
 
-    private OpenFileDialog CreateThemeListOpenDialog()
+    private OpenFileDialog CreateThemeSetOpenDialog()
     {
         OpenFileDialog dialog = new()
         {
             CheckFileExists = true,
-            Filter = "WarpClock themelist (*.json)|*.json|JSON files (*.json)|*.json|All files (*.*)|*.*",
-            InitialDirectory = GetThemeListInitialDirectory(_currentThemeListPath ?? _defaultThemeListPath),
-            Title = "Load WarpClock themelist",
+            Filter = "WarpClock themeset (*.themeset.json)|*.themeset.json|Legacy WarpClock theme list (*.json)|*.json|All files (*.*)|*.*",
+            InitialDirectory = GetThemeSetInitialDirectory(_currentThemeSetPath ?? _defaultThemeSetPath),
+            Title = "Load WarpClock themeset",
         };
 
         return dialog;
     }
 
-    private SaveFileDialog CreateThemeListSaveDialog(ThemeScheduleDocument document, string? currentPath)
+    private SaveFileDialog CreateThemeSetSaveDialog(ThemeScheduleDocument document, string? currentPath)
     {
         SaveFileDialog dialog = new()
         {
             AddExtension = true,
-            DefaultExt = "json",
-            Filter = "WarpClock themelist (*.json)|*.json|JSON files (*.json)|*.json|All files (*.*)|*.*",
-            InitialDirectory = GetThemeListInitialDirectory(currentPath ?? _defaultThemeListPath),
+            DefaultExt = "themeset.json",
+            Filter = "WarpClock themeset (*.themeset.json)|*.themeset.json|Legacy JSON (*.json)|*.json|All files (*.*)|*.*",
+            InitialDirectory = GetThemeSetInitialDirectory(currentPath ?? _defaultThemeSetPath),
             OverwritePrompt = true,
-            Title = "Save WarpClock themelist",
+            Title = "Save WarpClock themeset",
         };
 
         if (!string.IsNullOrWhiteSpace(currentPath))
         {
-            dialog.FileName = Path.GetFileName(currentPath);
+            dialog.FileName = GetPreferredThemeSetFileName(currentPath);
         }
         else
         {
-            dialog.FileName = MakeSafeFileName(document.Name) + ".json";
+            dialog.FileName = MakeSafeFileName(document.Name) + ".themeset.json";
         }
 
         return dialog;
     }
 
-    private string GetThemeListInitialDirectory(string? candidatePath)
+    private string GetThemeSetInitialDirectory(string? candidatePath)
     {
-        string? path = NormalizeThemeListPath(candidatePath);
+        string? path = NormalizeThemeSetPath(candidatePath);
         if (!string.IsNullOrWhiteSpace(path))
         {
             string? directory = Path.GetDirectoryName(path);
@@ -367,7 +441,7 @@ public partial class FormMain
     private static string MakeSafeFileName(string name)
     {
         string trimmed = string.IsNullOrWhiteSpace(name)
-            ? "WarpClock Theme List"
+            ? "WarpClock Themeset"
             : name.Trim();
 
         foreach (char invalid in Path.GetInvalidFileNameChars())
@@ -378,7 +452,18 @@ public partial class FormMain
         return trimmed;
     }
 
-    private static string? NormalizeThemeListPath(string? path)
+    private static string GetPreferredThemeSetFileName(string currentPath)
+    {
+        string fileName = Path.GetFileName(currentPath);
+        return HasThemeSetFileExtension(fileName)
+            ? fileName
+            : Path.GetFileNameWithoutExtension(currentPath) + ".themeset.json";
+    }
+
+    private static bool HasThemeSetFileExtension(string path)
+        => path.EndsWith(".themeset.json", StringComparison.OrdinalIgnoreCase);
+
+    private static string? NormalizeThemeSetPath(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
         {

@@ -32,4 +32,10 @@ internal sealed class ElementRuntime
 
     /// <summary>The clock-time snapshot used when the current content is drawn.</summary>
     public ClockTimeSnapshot ContentTime { get; set; }
+
+    /// <summary>The time-zone snapshot used when the current content is drawn.</summary>
+    public ClockTimeZoneSnapshot ContentTimeZone { get; set; } = ClockTimeZoneSnapshot.Create(TimeZoneInfo.Local, DateTime.Now);
+
+    /// <summary>The ambient snapshot used when the current content is drawn.</summary>
+    public ClockAmbientSnapshot ContentAmbient { get; set; } = ClockAmbientSnapshot.Empty;
 }

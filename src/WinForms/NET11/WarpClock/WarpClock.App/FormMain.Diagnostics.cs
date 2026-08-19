@@ -280,9 +280,9 @@ public partial class FormMain
             CaptureCount = captures.Count,
             ThemeKey = _current?.Catalog.ThemeKey ?? string.Empty,
             ThemeDisplayName = _current?.Catalog.GetConcreteDisplayName(_currentResolvedVariant, GetCurrentThemePeriod()) ?? string.Empty,
-            ThemeListName = _themeSchedule?.Name ?? string.Empty,
-            CurrentThemeListPath = _currentThemeListPath,
-            DefaultThemeListPath = _defaultThemeListPath,
+            ThemeSetName = _themeSchedule?.Name ?? string.Empty,
+            CurrentThemeSetPath = _currentThemeSetPath,
+            DefaultThemeSetPath = _defaultThemeSetPath,
             PresentationMode = _kioskModeManager.FullScreen ? WindowPresentationMode.FullScreen.ToString() : _presentationMode.ToString(),
             AlwaysOn = _kioskModeManager.AlwaysOn,
             VSyncEnabled = _clock.VSyncEnabled,
@@ -340,11 +340,11 @@ public partial class FormMain
 
         public string ThemeDisplayName { get; set; } = string.Empty;
 
-        public string ThemeListName { get; set; } = string.Empty;
+        public string ThemeSetName { get; set; } = string.Empty;
 
-        public string? CurrentThemeListPath { get; set; }
+        public string? CurrentThemeSetPath { get; set; }
 
-        public string? DefaultThemeListPath { get; set; }
+        public string? DefaultThemeSetPath { get; set; }
 
         public string PresentationMode { get; set; } = string.Empty;
 

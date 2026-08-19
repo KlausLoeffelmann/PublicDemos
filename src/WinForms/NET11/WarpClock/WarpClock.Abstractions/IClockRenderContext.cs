@@ -24,6 +24,18 @@ public interface IClockRenderContext
     /// <summary>The authoritative time snapshot, for time-dependent content.</summary>
     ClockTimeSnapshot Time { get; }
 
+    /// <summary>
+    ///  The displayed time-zone snapshot for the current render. Legacy
+    ///  implementations remain compatible through this default interface member.
+    /// </summary>
+    ClockTimeZoneSnapshot TimeZone => ClockTimeZoneSnapshot.Create(TimeZoneInfo.Local, Time.Now);
+
+    /// <summary>
+    ///  Immutable host ambient content, such as overlay messages or indexed images.
+    ///  Legacy implementations remain compatible through this default interface member.
+    /// </summary>
+    ClockAmbientSnapshot Ambient => ClockAmbientSnapshot.Empty;
+
     /// <summary>The scale factor from design units to pixels the engine applied.</summary>
     float Scale { get; }
 }

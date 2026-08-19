@@ -47,46 +47,60 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
     {
         float scale = ctx.Scale;
         float cx = ctx.ContentSize.Width / 2f;
-        float tipY = 8f * scale;
+        float tipY = NerdThemeGeometry.TipInset * scale;
         float pivotY = ctx.Pivot.Y;
-        float bladeHalf = 16f * scale;
+        float shoulderY = tipY + (NerdThemeGeometry.ShoulderInset * scale);
+        float lowerY = pivotY - (58f * scale);
+        float shoulderHalf = NerdThemeGeometry.ShoulderHalfWidth * scale;
+        float lowerHalf = NerdThemeGeometry.LowerHalfWidth * scale;
+        float tailHalf = NerdThemeGeometry.TailHalfWidth * scale;
 
         using (var blade = new SolidBrush(palette.Blade))
         {
             g.FillPolygon(blade,
             [
                 new PointF(cx, tipY),
-                new PointF(cx + bladeHalf, pivotY),
-                new PointF(cx, pivotY + 36f * scale),
-                new PointF(cx - bladeHalf, pivotY),
+                new PointF(cx + shoulderHalf, shoulderY),
+                new PointF(cx + lowerHalf, lowerY),
+                new PointF(cx + tailHalf, pivotY + (NerdThemeGeometry.TailDepth * scale)),
+                new PointF(cx - tailHalf, pivotY + (NerdThemeGeometry.TailDepth * scale)),
+                new PointF(cx - lowerHalf, lowerY),
+                new PointF(cx - shoulderHalf, shoulderY),
             ]);
         }
 
         int hour = ctx.Time.Now.Hour;
         int minute = ctx.Time.Now.Minute;
 
-        float dotR = 11f * scale;
-        float top = tipY + dotR + 6f * scale;
-        float bottom = pivotY - dotR - 6f * scale;
+        float dotR = NerdThemeGeometry.DotRadius * scale;
+        float top = NerdThemeGeometry.DotTop * scale;
+        float bottom = NerdThemeGeometry.DotBottom * scale;
+        float offset = NerdThemeGeometry.BitColumnOffset * scale;
 
-        const int minuteBits = 6;
-        const int hourBits = 5;
-        float gap = 34f * scale;
-        float step = (bottom - top - gap) / (minuteBits - 1 + hourBits - 1);
-
-        int slot = 0;
-        for (int b = minuteBits - 1; b >= 0; b--, slot++)
-        {
-            DrawBit(g, cx, top + step * slot, dotR, (minute & (1 << b)) != 0);
-        }
-
-        float hourTop = top + step * (minuteBits - 1) + gap;
-        for (int b = hourBits - 1, h = 0; b >= 0; b--, h++)
-        {
-            DrawBit(g, cx, hourTop + step * h, dotR, (hour & (1 << b)) != 0);
-        }
+        DrawBitColumn(g, cx - offset, top, bottom, dotR, minute, NerdThemeGeometry.MinuteBitCount, palette.MinuteOn, palette.MinuteOff);
+        DrawBitColumn(g, cx + offset, top, bottom, dotR, hour, NerdThemeGeometry.HourBitCount, palette.HourOn, palette.HourOff);
     }
 
-    private void DrawBit(ID2DGraphics g, float cx, float cy, float r, bool on)
-        => g.FillEllipse(on ? palette.On : palette.Off, cx - r, cy - r, r * 2f, r * 2f);
+    private static void DrawBitColumn(
+        ID2DGraphics g,
+        float cx,
+        float top,
+        float bottom,
+        float r,
+        int value,
+        int bitCount,
+        Color on,
+        Color off)
+    {
+        float step = bitCount > 1 ? (bottom - top) / (bitCount - 1) : 0f;
+        for (int b = bitCount - 1, slot = 0; b >= 0; b--, slot++)
+        {
+            g.FillEllipse(
+                (value & (1 << b)) != 0 ? on : off,
+                cx - r,
+                top + (step * slot) - r,
+                r * 2f,
+                r * 2f);
+        }
+    }
 }

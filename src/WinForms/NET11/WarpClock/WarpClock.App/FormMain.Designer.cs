@@ -23,45 +23,25 @@ partial class FormMain
         components = new Container();
         _splitContainer = new SplitContainer();
         _clock = new WarpClockControl();
+        _tickerBand = new TickerBandControl();
         _propertyGrid = new PropertyGrid();
         _menuStrip = new MenuStrip();
         _fileMenu = new ToolStripMenuItem();
-        _miCreateNewThemeList = new ToolStripMenuItem();
-        _miLoadThemeList = new ToolStripMenuItem();
-        _miSaveThemeList = new ToolStripMenuItem();
+        _miCreateNewThemeSet = new ToolStripMenuItem();
+        _miEditCurrentThemeSet = new ToolStripMenuItem();
+        _miLoadThemeSet = new ToolStripMenuItem();
+        _miSaveThemeSet = new ToolStripMenuItem();
         _fileReloadSeparator = new ToolStripSeparator();
         _fileExitSeparator = new ToolStripSeparator();
         _themeMenu = new ToolStripMenuItem();
-        _themeMenuSeparator = new ToolStripSeparator();
-        _miEditCurrentThemeList = new ToolStripMenuItem();
-        _motionMenu = new ToolStripMenuItem();
-        _secondMotionMenu = new ToolStripMenuItem();
-        _miSecondCrawling = new ToolStripMenuItem();
-        _miSecondSweep = new ToolStripMenuItem();
-        _miSecondFastTick = new ToolStripMenuItem();
-        _miSecondTick = new ToolStripMenuItem();
-        _minuteMotionMenu = new ToolStripMenuItem();
-        _miMinuteCrawling = new ToolStripMenuItem();
-        _miMinuteSweep = new ToolStripMenuItem();
-        _miMinuteFastTick = new ToolStripMenuItem();
-        _miMinuteTick = new ToolStripMenuItem();
-        _hourMotionMenu = new ToolStripMenuItem();
-        _miHourCrawling = new ToolStripMenuItem();
-        _miHourSweep = new ToolStripMenuItem();
-        _miHourFastTick = new ToolStripMenuItem();
-        _miHourTick = new ToolStripMenuItem();
-        _graceMenu = new ToolStripMenuItem();
-        _miGrace1 = new ToolStripMenuItem();
-        _miGrace5 = new ToolStripMenuItem();
-        _miGrace10 = new ToolStripMenuItem();
-        _miGrace20 = new ToolStripMenuItem();
-        _miGrace30 = new ToolStripMenuItem();
         _speedMenu = new ToolStripMenuItem();
         _miSpeed1 = new ToolStripMenuItem();
         _miSpeed10 = new ToolStripMenuItem();
         _miSpeed60 = new ToolStripMenuItem();
         _miSpeed600 = new ToolStripMenuItem();
         _viewMenu = new ToolStripMenuItem();
+        _toolsMenu = new ToolStripMenuItem();
+        _miOptions = new ToolStripMenuItem();
         _miKiosk = new ToolStripMenuItem();
         _miOledView = new ToolStripMenuItem();
         _miRecordFramerate = new ToolStripMenuItem();
@@ -147,11 +127,20 @@ partial class FormMain
         _propertyGrid.Name = "_propertyGrid";
         _propertyGrid.Size = new Size(236, 714);
         _propertyGrid.TabIndex = 0;
+        //
+        // _tickerBand
+        //
+        _tickerBand.Dock = DockStyle.Bottom;
+        _tickerBand.Location = new Point(0, 1537);
+        _tickerBand.Name = "_tickerBand";
+        _tickerBand.Size = new Size(1411, 42);
+        _tickerBand.TabIndex = 3;
+        _tickerBand.Visible = false;
         // 
         // _menuStrip
         // 
         _menuStrip.ImageScalingSize = new Size(32, 32);
-        _menuStrip.Items.AddRange(new ToolStripItem[] { _fileMenu, _themeMenu, _motionMenu, _graceMenu, _speedMenu, _viewMenu, _kioskMenu });
+        _menuStrip.Items.AddRange(new ToolStripItem[] { _fileMenu, _themeMenu, _viewMenu, _speedMenu, _toolsMenu, _kioskMenu });
         _menuStrip.Location = new Point(0, 0);
         _menuStrip.Name = "_menuStrip";
         _menuStrip.Padding = new Padding(11, 4, 0, 4);
@@ -160,217 +149,49 @@ partial class FormMain
         //
         // _fileMenu
         //
-        _fileMenu.DropDownItems.AddRange(new ToolStripItem[] { _miCreateNewThemeList, _miLoadThemeList, _miSaveThemeList, _fileReloadSeparator, _miReloadPlugins, _fileExitSeparator, _miExit });
+        _fileMenu.DropDownItems.AddRange(new ToolStripItem[] { _miCreateNewThemeSet, _miEditCurrentThemeSet, _miLoadThemeSet, _miSaveThemeSet, _fileReloadSeparator, _miReloadPlugins, _fileExitSeparator, _miExit });
         _fileMenu.Name = "_fileMenu";
         _fileMenu.Size = new Size(73, 36);
         _fileMenu.Text = "&File";
         //
-        // _miCreateNewThemeList
+        // _miCreateNewThemeSet
         //
-        _miCreateNewThemeList.Name = "_miCreateNewThemeList";
-        _miCreateNewThemeList.Size = new Size(347, 44);
-        _miCreateNewThemeList.Text = "Create &New Themelist...";
-        _miCreateNewThemeList.Click += OnCreateNewThemeListClick;
+        _miCreateNewThemeSet.Name = "_miCreateNewThemeSet";
+        _miCreateNewThemeSet.Size = new Size(393, 44);
+        _miCreateNewThemeSet.Text = "&New Themeset...";
+        _miCreateNewThemeSet.Click += OnCreateNewThemeSetClick;
         //
-        // _miLoadThemeList
+        // _miEditCurrentThemeSet
         //
-        _miLoadThemeList.Name = "_miLoadThemeList";
-        _miLoadThemeList.Size = new Size(347, 44);
-        _miLoadThemeList.Text = "&Load Themelist...";
-        _miLoadThemeList.Click += OnLoadThemeListClick;
+        _miEditCurrentThemeSet.Name = "_miEditCurrentThemeSet";
+        _miEditCurrentThemeSet.Size = new Size(393, 44);
+        _miEditCurrentThemeSet.Text = "&Edit Current Themeset...";
+        _miEditCurrentThemeSet.Click += OnEditCurrentThemeSetClick;
         //
-        // _miSaveThemeList
+        // _miLoadThemeSet
         //
-        _miSaveThemeList.Name = "_miSaveThemeList";
-        _miSaveThemeList.Size = new Size(347, 44);
-        _miSaveThemeList.Text = "&Save Themelist";
-        _miSaveThemeList.Click += OnSaveThemeListClick;
+        _miLoadThemeSet.Name = "_miLoadThemeSet";
+        _miLoadThemeSet.Size = new Size(393, 44);
+        _miLoadThemeSet.Text = "&Load Themeset...";
+        _miLoadThemeSet.Click += OnLoadThemeSetClick;
+        //
+        // _miSaveThemeSet
+        //
+        _miSaveThemeSet.Name = "_miSaveThemeSet";
+        _miSaveThemeSet.Size = new Size(393, 44);
+        _miSaveThemeSet.Text = "&Save Themeset";
+        _miSaveThemeSet.Click += OnSaveThemeSetClick;
         //
         // _fileReloadSeparator
         //
         _fileReloadSeparator.Name = "_fileReloadSeparator";
-        _fileReloadSeparator.Size = new Size(344, 6);
+        _fileReloadSeparator.Size = new Size(390, 6);
         // 
         // _themeMenu
         // 
-        _themeMenu.DropDownItems.AddRange(new ToolStripItem[] { _themeMenuSeparator, _miEditCurrentThemeList });
         _themeMenu.Name = "_themeMenu";
         _themeMenu.Size = new Size(108, 36);
         _themeMenu.Text = "&Theme";
-        //
-        // _themeMenuSeparator
-        //
-        _themeMenuSeparator.Name = "_themeMenuSeparator";
-        _themeMenuSeparator.Size = new Size(287, 6);
-        //
-        // _miEditCurrentThemeList
-        //
-        _miEditCurrentThemeList.Name = "_miEditCurrentThemeList";
-        _miEditCurrentThemeList.Size = new Size(290, 44);
-        _miEditCurrentThemeList.Text = "&Edit current themelist...";
-        _miEditCurrentThemeList.Click += OnEditCurrentThemeListClick;
-        // 
-        // _motionMenu
-        // 
-        _motionMenu.DropDownItems.AddRange(new ToolStripItem[] { _secondMotionMenu, _minuteMotionMenu, _hourMotionMenu });
-        _motionMenu.Name = "_motionMenu";
-        _motionMenu.Size = new Size(112, 36);
-        _motionMenu.Text = "&Motion";
-        // 
-        // _secondMotionMenu
-        // 
-        _secondMotionMenu.DropDownItems.AddRange(new ToolStripItem[] { _miSecondCrawling, _miSecondSweep, _miSecondFastTick, _miSecondTick });
-        _secondMotionMenu.Name = "_secondMotionMenu";
-        _secondMotionMenu.Size = new Size(287, 44);
-        _secondMotionMenu.Text = "&Second hand";
-        _secondMotionMenu.DropDownOpening += OnSecondMotionOpening;
-        // 
-        // _miSecondCrawling
-        // 
-        _miSecondCrawling.Name = "_miSecondCrawling";
-        _miSecondCrawling.Size = new Size(291, 44);
-        _miSecondCrawling.Text = "Crawling";
-        _miSecondCrawling.Click += OnSecondMotionClick;
-        // 
-        // _miSecondSweep
-        // 
-        _miSecondSweep.Name = "_miSecondSweep";
-        _miSecondSweep.Size = new Size(291, 44);
-        _miSecondSweep.Text = "Sweep (glide)";
-        _miSecondSweep.Click += OnSecondMotionClick;
-        // 
-        // _miSecondFastTick
-        // 
-        _miSecondFastTick.Name = "_miSecondFastTick";
-        _miSecondFastTick.Size = new Size(291, 44);
-        _miSecondFastTick.Text = "Fast Tick";
-        _miSecondFastTick.Click += OnSecondMotionClick;
-        // 
-        // _miSecondTick
-        // 
-        _miSecondTick.Name = "_miSecondTick";
-        _miSecondTick.Size = new Size(291, 44);
-        _miSecondTick.Text = "Tick";
-        _miSecondTick.Click += OnSecondMotionClick;
-        // 
-        // _minuteMotionMenu
-        // 
-        _minuteMotionMenu.DropDownItems.AddRange(new ToolStripItem[] { _miMinuteCrawling, _miMinuteSweep, _miMinuteFastTick, _miMinuteTick });
-        _minuteMotionMenu.Name = "_minuteMotionMenu";
-        _minuteMotionMenu.Size = new Size(287, 44);
-        _minuteMotionMenu.Text = "&Minute hand";
-        _minuteMotionMenu.DropDownOpening += OnMinuteMotionOpening;
-        // 
-        // _miMinuteCrawling
-        // 
-        _miMinuteCrawling.Name = "_miMinuteCrawling";
-        _miMinuteCrawling.Size = new Size(291, 44);
-        _miMinuteCrawling.Text = "Crawling";
-        _miMinuteCrawling.Click += OnMinuteMotionClick;
-        // 
-        // _miMinuteSweep
-        // 
-        _miMinuteSweep.Name = "_miMinuteSweep";
-        _miMinuteSweep.Size = new Size(291, 44);
-        _miMinuteSweep.Text = "Sweep (glide)";
-        _miMinuteSweep.Click += OnMinuteMotionClick;
-        // 
-        // _miMinuteFastTick
-        // 
-        _miMinuteFastTick.Name = "_miMinuteFastTick";
-        _miMinuteFastTick.Size = new Size(291, 44);
-        _miMinuteFastTick.Text = "Fast Tick";
-        _miMinuteFastTick.Click += OnMinuteMotionClick;
-        // 
-        // _miMinuteTick
-        // 
-        _miMinuteTick.Name = "_miMinuteTick";
-        _miMinuteTick.Size = new Size(291, 44);
-        _miMinuteTick.Text = "Tick";
-        _miMinuteTick.Click += OnMinuteMotionClick;
-        // 
-        // _hourMotionMenu
-        // 
-        _hourMotionMenu.DropDownItems.AddRange(new ToolStripItem[] { _miHourCrawling, _miHourSweep, _miHourFastTick, _miHourTick });
-        _hourMotionMenu.Name = "_hourMotionMenu";
-        _hourMotionMenu.Size = new Size(287, 44);
-        _hourMotionMenu.Text = "&Hour hand";
-        _hourMotionMenu.DropDownOpening += OnHourMotionOpening;
-        // 
-        // _miHourCrawling
-        // 
-        _miHourCrawling.Name = "_miHourCrawling";
-        _miHourCrawling.Size = new Size(291, 44);
-        _miHourCrawling.Text = "Crawling";
-        _miHourCrawling.Click += OnHourMotionClick;
-        // 
-        // _miHourSweep
-        // 
-        _miHourSweep.Name = "_miHourSweep";
-        _miHourSweep.Size = new Size(291, 44);
-        _miHourSweep.Text = "Sweep (glide)";
-        _miHourSweep.Click += OnHourMotionClick;
-        // 
-        // _miHourFastTick
-        // 
-        _miHourFastTick.Name = "_miHourFastTick";
-        _miHourFastTick.Size = new Size(291, 44);
-        _miHourFastTick.Text = "Fast Tick";
-        _miHourFastTick.Click += OnHourMotionClick;
-        // 
-        // _miHourTick
-        // 
-        _miHourTick.Name = "_miHourTick";
-        _miHourTick.Size = new Size(291, 44);
-        _miHourTick.Text = "Tick";
-        _miHourTick.Click += OnHourMotionClick;
-        // 
-        // _graceMenu
-        // 
-        _graceMenu.DropDownItems.AddRange(new ToolStripItem[] { _miGrace1, _miGrace5, _miGrace10, _miGrace20, _miGrace30 });
-        _graceMenu.Name = "_graceMenu";
-        _graceMenu.Size = new Size(94, 36);
-        _graceMenu.Text = "&Grace";
-        // 
-        // _miGrace1
-        // 
-        _miGrace1.Name = "_miGrace1";
-        _miGrace1.Size = new Size(266, 44);
-        _miGrace1.Tag = 1;
-        _miGrace1.Text = "1 second";
-        _miGrace1.Click += OnGraceClick;
-        // 
-        // _miGrace5
-        // 
-        _miGrace5.Name = "_miGrace5";
-        _miGrace5.Size = new Size(266, 44);
-        _miGrace5.Tag = 5;
-        _miGrace5.Text = "5 seconds";
-        _miGrace5.Click += OnGraceClick;
-        // 
-        // _miGrace10
-        // 
-        _miGrace10.Name = "_miGrace10";
-        _miGrace10.Size = new Size(266, 44);
-        _miGrace10.Tag = 10;
-        _miGrace10.Text = "10 seconds";
-        _miGrace10.Click += OnGraceClick;
-        // 
-        // _miGrace20
-        // 
-        _miGrace20.Name = "_miGrace20";
-        _miGrace20.Size = new Size(266, 44);
-        _miGrace20.Tag = 20;
-        _miGrace20.Text = "20 seconds";
-        _miGrace20.Click += OnGraceClick;
-        // 
-        // _miGrace30
-        // 
-        _miGrace30.Name = "_miGrace30";
-        _miGrace30.Size = new Size(266, 44);
-        _miGrace30.Tag = 30;
-        _miGrace30.Text = "30 seconds";
-        _miGrace30.Click += OnGraceClick;
         // 
         // _speedMenu
         // 
@@ -417,6 +238,20 @@ partial class FormMain
         _viewMenu.Name = "_viewMenu";
         _viewMenu.Size = new Size(85, 36);
         _viewMenu.Text = "&View";
+        //
+        // _toolsMenu
+        //
+        _toolsMenu.DropDownItems.AddRange(new ToolStripItem[] { _miOptions });
+        _toolsMenu.Name = "_toolsMenu";
+        _toolsMenu.Size = new Size(86, 36);
+        _toolsMenu.Text = "&Tools";
+        //
+        // _miOptions
+        //
+        _miOptions.Name = "_miOptions";
+        _miOptions.Size = new Size(187, 44);
+        _miOptions.Text = "&Options";
+        _miOptions.Click += OnOptionsClick;
         // 
         // _miKiosk
         // 
@@ -534,7 +369,7 @@ partial class FormMain
         // 
         _miExit.Name = "_miExit";
         _miExit.ShortcutKeys = Keys.Alt | Keys.F4;
-        _miExit.Size = new Size(347, 44);
+        _miExit.Size = new Size(393, 44);
         _miExit.Text = "E&xit";
         _miExit.Click += OnExitClick;
         // 
@@ -668,14 +503,14 @@ partial class FormMain
         // _miReloadPlugins
         // 
         _miReloadPlugins.Name = "_miReloadPlugins";
-        _miReloadPlugins.Size = new Size(347, 44);
+        _miReloadPlugins.Size = new Size(393, 44);
         _miReloadPlugins.Text = "&Reload Plug-Ins";
         _miReloadPlugins.Click += OnReloadPluginsClick;
         // 
         // _fileExitSeparator
         // 
         _fileExitSeparator.Name = "_fileExitSeparator";
-        _fileExitSeparator.Size = new Size(344, 6);
+        _fileExitSeparator.Size = new Size(390, 6);
         // 
         // _statusStrip
         // 
@@ -733,6 +568,7 @@ partial class FormMain
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1411, 1621);
         Controls.Add(_splitContainer);
+        Controls.Add(_tickerBand);
         Controls.Add(_statusStrip);
         Controls.Add(_menuStrip);
         MainMenuStrip = _menuStrip;
@@ -756,41 +592,17 @@ partial class FormMain
     private SplitContainer _splitContainer;
     private WarpClockControl _clock;
     private PropertyGrid _propertyGrid;
+    private TickerBandControl _tickerBand;
 
     private MenuStrip _menuStrip;
     private ToolStripMenuItem _fileMenu;
-    private ToolStripMenuItem _miCreateNewThemeList;
-    private ToolStripMenuItem _miLoadThemeList;
-    private ToolStripMenuItem _miSaveThemeList;
+    private ToolStripMenuItem _miCreateNewThemeSet;
+    private ToolStripMenuItem _miEditCurrentThemeSet;
+    private ToolStripMenuItem _miLoadThemeSet;
+    private ToolStripMenuItem _miSaveThemeSet;
     private ToolStripSeparator _fileReloadSeparator;
     private ToolStripSeparator _fileExitSeparator;
     private ToolStripMenuItem _themeMenu;
-    private ToolStripSeparator _themeMenuSeparator;
-    private ToolStripMenuItem _miEditCurrentThemeList;
-
-    private ToolStripMenuItem _motionMenu;
-    private ToolStripMenuItem _secondMotionMenu;
-    private ToolStripMenuItem _miSecondCrawling;
-    private ToolStripMenuItem _miSecondSweep;
-    private ToolStripMenuItem _miSecondFastTick;
-    private ToolStripMenuItem _miSecondTick;
-    private ToolStripMenuItem _minuteMotionMenu;
-    private ToolStripMenuItem _miMinuteCrawling;
-    private ToolStripMenuItem _miMinuteSweep;
-    private ToolStripMenuItem _miMinuteFastTick;
-    private ToolStripMenuItem _miMinuteTick;
-    private ToolStripMenuItem _hourMotionMenu;
-    private ToolStripMenuItem _miHourCrawling;
-    private ToolStripMenuItem _miHourSweep;
-    private ToolStripMenuItem _miHourFastTick;
-    private ToolStripMenuItem _miHourTick;
-
-    private ToolStripMenuItem _graceMenu;
-    private ToolStripMenuItem _miGrace1;
-    private ToolStripMenuItem _miGrace5;
-    private ToolStripMenuItem _miGrace10;
-    private ToolStripMenuItem _miGrace20;
-    private ToolStripMenuItem _miGrace30;
 
     private ToolStripMenuItem _speedMenu;
     private ToolStripMenuItem _miSpeed1;
@@ -799,6 +611,8 @@ partial class FormMain
     private ToolStripMenuItem _miSpeed600;
 
     private ToolStripMenuItem _viewMenu;
+    private ToolStripMenuItem _toolsMenu;
+    private ToolStripMenuItem _miOptions;
     private ToolStripMenuItem _miKiosk;
     private ToolStripMenuItem _miOledView;
     private ToolStripMenuItem _miRecordFramerate;

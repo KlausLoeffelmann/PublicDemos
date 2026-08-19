@@ -38,9 +38,9 @@ hour hand's tip follows them; you still cannot make it lie about the time.
 |---------|------|
 | `WarpClock.Abstractions` | The plug-in contract (`IClockTheme`, descriptors, layout, renderer, animator, parameters). |
 | `WarpClock.Engine` | `WarpClockControl` (a `D2DPanel`): authoritative time, anchor resolution, hand-pointing solver + grace, OLED scene motion, and a dedicated DirectX render-thread loop. |
-| `WarpClock.Themes.Builtin` | Six stock families — **Railway Classic**, **Modern Minimal**, **Antique Worn**, **NERD**, **Scatter (Magnetic)**, and OLED-oriented **Logical** — each with explicit **Day** and **Night** variants. |
+| `WarpClock.Themes.Builtin` | Six stock families — **Railway Classic**, **Modern Minimal**, **Antique Worn**, **NERD**, **Scatter (Magnetic)**, and OLED-oriented **Logical** — with explicit Day/Night palettes and OLED variants where specialized rendering is available. |
 | `WarpClock.Tests` / `WarpClock.Engine.Tests` / `WarpClock.App.Tests` | Focused xUnit coverage for theme contracts and catalogs, OLED transforms, scheduling, persistence, plug-in loading, CLI parsing, and diagnostics. |
-| `WarpClock.App` | Hosted kiosk application with centralized logging/exception routing, Themelists, settings persistence, diagnostics, and a reloadable plug-in catalog. |
+| `WarpClock.App` | Hosted kiosk application with centralized logging/exception routing, Themesets, Tools/Options, timezone rotation, a global ticker, complete UI persistence, diagnostics, and a reloadable plug-in catalog. |
 | `WarpClock.Themes.SunFlower` | Sample plug-in: a sunflower dial whose numerals are bees that spin a full turn when a branch-hand sweeps over them. |
 
 ## Kiosk mode
@@ -64,15 +64,44 @@ OLED-Night variants. Themes without the new members continue to behave as Day-on
 themes. OLED View uses a dedicated OLED variant when available and otherwise applies
 engine-owned pixel drift and slow scaling to the active Day/Night variant.
 
+Themes may optionally declare timezone, weekday, day-of-month, ticker/overlay,
+indexed-image, and fraction-second visuals. Render and tick contexts expose immutable
+timezone and host ambient snapshots, and `IThemeAnimator.OnTimeZoneChanged` lets a
+theme animate a timezone transition. The host still owns the displayed
+`TimeZoneInfo`, DST conversion, auxiliary visibility, and all hand targets.
+
+Theme-specific settings can be exposed in the Properties panel. A supported property
+must be public and convertible, have a getter/setter, and carry
+`[Browsable(true)]`, `[Description]`, and `[Category("Custom Properties")]`. Values
+are persisted by logical theme family and reapplied across Day/Night/OLED variants.
+
+## Options, timezones, and ticker
+
+**Tools ▸ Options** uses one Designer-backed page per FluentTabControl tab:
+
+- **Hands** configures Hour, Minute, and Second motion plus the global grace period.
+- **Timezones** configures up to six zones (including the default), aliases,
+  default/alternate rotation timing, clock-face visibility, and the fallback headline.
+- **Display** configures the app-owned bottom ticker and optional in-theme ticker and
+  fraction-second visuals.
+- **Folders** selects theme, calendar, short-message, and picture locations. Picture
+  paths are supplied to themes as ordered ambient image entries.
+
+Timezone rotation alternates default → alternate → default → next alternate. Conversion
+is DST-aware and supports fractional-hour zones. If a theme has no timezone visual,
+the engine can render a fading upper-left fallback headline. The global ticker consumes
+its own band below the clock; it does not overlap or shrink theme-owned coordinates.
+
 ## Automation, logs, and persistence
 
 - UI state persists to `%AppData%\WarpClock\settings.json`.
-- The default day/night rotation list persists to `%AppData%\WarpClock\themelist.json`;
-  Themelists can also be created, loaded, and saved at arbitrary paths.
+- The default day/night rotation set persists to
+  `%AppData%\WarpClock\default.themeset.json`; legacy `themelist.json` data migrates
+  automatically. Themesets can also be created, loaded, and saved at arbitrary paths.
 - Rolling application logs live under `%AppData%\WarpClock\Logs` with 14-day retention.
-- **File** provides New/Load/Save Themelist, plug-in reload, and Exit commands. The
-  **Theme** menu edits the active high-DPI schedule (07:00 / 19:00 defaults,
-  30-minute rotation).
+- **File** provides New/Edit/Load/Save Themeset, plug-in reload, and Exit commands.
+  **Theme** selects the active family/variant, **View** controls presentation, and
+  **Tools** opens Options.
 - Supported CLI options: `--StartTheme`, `--StartKioskMode`, `--AlwaysOn`,
   `--RecordFramerate`, `--DebugRun 1-15`, and `--DontPersist`.
 - `--DebugRun` captures the window and clock every second under

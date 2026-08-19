@@ -15,6 +15,10 @@ public sealed class DefaultClockLayout : IClockLayout
     private const float MinuteTickRadius = 0.93f;
     private const float DrumRadius = 0.45f;
     private const float SubSecondRadius = 0.50f;
+    private const float TimeZoneRadius = 0.46f;
+    private const float AuxiliaryLabelRadius = 0.55f;
+    private const float IndexedImageRadius = 0.65f;
+    private const float OverlayMessageYOffset = 0.22f;
 
     /// <inheritdoc/>
     public bool TryGetAnchor(ClockElementId id, SizeF surface, out PointF anchor)
@@ -46,6 +50,24 @@ public sealed class DefaultClockLayout : IClockLayout
 
             ClockElementKind.SubSecondHand
                 => ClockMath.PointOnDial(center, radius * SubSecondRadius, 180f),
+
+            ClockElementKind.FractionSecondDial
+                => ClockMath.PointOnDial(center, radius * SubSecondRadius, 180f),
+
+            ClockElementKind.TimeZone
+                => ClockMath.PointOnDial(center, radius * TimeZoneRadius, 0f),
+
+            ClockElementKind.Day
+                => ClockMath.PointOnDial(center, radius * AuxiliaryLabelRadius, 60f),
+
+            ClockElementKind.Weekday
+                => ClockMath.PointOnDial(center, radius * AuxiliaryLabelRadius, 300f),
+
+            ClockElementKind.OverlayMessage
+                => new PointF(center.X, center.Y + radius * OverlayMessageYOffset),
+
+            ClockElementKind.IndexedImage
+                => ClockMath.PointOnDial(center, radius * IndexedImageRadius, 22.5f + NormalizeIndex(id.Index, 8) * 45f),
 
             // Background, Face, Case, Arbour, and the main hands pivot at the center.
             _ => center,

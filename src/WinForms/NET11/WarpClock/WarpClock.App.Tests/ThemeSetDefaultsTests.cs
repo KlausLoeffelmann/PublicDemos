@@ -2,7 +2,7 @@ using WarpClock.Abstractions;
 
 namespace WarpClock.App.Tests;
 
-public sealed class ThemeListDefaultsTests
+public sealed class ThemeSetDefaultsTests
 {
     [Fact]
     public void CreateDefault_UsesExpectedScheduleDefaults()
@@ -25,10 +25,10 @@ public sealed class ThemeListDefaultsTests
             },
         ];
 
-        ThemeScheduleDocument document = ThemeListDefaults.CreateDefault(catalog);
+        ThemeScheduleDocument document = ThemeSetDefaults.CreateDefault(catalog);
 
         Assert.True(document.AutoRotate);
-        Assert.Equal("WarpClock Default Themelist", document.Name);
+        Assert.Equal("WarpClock Default Themeset", document.Name);
         Assert.Equal(new TimeOnly(7, 0), document.DayStartsAt);
         Assert.Equal(new TimeOnly(19, 0), document.NightStartsAt);
         Assert.Equal(30, document.RotationMinutes);
@@ -48,7 +48,7 @@ public sealed class ThemeListDefaultsTests
             new() { ThemeKey = "c", FamilyName = "C", Source = "stock", SupportedVariants = ClockThemeVariants.DayNight },
         ];
 
-        ThemeScheduleDocument document = ThemeListDefaults.CreateDefault(catalog);
+        ThemeScheduleDocument document = ThemeSetDefaults.CreateDefault(catalog);
 
         Assert.Equal(["a", "b", "c"], document.Entries.Select(entry => entry.Theme.ThemeKey));
     }

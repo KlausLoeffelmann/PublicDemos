@@ -4,19 +4,47 @@ using WarpClock.Abstractions;
 
 namespace WarpClock.Themes.Builtin;
 
-internal sealed record NerdThemePalette(Color Face, Color Grid, Color Blade, Color On, Color Off);
+internal sealed record NerdThemePalette(
+    Color Face,
+    Color Grid,
+    Color Blade,
+    Color HourOn,
+    Color HourOff,
+    Color MinuteOn,
+    Color MinuteOff);
+
+internal static class NerdThemeGeometry
+{
+    public static readonly SizeF SecondHandContentSize = new(160f, 380f);
+    public static readonly PointF SecondHandPivot = new(80f, 336f);
+
+    public const int HourBitCount = 5;
+    public const int MinuteBitCount = 6;
+
+    public const float TipInset = 32f;
+    public const float TailDepth = 28f;
+    public const float ShoulderInset = 30f;
+    public const float ShoulderHalfWidth = 26f;
+    public const float LowerHalfWidth = 34f;
+    public const float TailHalfWidth = 18f;
+
+    public const float BitColumnOffset = 16f;
+    public const float DotRadius = 10.5f;
+    public const float DotTop = 66f;
+    public const float DotBottom = 310f;
+}
 
 /// <summary>
 ///  A minimalist nerd dial: there is only a second hand, and that hand <i>is</i> the
-///  display. Its blade carries two columns of bit dots — the hour in binary near the tip
-///  and the minute in binary near the pivot — while it still sweeps the seconds (so the
-///  time is read three ways at once). The hour markers around the dial are shown in octal.
+///  display. Its shortened blade carries separate binary LED columns — blue for hours and
+///  red for minutes — while it still sweeps the authoritative seconds. The hour markers
+///  around the dial are shown in octal.
 /// </summary>
 public sealed class NerdTheme : IClockTheme
 {
     private const string BaseName = "NERD";
     private const string BaseDescription =
-        "One second hand encoding hour & minute in binary; octal hour markers.";
+        "Short binary second hand with blue hour LEDs, red minute LEDs, and octal hour markers.";
 
     private readonly ClockThemeVariantKind _variant;
     private readonly NerdThemePalette _palette;
@@ -91,8 +119,8 @@ public sealed class NerdTheme : IClockTheme
         elements.Add(new ClockElementDescriptor
         {
             Id = ClockElementId.SecondHand,
-            ContentSize = new SizeF(140, 520),
-            Pivot = new PointF(70, 440),
+            ContentSize = NerdThemeGeometry.SecondHandContentSize,
+            Pivot = NerdThemeGeometry.SecondHandPivot,
             Hand = ClockHandKind.Second,
             ZOrder = 30,
             RedrawPerFrame = true,
@@ -118,21 +146,25 @@ public sealed class NerdTheme : IClockTheme
     /// <inheritdoc/>
     public IThemeAnimator? CreateAnimator() => null;
 
-    private static NerdThemePalette CreatePalette(ClockThemeVariantKind variant)
+    internal static NerdThemePalette CreatePalette(ClockThemeVariantKind variant)
         => variant switch
         {
             ClockThemeVariantKind.Day => new NerdThemePalette(
-                Face: Color.FromArgb(244, 248, 245),
-                Grid: Color.FromArgb(55, 113, 82),
-                Blade: Color.FromArgb(118, 120, 156, 132),
-                On: Color.FromArgb(77, 149, 108),
-                Off: Color.FromArgb(175, 204, 188)),
+                Face: Color.FromArgb(243, 246, 249),
+                Grid: Color.FromArgb(72, 84, 100),
+                Blade: Color.FromArgb(116, 104, 116, 134),
+                HourOn: Color.FromArgb(132, 211, 255),
+                HourOff: Color.FromArgb(206, 229, 244),
+                MinuteOn: Color.FromArgb(246, 156, 156),
+                MinuteOff: Color.FromArgb(241, 210, 210)),
             ClockThemeVariantKind.Night => new NerdThemePalette(
-                Face: Color.FromArgb(12, 16, 15),
-                Grid: Color.FromArgb(94, 190, 136),
-                Blade: Color.FromArgb(118, 47, 92, 68),
-                On: Color.FromArgb(130, 232, 173),
-                Off: Color.FromArgb(41, 74, 57)),
+                Face: Color.FromArgb(13, 16, 21),
+                Grid: Color.FromArgb(112, 122, 136),
+                Blade: Color.FromArgb(108, 48, 56, 68),
+                HourOn: Color.FromArgb(102, 176, 216),
+                HourOff: Color.FromArgb(36, 55, 68),
+                MinuteOn: Color.FromArgb(204, 122, 122),
+                MinuteOff: Color.FromArgb(70, 41, 45)),
             _ => throw ClockThemeVariants.CreateUnsupportedVariantException(BaseName, ClockThemeVariants.DayNight, variant),
         };
 }

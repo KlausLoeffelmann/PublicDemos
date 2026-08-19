@@ -17,18 +17,23 @@ public partial class FormMain : Form
     private readonly List<ThemeEntry> _themes = [];
     private readonly List<ThemeMenuBinding> _themeMenuItems = [];
     private readonly ClockSettingsView _clockSettings;
+    private readonly ThemePropertyGridAdapter _propertyGridSelection;
+    private readonly ThemeCustomPropertyStore _themeCustomPropertyStore = new();
     private readonly SemaphoreSlim _loadGate = new(1, 1);
 
     private AppPaths _appPaths;
     private ThemePluginLoader _pluginLoader;
     private AppStateStore? _appStateStore;
-    private ThemeListStore? _themeListStore;
+    private ThemeSetStore? _themeSetStore;
     private AppExceptionRouter? _exceptionRouter;
     private StartupOptions _startupOptions = StartupOptions.Empty;
     private ILogger<FormMain> _logger = NullLogger<FormMain>.Instance;
+    private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
+    private PictureFolderCatalog _pictureCatalog = new(NullLogger<PictureFolderCatalog>.Instance);
     private FileSystemWatcher? _pluginWatcher;
     private ThemeEntry? _current;
     private ThemeSelection? _currentSelection;
+    private ThemeCustomPropertySession? _activeThemeCustomProperties;
     private ClockThemeVariantKind _currentResolvedVariant = ClockThemeVariantKind.Day;
     private Font? _stripFont;
 
@@ -40,10 +45,17 @@ public partial class FormMain : Form
         InitializeComponent();
 
         _clockSettings = new ClockSettingsView(this, _clock);
+        _propertyGridSelection = new ThemePropertyGridAdapter(_clockSettings);
         _themeScheduleTimer = new System.Windows.Forms.Timer();
         _themeScheduleTimer.Tick += OnThemeScheduleTimerTick;
+        _timeZoneTimer = new System.Windows.Forms.Timer
+        {
+            Interval = 1_000,
+        };
+        _timeZoneTimer.Tick += OnTimeZoneTimerTick;
         _propertyGrid.PropertyValueChanged += OnClockSettingsPropertyValueChanged;
         _splitContainer.SplitterMoved += OnSplitContainerSplitterMoved;
+        RefreshPropertyGridSelection();
 
         if (_designMode)
         {
@@ -67,27 +79,33 @@ public partial class FormMain : Form
         AppPaths appPaths,
         ThemePluginLoader pluginLoader,
         AppStateStore appStateStore,
-        ThemeListStore themeListStore,
+        ThemeSetStore themeSetStore,
+        PictureFolderCatalog pictureCatalog,
         AppExceptionRouter exceptionRouter,
         StartupOptions startupOptions,
-        ILogger<FormMain> logger)
+        ILogger<FormMain> logger,
+        ILoggerFactory loggerFactory)
         : this()
     {
         ArgumentNullException.ThrowIfNull(appPaths);
         ArgumentNullException.ThrowIfNull(pluginLoader);
         ArgumentNullException.ThrowIfNull(appStateStore);
-        ArgumentNullException.ThrowIfNull(themeListStore);
+        ArgumentNullException.ThrowIfNull(themeSetStore);
+        ArgumentNullException.ThrowIfNull(pictureCatalog);
         ArgumentNullException.ThrowIfNull(exceptionRouter);
         ArgumentNullException.ThrowIfNull(startupOptions);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         _appPaths = appPaths;
         _pluginLoader = pluginLoader;
         _appStateStore = appStateStore;
-        _themeListStore = themeListStore;
+        _themeSetStore = themeSetStore;
+        _pictureCatalog = pictureCatalog;
         _exceptionRouter = exceptionRouter;
         _startupOptions = startupOptions;
         _logger = logger;
+        _loggerFactory = loggerFactory;
 
         _exceptionRouter.Start(this, ReportRecoverableExceptionStatus);
     }
@@ -183,6 +201,7 @@ public partial class FormMain : Form
     {
         _pluginWatcher?.Dispose();
         _themeScheduleTimer?.Dispose();
+        _timeZoneTimer?.Dispose();
         _loadGate.Dispose();
         StopDiagnostics();
         _exceptionRouter?.Stop();
@@ -238,16 +257,9 @@ public partial class FormMain : Form
 
     private void RebuildThemeMenuItems()
     {
-        int separatorIndex = _themeMenu.DropDownItems.IndexOf(_themeMenuSeparator);
-        if (separatorIndex < 0)
-        {
-            separatorIndex = _themeMenu.DropDownItems.Count;
-        }
-
-        while (separatorIndex > 0)
+        while (_themeMenu.DropDownItems.Count > 0)
         {
             _themeMenu.DropDownItems.RemoveAt(0);
-            separatorIndex--;
         }
 
         _themeMenuItems.Clear();
@@ -265,12 +277,6 @@ public partial class FormMain : Form
 
     private void AddThemeMenuItems(ThemeEntry entry)
     {
-        int insertIndex = _themeMenu.DropDownItems.IndexOf(_themeMenuSeparator);
-        if (insertIndex < 0)
-        {
-            insertIndex = _themeMenu.DropDownItems.Count;
-        }
-
         if (entry.Catalog.SupportedVariants.Count > 1)
         {
             ToolStripMenuItem familyMenu = new(entry.Catalog.FamilyName);
@@ -287,7 +293,7 @@ public partial class FormMain : Form
                 _themeMenuItems.Add(new ThemeMenuBinding((ThemeSelection)variantItem.Tag, variantItem));
             }
 
-            _themeMenu.DropDownItems.Insert(insertIndex, familyMenu);
+            _themeMenu.DropDownItems.Add(familyMenu);
             return;
         }
 
@@ -296,7 +302,7 @@ public partial class FormMain : Form
             Tag = new ThemeSelection(entry, explicitVariant: null),
         };
         item.Click += OnThemeSelected;
-        _themeMenu.DropDownItems.Insert(insertIndex, item);
+        _themeMenu.DropDownItems.Add(item);
         _themeMenuItems.Add(new ThemeMenuBinding((ThemeSelection)item.Tag, item));
     }
 
@@ -314,32 +320,38 @@ public partial class FormMain : Form
         bool preferOledVariants = GetOledViewEnabled();
         ClockThemeVariantKind resolvedVariant = selection.Entry.Catalog.ResolveVariant(selection.ExplicitVariant, period, preferOledVariants);
         IClockTheme concreteTheme = selection.Entry.ResolveTheme(selection.ExplicitVariant, period, preferOledVariants);
+        ThemeCustomPropertySession customProperties = ThemeCustomPropertySession.Create(
+            selection.Entry.Catalog.ThemeKey,
+            concreteTheme,
+            _themeCustomPropertyStore,
+            _logger);
         bool themeChanged = !ReferenceEquals(_current, selection.Entry)
             || _currentResolvedVariant != resolvedVariant;
 
         _current = selection.Entry;
         _currentSelection = selection;
+        _activeThemeCustomProperties = customProperties;
         _currentResolvedVariant = resolvedVariant;
-        _clock.Theme = concreteTheme;
+        ApplyThemeToClock(customProperties.Theme);
         ApplyEffectiveThemeInfoMode();
 
         if (applyThemeDefaults)
         {
-            _clock.MagneticNumerals = concreteTheme.Capabilities.MagneticByDefault;
+            _clock.MagneticNumerals = customProperties.Theme.Capabilities.MagneticByDefault;
         }
 
         _miMagnetic.Checked = _clock.MagneticNumerals;
         UpdateThemeChecks(selection.Entry, _currentResolvedVariant);
 
-        _propertyGrid.Refresh();
+        RefreshPropertyGridSelection();
 
-        _statusInfo.Text = $"Theme: {concreteTheme.Name} ({selection.Entry.Catalog.Source})"
-            + (concreteTheme.Capabilities.FreeFloating ? " — free-floating" : string.Empty)
+        _statusInfo.Text = $"Theme: {customProperties.Theme.Name} ({selection.Entry.Catalog.Source})"
+            + (customProperties.Theme.Capabilities.FreeFloating ? " — free-floating" : string.Empty)
             + (_clock.MagneticNumerals ? " — magnetic" : string.Empty);
 
         _logger.LogInformation(
             "Selected theme {ThemeName} from {Source}. Reason={Reason}",
-            concreteTheme.Name,
+            customProperties.Theme.Name,
             selection.Entry.Catalog.Source,
             reason);
 
@@ -347,6 +359,8 @@ public partial class FormMain : Form
         {
             RestartFrameRateRecordingForThemeChange(reason);
         }
+
+        RefreshRuntimePresentation();
     }
 
     private void UpdateThemeChecks(ThemeEntry selectedEntry, ClockThemeVariantKind resolvedVariant)
@@ -518,6 +532,8 @@ public partial class FormMain : Form
     {
         try
         {
+            _pluginWatcher?.Dispose();
+            _pluginWatcher = null;
             Directory.CreateDirectory(_pluginLoader.PluginDirectory);
 
             _pluginWatcher = new FileSystemWatcher(_pluginLoader.PluginDirectory, "*.dll")
@@ -560,109 +576,6 @@ public partial class FormMain : Form
         }
     }
 
-    // ── Motion menu handlers ──
-
-    private void OnSecondMotionClick(object? sender, EventArgs e)
-        => SetSecondMotion(MotionFor(sender));
-
-    private void OnMinuteMotionClick(object? sender, EventArgs e)
-        => SetMinuteMotion(MotionFor(sender));
-
-    private void OnHourMotionClick(object? sender, EventArgs e)
-        => SetHourMotion(MotionFor(sender));
-
-    private void SetSecondMotion(ClockHandMotion motion)
-    {
-        _clock.SecondMotion = motion;
-        MarkClockSettingsCustomized();
-        _statusInfo.Text = $"Second hand: {motion}";
-    }
-
-    private void SetMinuteMotion(ClockHandMotion motion)
-    {
-        _clock.MinuteMotion = motion;
-        MarkClockSettingsCustomized();
-        _statusInfo.Text = $"Minute hand: {motion}";
-    }
-
-    private void SetHourMotion(ClockHandMotion motion)
-    {
-        _clock.HourMotion = motion;
-        MarkClockSettingsCustomized();
-        _statusInfo.Text = $"Hour hand: {motion}";
-    }
-
-    private ClockHandMotion MotionFor(object? sender)
-    {
-        if (ReferenceEquals(sender, _miSecondCrawling)
-            || ReferenceEquals(sender, _miMinuteCrawling)
-            || ReferenceEquals(sender, _miHourCrawling))
-        {
-            return ClockHandMotion.Crawling;
-        }
-
-        if (ReferenceEquals(sender, _miSecondSweep)
-            || ReferenceEquals(sender, _miMinuteSweep)
-            || ReferenceEquals(sender, _miHourSweep))
-        {
-            return ClockHandMotion.Sweep;
-        }
-
-        if (ReferenceEquals(sender, _miSecondFastTick)
-            || ReferenceEquals(sender, _miMinuteFastTick)
-            || ReferenceEquals(sender, _miHourFastTick))
-        {
-            return ClockHandMotion.FastTick;
-        }
-
-        return ClockHandMotion.Tick;
-    }
-
-    private void OnSecondMotionOpening(object? sender, EventArgs e)
-        => RefreshMotionChecks(_clock.SecondMotion, _miSecondCrawling, _miSecondSweep, _miSecondFastTick, _miSecondTick);
-
-    private void OnMinuteMotionOpening(object? sender, EventArgs e)
-        => RefreshMotionChecks(_clock.MinuteMotion, _miMinuteCrawling, _miMinuteSweep, _miMinuteFastTick, _miMinuteTick);
-
-    private void OnHourMotionOpening(object? sender, EventArgs e)
-        => RefreshMotionChecks(_clock.HourMotion, _miHourCrawling, _miHourSweep, _miHourFastTick, _miHourTick);
-
-    private void RefreshMotionChecks(
-        ClockHandMotion current,
-        ToolStripMenuItem crawling,
-        ToolStripMenuItem sweep,
-        ToolStripMenuItem fastTick,
-        ToolStripMenuItem tick)
-    {
-        bool freeFloating = _current?.FamilyTheme.Capabilities.FreeFloating == true;
-        crawling.Enabled = !freeFloating;
-        crawling.Checked = current == ClockHandMotion.Crawling;
-        sweep.Checked = current == ClockHandMotion.Sweep;
-        fastTick.Checked = current == ClockHandMotion.FastTick;
-        tick.Checked = current == ClockHandMotion.Tick;
-    }
-
-    // ── Grace menu handlers ──
-
-    private void OnGraceClick(object? sender, EventArgs e)
-    {
-        if (sender is ToolStripMenuItem { Tag: int seconds })
-        {
-            _clock.GraceSeconds = seconds;
-            MarkClockSettingsCustomized();
-            _statusInfo.Text = $"Grace catch-up: {seconds}s";
-        }
-    }
-
-    private void RefreshGraceChecks()
-    {
-        _miGrace1.Checked = _clock.GraceSeconds == 1;
-        _miGrace5.Checked = _clock.GraceSeconds == 5;
-        _miGrace10.Checked = _clock.GraceSeconds == 10;
-        _miGrace20.Checked = _clock.GraceSeconds == 20;
-        _miGrace30.Checked = _clock.GraceSeconds == 30;
-    }
-
     // ── Speed menu handlers ──
 
     private void OnSpeedClick(object? sender, EventArgs e)
@@ -686,6 +599,21 @@ public partial class FormMain : Form
         _miSpeed10.Checked = _clock.SpeedMultiplier == 10d;
         _miSpeed60.Checked = _clock.SpeedMultiplier == 60d;
         _miSpeed600.Checked = _clock.SpeedMultiplier == 600d;
+    }
+
+    private void OnOptionsClick(object? sender, EventArgs e)
+    {
+        SynchronizeHandOptionsFromClock();
+        using OptionsDialog dialog = new(_options);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        _options = dialog.EditedOptions.Clone();
+        ApplyRuntimeOptions(reloadPluginsForFolderChange: true);
+        PersistCurrentAppState();
+        _statusInfo.Text = "Options updated.";
     }
 
     // ── View menu handlers ──
@@ -795,6 +723,7 @@ public partial class FormMain : Form
     {
         _statusFps.Text = $"{_clock.CurrentFramesPerSecond:0} fps";
         RecordCurrentFrameRateSample();
+        RefreshTickerText();
     }
 
     // ── Theme-info overlay menu ──
@@ -852,7 +781,7 @@ public partial class FormMain : Form
                 _splitContainer.Panel2.Controls.Add(_propertyGrid);
             }
 
-            _propertyGrid.SelectedObject = _clockSettings;
+            RefreshPropertyGridSelection();
             _splitContainer.Panel2Collapsed = false;
             ApplyPropertyPanelWidth();
         }
@@ -870,6 +799,32 @@ public partial class FormMain : Form
     }
 
     private void OnExitClick(object? sender, EventArgs e) => Close();
+
+    private void ApplyThemeToClock(IClockTheme theme)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+
+        if (ReferenceEquals(_clock.Theme, theme))
+        {
+            _clock.Theme = null;
+        }
+
+        _clock.Theme = theme;
+    }
+
+    private void RefreshPropertyGridSelection()
+    {
+        _propertyGridSelection.SetThemeSession(_activeThemeCustomProperties);
+        TypeDescriptor.Refresh(_propertyGridSelection);
+
+        if (ReferenceEquals(_propertyGrid.SelectedObject, _propertyGridSelection))
+        {
+            _propertyGrid.SelectedObject = null;
+        }
+
+        _propertyGrid.SelectedObject = _propertyGridSelection;
+        _propertyGrid.Refresh();
+    }
 
     // ── Kiosk component events ──
 

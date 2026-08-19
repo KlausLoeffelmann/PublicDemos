@@ -60,7 +60,7 @@ public sealed class ThemeVariantTests
             ClockThemeVariants.DayNight,
             ClockThemeVariants.DayNight,
             ClockThemeVariants.DayNight,
-            ClockThemeVariants.DayNight,
+            ClockThemeVariants.DayNightOled,
             ClockThemeVariants.DayNightOled,
         ],
         all.Select(theme => theme.SupportedVariants));
@@ -75,13 +75,13 @@ public sealed class ThemeVariantTests
             new("Modern Minimal", BuiltInThemes.ModernMinimal, 69, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Antique Worn", BuiltInThemes.AntiqueWorn, 77, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("NERD", BuiltInThemes.Nerd, 15, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
-            new("Scatter (Magnetic)", BuiltInThemes.Scatter, 17, new ThemeCapabilities
+            new("Scatter (Magnetic)", BuiltInThemes.Scatter, 20, new ThemeCapabilities
             {
                 FreeFloating = true,
                 HandsFollowFaceRotation = true,
                 MagneticByDefault = true,
-            }, ClockThemeVariants.DayNight),
-            new("Logical", BuiltInThemes.Logical, 17, ThemeCapabilities.Default, ClockThemeVariants.DayNightOled),
+            }, ClockThemeVariants.DayNightOled),
+            new("Logical", BuiltInThemes.Logical, 21, ThemeCapabilities.Default, ClockThemeVariants.DayNightOled),
         ];
 
         foreach (ThemeExpectation expectation in expectations)

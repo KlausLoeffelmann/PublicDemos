@@ -20,6 +20,20 @@ public sealed class ScatterThemePaletteTests
         Assert.Equal(Color.FromArgb(132, 141, 156), GetColor(palette, "Arbour"));
     }
 
+    [Fact]
+    public void OledPalettes_UseDarkBlueAndBlackFaces()
+    {
+        object oledDayPalette = typeof(ScatterTheme)
+            .GetProperty("Palette", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(new ScatterTheme().ResolveVariant(ClockThemeVariantKind.OledDay))!;
+        object oledNightPalette = typeof(ScatterTheme)
+            .GetProperty("Palette", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(new ScatterTheme().ResolveVariant(ClockThemeVariantKind.OledNight))!;
+
+        Assert.Equal(Color.FromArgb(12, 32, 86), GetColor(oledDayPalette, "Face"));
+        Assert.Equal(Color.Black, GetColor(oledNightPalette, "Face"));
+    }
+
     private static Color GetColor(object palette, string propertyName)
         => (Color)(palette.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!
             .GetValue(palette) ?? throw new InvalidOperationException($"Palette property '{propertyName}' was null."));

@@ -24,6 +24,10 @@ internal sealed class ThemeTickContext : IClockTickContext
 
     public ClockTimeSnapshot Time { get; set; }
 
+    public ClockTimeZoneSnapshot TimeZone { get; set; } = ClockTimeZoneSnapshot.Create(TimeZoneInfo.Local, DateTime.Now);
+
+    public ClockAmbientSnapshot Ambient { get; set; } = ClockAmbientSnapshot.Empty;
+
     public TimeSpan FrameDelta { get; set; }
 
     public IReadOnlyList<ClockElementDescriptor> Elements => _elements;

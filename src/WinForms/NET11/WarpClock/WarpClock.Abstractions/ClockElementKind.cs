@@ -44,5 +44,23 @@ public enum ClockElementKind
     AmPmDrum,
 
     /// <summary>A theme-specific custom element. Disambiguate via <see cref="ClockElementId.Index"/>.</summary>
-    Custom
+    Custom,
+
+    /// <summary>An auxiliary dial for a fractional-second / sub-second hand.</summary>
+    FractionSecondDial,
+
+    /// <summary>A rendered time-zone label or badge.</summary>
+    TimeZone,
+
+    /// <summary>A rendered day-of-month indicator.</summary>
+    Day,
+
+    /// <summary>A rendered weekday indicator.</summary>
+    Weekday,
+
+    /// <summary>A transient overlay message supplied by the host.</summary>
+    OverlayMessage,
+
+    /// <summary>A host-supplied indexed auxiliary image.</summary>
+    IndexedImage
 }

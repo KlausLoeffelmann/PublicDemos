@@ -81,10 +81,38 @@ public sealed class LogicalTheme : IClockTheme
         {
             new()
             {
+                Id = new ClockElementId(ClockElementKind.Case),
+                ContentSize = new SizeF(1000f, 1000f),
+                Pivot = new PointF(500f, 500f),
+                ZOrder = -10,
+            },
+            new()
+            {
                 Id = ClockElementId.Face,
                 ContentSize = new SizeF(1000f, 1000f),
                 Pivot = new PointF(500f, 500f),
                 ZOrder = 0,
+            },
+            new()
+            {
+                Id = ClockElementId.Weekday,
+                ContentSize = new SizeF(276f, 54f),
+                Pivot = new PointF(138f, 27f),
+                ZOrder = 16,
+            },
+            new()
+            {
+                Id = ClockElementId.TimeZone,
+                ContentSize = new SizeF(320f, 46f),
+                Pivot = new PointF(160f, 23f),
+                ZOrder = 17,
+            },
+            new()
+            {
+                Id = ClockElementId.Day,
+                ContentSize = new SizeF(296f, 54f),
+                Pivot = new PointF(148f, 27f),
+                ZOrder = 18,
             },
         };
 
@@ -115,7 +143,7 @@ public sealed class LogicalTheme : IClockTheme
     }
 
     /// <inheritdoc/>
-    public IClockLayout CreateLayout() => new RadialLayout();
+    public IClockLayout CreateLayout() => new LogicalLayout();
 
     /// <inheritdoc/>
     public IClockElementRenderer CreateRenderer() => new LogicalRenderer(_palette);
@@ -212,5 +240,22 @@ public sealed class LogicalTheme : IClockTheme
             Hand = hand,
             ZOrder = zOrder,
         };
+    }
+
+    private sealed class LogicalLayout : IClockLayout
+    {
+        public bool TryGetAnchor(ClockElementId id, SizeF surface, out PointF anchor)
+        {
+            // Labels are centered in pixel space; all caption motion is design-unit
+            // AnchorOffset scaled exactly once by the engine's DesignScale.
+            if (id.Kind is ClockElementKind.Weekday or ClockElementKind.Day or ClockElementKind.TimeZone)
+            {
+                anchor = new PointF(surface.Width / 2f, surface.Height / 2f);
+                return true;
+            }
+
+            anchor = default;
+            return false;
+        }
     }
 }

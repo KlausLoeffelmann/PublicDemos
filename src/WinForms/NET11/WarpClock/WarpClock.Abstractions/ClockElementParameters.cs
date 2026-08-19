@@ -46,6 +46,12 @@ public sealed class ClockElementParameters
     /// <summary>Opacity 0..1. Honored by renderers that support it (forces a redraw when changed).</summary>
     public float Opacity { get; set; } = 1f;
 
+    /// <summary>
+    ///  Per-hand override for how the engine chooses the time target this element points at.
+    ///  Non-hand elements ignore it; unsafe requests fall back to the engine's safe default.
+    /// </summary>
+    public ClockHandTargetMode HandTargetMode { get; set; } = ClockHandTargetMode.ThemeDefault;
+
     /// <summary>Optional text the renderer may use (e.g. a numeral override during a blend).</summary>
     public string? Text { get; set; }
 

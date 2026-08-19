@@ -6,9 +6,9 @@ using WarpClock.Abstractions;
 namespace WarpClock.App;
 
 /// <summary>
-///  Persists editable theme-list documents at arbitrary JSON paths.
+///  Persists editable theme-set documents at arbitrary JSON paths.
 /// </summary>
-public sealed class ThemeListStore
+public sealed class ThemeSetStore
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new()
     {
@@ -20,9 +20,9 @@ public sealed class ThemeListStore
     };
 
     private readonly AppPaths _paths;
-    private readonly ILogger<ThemeListStore> _logger;
+    private readonly ILogger<ThemeSetStore> _logger;
 
-    public ThemeListStore(AppPaths paths, ILogger<ThemeListStore> logger)
+    public ThemeSetStore(AppPaths paths, ILogger<ThemeSetStore> logger)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(logger);
@@ -38,7 +38,7 @@ public sealed class ThemeListStore
 
         if (!File.Exists(path))
         {
-            ThemeScheduleDocument defaults = ThemeListDefaults.CreateDefault(catalog);
+            ThemeScheduleDocument defaults = ThemeSetDefaults.CreateDefault(catalog);
             ApplyCatalogMetadata(defaults, catalog, path);
             SaveToPath(path, defaults);
             return defaults;
@@ -51,13 +51,34 @@ public sealed class ThemeListStore
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
             BackupUnreadableFile(path);
-            _logger.LogWarning(ex, "Could not restore the WarpClock theme list from {Path}; rebuilding defaults.", path);
+            _logger.LogWarning(ex, "Could not restore the WarpClock theme set from {Path}; rebuilding defaults.", path);
 
-            ThemeScheduleDocument defaults = ThemeListDefaults.CreateDefault(catalog);
+            ThemeScheduleDocument defaults = ThemeSetDefaults.CreateDefault(catalog);
             ApplyCatalogMetadata(defaults, catalog, path);
             SaveToPath(path, defaults);
             return defaults;
         }
+    }
+
+    public ThemeScheduleDocument MigrateLegacyDefaultFile(string legacyPath, string path, IReadOnlyList<ThemeCatalogInfo> catalog)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(legacyPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(catalog);
+
+        ThemeScheduleDocument document = LoadFromPath(legacyPath, catalog);
+        SaveToPath(path, document);
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not remove the legacy WarpClock theme-list file {Path}.", legacyPath);
+        }
+
+        return LoadFromPath(path, catalog);
     }
 
     public ThemeScheduleDocument LoadFromPath(string path, IReadOnlyList<ThemeCatalogInfo> catalog)
@@ -78,7 +99,7 @@ public sealed class ThemeListStore
         document.Normalize();
         if (string.IsNullOrWhiteSpace(document.Name))
         {
-            document.Name = Path.GetFileNameWithoutExtension(path);
+            document.Name = GetDocumentNameFromPath(path);
         }
 
         WriteJsonFile(path, document);
@@ -93,7 +114,7 @@ public sealed class ThemeListStore
 
         if (string.IsNullOrWhiteSpace(document.Name))
         {
-            document.Name = Path.GetFileNameWithoutExtension(path);
+            document.Name = GetDocumentNameFromPath(path);
         }
 
         Dictionary<string, ThemeCatalogInfo> byKey = catalog
@@ -142,6 +163,14 @@ public sealed class ThemeListStore
         File.Move(tempPath, path, overwrite: true);
     }
 
+    private static string GetDocumentNameFromPath(string path)
+    {
+        string fileName = Path.GetFileName(path);
+        return fileName.EndsWith(".themeset.json", StringComparison.OrdinalIgnoreCase)
+            ? fileName[..^".themeset.json".Length]
+            : Path.GetFileNameWithoutExtension(path);
+    }
+
     private void BackupUnreadableFile(string path)
     {
         try
@@ -159,7 +188,7 @@ public sealed class ThemeListStore
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _logger.LogWarning(ex, "Could not preserve unreadable theme-list file {Path}.", path);
+            _logger.LogWarning(ex, "Could not preserve unreadable theme-set file {Path}.", path);
         }
     }
 }

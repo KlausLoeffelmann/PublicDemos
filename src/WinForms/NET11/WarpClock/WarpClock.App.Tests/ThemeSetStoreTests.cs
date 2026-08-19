@@ -5,7 +5,7 @@ using WarpClock.Abstractions;
 
 namespace WarpClock.App.Tests;
 
-public sealed class ThemeListStoreTests
+public sealed class ThemeSetStoreTests
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new()
     {
@@ -47,7 +47,7 @@ public sealed class ThemeListStoreTests
 
             File.WriteAllText(path, JsonSerializer.Serialize(legacy, s_jsonOptions));
 
-            ThemeListStore store = new(new AppPaths(), NullLogger<ThemeListStore>.Instance);
+            ThemeSetStore store = new(new AppPaths(), NullLogger<ThemeSetStore>.Instance);
             ThemeCatalogInfo[] catalog =
             [
                 new()
@@ -73,9 +73,64 @@ public sealed class ThemeListStoreTests
         }
     }
 
+    [Fact]
+    public void MigrateLegacyDefaultFile_CreatesCanonicalThemesetAndRemovesLegacyFile()
+    {
+        string workDirectory = CreateWorkDirectory();
+
+        try
+        {
+            string legacyPath = Path.Combine(workDirectory, "themelist.json");
+            string canonicalPath = Path.Combine(workDirectory, "default.themeset.json");
+            ThemeScheduleDocument legacy = new()
+            {
+                Name = "Migrated Set",
+                Entries =
+                [
+                    new ThemeScheduleEntry
+                    {
+                        Theme = new ThemeReference
+                        {
+                            ThemeKey = "scatter",
+                        },
+                        DisplayName = "Scatter",
+                        Source = "stock",
+                        Enabled = true,
+                        EligibleDuringDay = true,
+                        EligibleDuringNight = true,
+                    },
+                ],
+            };
+
+            File.WriteAllText(legacyPath, JsonSerializer.Serialize(legacy, s_jsonOptions));
+
+            ThemeSetStore store = new(new AppPaths(), NullLogger<ThemeSetStore>.Instance);
+            ThemeCatalogInfo[] catalog =
+            [
+                new()
+                {
+                    ThemeKey = "scatter",
+                    FamilyName = "Scatter",
+                    Source = "stock",
+                    SupportedVariants = ClockThemeVariants.DayNight,
+                },
+            ];
+
+            ThemeScheduleDocument migrated = store.MigrateLegacyDefaultFile(legacyPath, canonicalPath, catalog);
+
+            Assert.Equal("Migrated Set", migrated.Name);
+            Assert.True(File.Exists(canonicalPath));
+            Assert.False(File.Exists(legacyPath));
+        }
+        finally
+        {
+            DeleteDirectory(workDirectory);
+        }
+    }
+
     private static string CreateWorkDirectory()
     {
-        string path = Path.Combine(AppContext.BaseDirectory, "TestArtifacts", nameof(ThemeListStoreTests), Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(AppContext.BaseDirectory, "TestArtifacts", nameof(ThemeSetStoreTests), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         return path;
     }

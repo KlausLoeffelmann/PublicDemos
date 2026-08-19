@@ -17,6 +17,8 @@ public partial class FormMain
         _loadedAppState = _persistenceEnabled
             ? _appStateStore!.Load()
             : null;
+        _themeCustomPropertyStore.Load(_loadedAppState?.Theme);
+        RestoreRuntimeOptions(_loadedAppState?.Options);
 
         ApplyWindowSettings(CreateEffectiveWindowSettings(_loadedAppState?.Window));
         _recordFramerateEnabled = _startupOptions.RecordFramerate
@@ -68,28 +70,24 @@ public partial class FormMain
 
     private void ApplyLoadedClockState()
     {
-        if (_loadedAppState is null || !HasLoadedClockState)
+        if (_loadedAppState is not null && HasLoadedClockState)
         {
-            return;
+            PersistedClockSettings settings = _loadedAppState.Clock;
+            _clock.GlideDurationSeconds = settings.GlideDurationSeconds;
+            _clock.MagneticNumerals = settings.MagneticNumerals;
+            _clock.TimeOffset = settings.TimeOffset;
+            _clock.SpeedMultiplier = settings.SpeedMultiplier;
+            _preferredThemeInfoMode = settings.RenderThemeInfo;
+            _clock.ThemeInfoPlacement = settings.ThemeInfoPlacement;
+            SetOledViewEnabled(settings.OledView);
+            _clock.VSyncEnabled = settings.VSyncEnabled;
+            _clock.TargetFrameRate = settings.TargetFrameRate;
+            ApplyEffectiveThemeInfoMode();
+
+            _clockSettingsCustomized = true;
         }
 
-        PersistedClockSettings settings = _loadedAppState.Clock;
-        _clock.SecondMotion = settings.SecondMotion;
-        _clock.MinuteMotion = settings.MinuteMotion;
-        _clock.HourMotion = settings.HourMotion;
-        _clock.GraceSeconds = settings.GraceSeconds;
-        _clock.GlideDurationSeconds = settings.GlideDurationSeconds;
-        _clock.MagneticNumerals = settings.MagneticNumerals;
-        _clock.TimeOffset = settings.TimeOffset;
-        _clock.SpeedMultiplier = settings.SpeedMultiplier;
-        _preferredThemeInfoMode = settings.RenderThemeInfo;
-        _clock.ThemeInfoPlacement = settings.ThemeInfoPlacement;
-        SetOledViewEnabled(settings.OledView);
-        _clock.VSyncEnabled = settings.VSyncEnabled;
-        _clock.TargetFrameRate = settings.TargetFrameRate;
-        ApplyEffectiveThemeInfoMode();
-
-        _clockSettingsCustomized = true;
+        ApplyRuntimeOptions(reloadPluginsForFolderChange: false);
         RefreshAllSettingChecks();
         _propertyGrid.Refresh();
     }
@@ -148,9 +146,11 @@ public partial class FormMain
             Theme = new PersistedThemeState
             {
                 CurrentTheme = ThemeReferenceUtility.Clone(_currentSelection?.ToReference()),
-                CurrentThemeListPath = _currentThemeListPath,
-                DefaultThemeListPath = _defaultThemeListPath,
+                CurrentThemeSetPath = _currentThemeSetPath,
+                DefaultThemeSetPath = _defaultThemeSetPath,
+                CustomPropertyValues = [.. _themeCustomPropertyStore.ExportValues()],
             },
+            Options = CaptureRuntimeOptions(),
         };
 
     private void PersistCurrentAppState()
@@ -172,7 +172,6 @@ public partial class FormMain
 
     private void RefreshAllSettingChecks()
     {
-        RefreshGraceChecks();
         RefreshSpeedChecks();
         RefreshKioskChecks();
         _miOledView.Checked = GetOledViewEnabled();
@@ -180,9 +179,6 @@ public partial class FormMain
         _miRecordFramerate.Checked = _recordFramerateEnabled;
         _miMagnetic.Checked = _clock.MagneticNumerals;
         _miVSync.Checked = _clock.VSyncEnabled;
-        OnSecondMotionOpening(this, EventArgs.Empty);
-        OnMinuteMotionOpening(this, EventArgs.Empty);
-        OnHourMotionOpening(this, EventArgs.Empty);
         OnThemeInfoOpening(this, EventArgs.Empty);
         OnThemeInfoPlacementOpening(this, EventArgs.Empty);
     }
@@ -198,6 +194,18 @@ public partial class FormMain
 
     private void OnClockSettingsPropertyValueChanged(object? sender, PropertyValueChangedEventArgs e)
     {
+        string? propertyName = e.ChangedItem?.PropertyDescriptor?.Name;
+        if (_activeThemeCustomProperties is not null
+            && _currentSelection is not null
+            && _propertyGridSelection.IsThemeCustomProperty(propertyName))
+        {
+            _themeCustomPropertyStore.CaptureValue(_activeThemeCustomProperties, propertyName!, _logger);
+            SelectTheme(_currentSelection, ThemeSelectionReason.CustomPropertyEdit, applyThemeDefaults: false);
+            PersistCurrentAppState();
+            _statusInfo.Text = $"Theme setting updated: {e.ChangedItem?.Label ?? propertyName}";
+            return;
+        }
+
         MarkClockSettingsCustomized();
         _statusInfo.Text = $"Setting updated: {e.ChangedItem?.Label ?? "Property"}";
     }
@@ -212,4 +220,5 @@ internal enum ThemeSelectionReason
     Manual,
     PluginReload,
     OledViewToggle,
+    CustomPropertyEdit,
 }

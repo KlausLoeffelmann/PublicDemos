@@ -16,8 +16,20 @@ internal sealed class LogicalRenderer(LogicalThemePalette palette) : IClockEleme
 
         switch (context.Id.Kind)
         {
+            case ClockElementKind.Case:
+                DrawCase(graphics, context);
+                break;
             case ClockElementKind.Face:
                 DrawFace(graphics, context);
+                break;
+            case ClockElementKind.Weekday:
+                DrawAuxiliaryLabel(graphics, context, palette.Numeral, 0.56f, FontStyle.Bold);
+                break;
+            case ClockElementKind.Day:
+                DrawAuxiliaryLabel(graphics, context, palette.Numeral, 0.54f, FontStyle.Bold);
+                break;
+            case ClockElementKind.TimeZone:
+                DrawAuxiliaryLabel(graphics, context, palette.FaceRing, 0.50f, FontStyle.Regular);
                 break;
             case ClockElementKind.HourMarker:
                 DrawHourMarker(graphics, context);
@@ -37,10 +49,34 @@ internal sealed class LogicalRenderer(LogicalThemePalette palette) : IClockEleme
         }
     }
 
+    private void DrawCase(ID2DGraphics graphics, IClockRenderContext context)
+    {
+        PointF center = context.Pivot;
+        Color shell = ApplyOpacity(Lerp(palette.FaceFill, palette.FaceRing, 0.18f), context.Parameters.Opacity);
+        float outerRadius = 468f * context.Scale;
+        float innerCutRadius = 438f * context.Scale;
+
+        graphics.FillEllipse(shell, center.X - outerRadius, center.Y - outerRadius, outerRadius * 2f, outerRadius * 2f);
+
+        Color innerCut = ApplyOpacity(Color.FromArgb(235, 6, 10, 16), context.Parameters.Opacity);
+        graphics.FillEllipse(
+            innerCut,
+            center.X - innerCutRadius,
+            center.Y - innerCutRadius,
+            innerCutRadius * 2f,
+            innerCutRadius * 2f);
+
+        using var outerPen = new Pen(ApplyOpacity(palette.FaceRing, context.Parameters.Opacity), 12f * context.Scale);
+        float strokeRadius = 462f * context.Scale;
+        graphics.DrawEllipse(
+            outerPen,
+            new RectangleF(center.X - strokeRadius, center.Y - strokeRadius, strokeRadius * 2f, strokeRadius * 2f));
+    }
+
     private void DrawFace(ID2DGraphics graphics, IClockRenderContext context)
     {
         PointF center = context.Pivot;
-        float radius = 435f * context.Scale;
+        float radius = 420f * context.Scale;
         Color fill = ApplyOpacity(palette.FaceFill, context.Parameters.Opacity);
 
         graphics.FillEllipse(fill, center.X - radius, center.Y - radius, radius * 2f, radius * 2f);
@@ -53,10 +89,42 @@ internal sealed class LogicalRenderer(LogicalThemePalette palette) : IClockEleme
             new RectangleF(center.X - outerRadius, center.Y - outerRadius, outerRadius * 2f, outerRadius * 2f));
 
         using var innerPen = new Pen(ApplyOpacity(palette.FaceInnerRing, context.Parameters.Opacity), 3.5f * context.Scale);
-        float innerRadius = radius * 0.77f;
+        float innerRadius = radius * 0.78f;
         graphics.DrawEllipse(
             innerPen,
             new RectangleF(center.X - innerRadius, center.Y - innerRadius, innerRadius * 2f, innerRadius * 2f));
+    }
+
+    private void DrawAuxiliaryLabel(
+        ID2DGraphics graphics,
+        IClockRenderContext context,
+        Color baseColor,
+        float fontScale,
+        FontStyle style)
+    {
+        string text = context.Parameters.Text ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        Color color = AnimatedColor(baseColor, context);
+        float fontSize = context.ContentSize.Height * fontScale;
+        using var font = new Font("Segoe UI", fontSize, style, GraphicsUnit.Pixel);
+        using var brush = new SolidBrush(color);
+        using var format = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center,
+            FormatFlags = StringFormatFlags.NoWrap,
+        };
+
+        graphics.DrawString(
+            text,
+            font,
+            brush,
+            new RectangleF(0f, 0f, context.ContentSize.Width, context.ContentSize.Height),
+            format);
     }
 
     private void DrawHourMarker(ID2DGraphics graphics, IClockRenderContext context)
@@ -148,6 +216,10 @@ internal sealed class LogicalRenderer(LogicalThemePalette palette) : IClockEleme
             ClockElementKind.MinuteHand => 14,
             ClockElementKind.SecondHand => 15,
             ClockElementKind.Arbour => 16,
+            ClockElementKind.Case => 17,
+            ClockElementKind.Weekday => 18,
+            ClockElementKind.TimeZone => 19,
+            ClockElementKind.Day => 20,
             _ => 0,
         };
 

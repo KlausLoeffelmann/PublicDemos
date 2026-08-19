@@ -3,13 +3,13 @@ using WarpClock.Abstractions;
 
 namespace WarpClock.App;
 
-public partial class ThemeListEditorDialog : Form
+public partial class ThemeSetEditorDialog : Form
 {
-    private readonly BindingList<ThemeListRow> _rows = new();
+    private readonly BindingList<ThemeSetRow> _rows = new();
     private IReadOnlyList<ThemeCatalogInfo> _catalog = Array.Empty<ThemeCatalogInfo>();
     private string? _currentPath;
 
-    public ThemeListEditorDialog()
+    public ThemeSetEditorDialog()
     {
         InitializeComponent();
 
@@ -27,7 +27,7 @@ public partial class ThemeListEditorDialog : Form
         _rotationSuffixLabel.Enabled = _autoRotateCheckBox.Checked;
     }
 
-    public ThemeListEditorDialog(
+    public ThemeSetEditorDialog(
         ThemeScheduleDocument document,
         IReadOnlyList<ThemeCatalogInfo> catalog,
         string? currentPath,
@@ -63,13 +63,13 @@ public partial class ThemeListEditorDialog : Form
         ClearValidation();
     }
 
-    private List<ThemeListRow> BuildRows(ThemeScheduleDocument document, IReadOnlyList<ThemeCatalogInfo> catalog)
+    private List<ThemeSetRow> BuildRows(ThemeScheduleDocument document, IReadOnlyList<ThemeCatalogInfo> catalog)
     {
         Dictionary<string, ThemeCatalogInfo> catalogByKey = catalog
             .GroupBy(item => ThemeCatalogInfo.NormalizeThemeKey(item.ThemeKey), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.Last(), StringComparer.OrdinalIgnoreCase);
 
-        var rows = new List<ThemeListRow>(document.Entries.Count + catalog.Count);
+        var rows = new List<ThemeSetRow>(document.Entries.Count + catalog.Count);
         var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (ThemeScheduleEntry entry in document.Entries)
@@ -87,7 +87,7 @@ public partial class ThemeListEditorDialog : Form
                 bool supportsDay = info.SupportsPeriod(ThemeSchedulePeriod.Day, entry.Theme.Variant);
                 bool supportsNight = info.SupportsPeriod(ThemeSchedulePeriod.Night, entry.Theme.Variant);
 
-                rows.Add(new ThemeListRow
+                rows.Add(new ThemeSetRow
                 {
                     ThemeKey = themeKey,
                     Variant = info.SupportsVariant(entry.Theme.Variant ?? ClockThemeVariantKind.Day)
@@ -105,7 +105,7 @@ public partial class ThemeListEditorDialog : Form
             }
             else
             {
-                rows.Add(new ThemeListRow
+                rows.Add(new ThemeSetRow
                 {
                     ThemeKey = themeKey,
                     Variant = entry.Theme.Variant,
@@ -128,10 +128,10 @@ public partial class ThemeListEditorDialog : Form
                 continue;
             }
 
-            ThemeScheduleEntry defaults = ThemeListDefaults.CreateDefaultEntry(info);
+            ThemeScheduleEntry defaults = ThemeSetDefaults.CreateDefaultEntry(info);
             defaults.Enabled = false;
 
-            rows.Add(new ThemeListRow
+            rows.Add(new ThemeSetRow
             {
                 ThemeKey = info.ThemeKey,
                 DisplayName = info.FamilyName,
@@ -148,12 +148,12 @@ public partial class ThemeListEditorDialog : Form
         return rows;
     }
 
-    private void FillRows(IEnumerable<ThemeListRow> rows)
+    private void FillRows(IEnumerable<ThemeSetRow> rows)
     {
         _rows.RaiseListChangedEvents = false;
         _rows.Clear();
 
-        foreach (ThemeListRow row in rows)
+        foreach (ThemeSetRow row in rows)
         {
             _rows.Add(row);
         }
@@ -165,7 +165,7 @@ public partial class ThemeListEditorDialog : Form
 
     private void OnResetDefaultsClick(object? sender, EventArgs e)
     {
-        ThemeScheduleDocument defaults = ThemeListDefaults.CreateDefault(_catalog);
+        ThemeScheduleDocument defaults = ThemeSetDefaults.CreateDefault(_catalog);
         _nameTextBox.Text = defaults.Name;
         FillRows(BuildRows(defaults, _catalog));
         _autoRotateCheckBox.Checked = true;
@@ -189,7 +189,7 @@ public partial class ThemeListEditorDialog : Form
 
         if (string.IsNullOrWhiteSpace(_nameTextBox.Text))
         {
-            SetValidation("Enter a themelist name.");
+            SetValidation("Enter a themeset name.");
             return;
         }
 
@@ -244,7 +244,7 @@ public partial class ThemeListEditorDialog : Form
             return;
         }
 
-        ThemeListRow row = _rows[e.RowIndex];
+        ThemeSetRow row = _rows[e.RowIndex];
         if (e.ColumnIndex == _statusColumn.Index)
         {
             if (!row.SupportsDay && !row.SupportsNight && !string.Equals(row.Status, "Missing", StringComparison.OrdinalIgnoreCase))
@@ -265,7 +265,7 @@ public partial class ThemeListEditorDialog : Form
         for (int index = 0; index < _themeGrid.Rows.Count && index < _rows.Count; index++)
         {
             DataGridViewRow gridRow = _themeGrid.Rows[index];
-            ThemeListRow row = _rows[index];
+            ThemeSetRow row = _rows[index];
 
             ApplyEligibilityCellState(gridRow.Cells[_dayColumn.Index], row.SupportsDay);
             ApplyEligibilityCellState(gridRow.Cells[_nightColumn.Index], row.SupportsNight);
@@ -284,7 +284,7 @@ public partial class ThemeListEditorDialog : Form
     private void UpdateDisplayedPath()
     {
         _currentPathValueLabel.Text = string.IsNullOrWhiteSpace(_currentPath)
-            ? "Unsaved new themelist (choose a file when saving)."
+            ? "Unsaved new themeset (choose a file when saving)."
             : _currentPath;
     }
 
@@ -300,7 +300,7 @@ public partial class ThemeListEditorDialog : Form
         _validationLabel.Visible = false;
     }
 
-    private sealed class ThemeListRow
+    private sealed class ThemeSetRow
     {
         public string ThemeKey { get; set; } = string.Empty;
 

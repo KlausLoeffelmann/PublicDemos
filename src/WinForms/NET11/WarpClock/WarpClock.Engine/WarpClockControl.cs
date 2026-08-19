@@ -31,9 +31,15 @@ public sealed class WarpClockControl : D2DPanel
     private ThemeTickContext? _tickContext;
     private readonly ElementRenderContext _renderContext = new();
     private readonly ThemeInfoOverlay _themeInfoOverlay = new();
+    private readonly TimeZoneHeadlineOverlay _timeZoneHeadlineOverlay = new();
 
     private SizeF _surface = new(2, 2);
     private ClockGeometry _sceneGeometry = ClockGeometry.ForSurface(new SizeF(2, 2));
+    private TimeZoneInfo _displayedTimeZone = TimeZoneInfo.Local;
+    private ClockAmbientSnapshot _ambientContent = ClockAmbientSnapshot.Empty;
+    private ClockAuxiliaryVisibility _auxiliaryVisibility = ClockAuxiliaryVisibility.Default;
+    private ClockTimeZoneSnapshot _lastAnimatorTimeZone;
+    private bool _hasAnimatorTimeZone;
     private float _faceRotation;
     private int _graceSeconds = 5;
     private float _glideDurationSeconds = 0.5f;
@@ -46,6 +52,9 @@ public sealed class WarpClockControl : D2DPanel
     private Point _currentOledViewOffset;
     private RenderThemeInfo _renderThemeInfo = RenderThemeInfo.FadeAlternateScreenSides;
     private ThemeInfoPlacement _themeInfoPlacement = ThemeInfoPlacement.LeftScreenSide;
+    private bool _timeZoneHeadlineFallbackEnabled;
+    private string _timeZoneHeadlineText = string.Empty;
+    private bool _timeZoneHeadlineNightMode;
     private bool _sceneBuilt;
     private double _framesPerSecond;
 
@@ -106,6 +115,69 @@ public sealed class WarpClockControl : D2DPanel
             lock (_sync)
             {
                 _themeInfoPlacement = value;
+            }
+        }
+    }
+
+    /// <summary>Whether the engine should draw its fallback fading time-zone headline.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool TimeZoneHeadlineFallbackEnabled
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _timeZoneHeadlineFallbackEnabled;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _timeZoneHeadlineFallbackEnabled = value;
+            }
+        }
+    }
+
+    /// <summary>The fallback time-zone headline text drawn by the engine when enabled.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public string TimeZoneHeadlineText
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _timeZoneHeadlineText;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _timeZoneHeadlineText = value ?? string.Empty;
+            }
+        }
+    }
+
+    /// <summary>Whether the fallback time-zone headline should use its subdued night palette.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool TimeZoneHeadlineNightMode
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _timeZoneHeadlineNightMode;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _timeZoneHeadlineNightMode = value;
             }
         }
     }
@@ -216,7 +288,7 @@ public sealed class WarpClockControl : D2DPanel
         }
     }
 
-    /// <summary>Second-hand motion in a radial layout. <see cref="ClockHandMotion.Crawling"/> is disabled when the theme is free-floating.</summary>
+    /// <summary>Second-hand motion used when the hand is targeting the radial dial.</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public ClockHandMotion SecondMotion
@@ -346,6 +418,72 @@ public sealed class WarpClockControl : D2DPanel
         }
     }
 
+    /// <summary>The displayed time zone. The engine converts from UTC each frame so DST remains correct.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public TimeZoneInfo DisplayedTimeZone
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _displayedTimeZone;
+            }
+        }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            lock (_sync)
+            {
+                _displayedTimeZone = value;
+                _timeModel.DisplayedTimeZone = value;
+            }
+        }
+    }
+
+    /// <summary>Host-supplied ambient content exposed to renderers and animators.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public ClockAmbientSnapshot AmbientContent
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return CloneAmbientSnapshot(_ambientContent);
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _ambientContent = CloneAmbientSnapshot(value);
+            }
+        }
+    }
+
+    /// <summary>Visibility gates for optional auxiliary visuals.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public ClockAuxiliaryVisibility AuxiliaryVisibility
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _auxiliaryVisibility;
+            }
+        }
+        set
+        {
+            lock (_sync)
+            {
+                _auxiliaryVisibility = value;
+            }
+        }
+    }
+
     /// <summary>
     ///  When <see langword="true"/>, every hand "finds" the hour numerals wherever the
     ///  theme has placed them on the canvas and swings to the next one at its own rate
@@ -437,6 +575,7 @@ public sealed class WarpClockControl : D2DPanel
         if (disposing)
         {
             _themeInfoOverlay.Dispose();
+            _timeZoneHeadlineOverlay.Dispose();
         }
     }
 
@@ -449,6 +588,7 @@ public sealed class WarpClockControl : D2DPanel
         _magneticSolver.Reset();
         _faceRotation = 0f;
         _themeChangePending = false;
+        _hasAnimatorTimeZone = false;
 
         if (_theme is null)
         {
@@ -467,14 +607,6 @@ public sealed class WarpClockControl : D2DPanel
         _renderer = _theme.CreateRenderer();
         _animator = _theme.CreateAnimator();
         _descriptors = _theme.CreateElements();
-
-        // Enforce the time-correctness invariant: a free-floating layout cannot crawl.
-        if (_theme.Capabilities.FreeFloating)
-        {
-            if (SecondMotion == ClockHandMotion.Crawling) SecondMotion = ClockHandMotion.Sweep;
-            if (MinuteMotion == ClockHandMotion.Crawling) MinuteMotion = ClockHandMotion.Sweep;
-            if (HourMotion == ClockHandMotion.Crawling) HourMotion = ClockHandMotion.Sweep;
-        }
 
         _tickContext = new ThemeTickContext(_descriptors, GetParametersFor);
     }
@@ -502,6 +634,14 @@ public sealed class WarpClockControl : D2DPanel
 
             visual.PaintContent += (_, e) => RedrawElement(runtime, e.Graphics);
             _runtime[descriptor.Id] = runtime;
+        }
+
+        // Surface size must be known before Initialize so themes can place
+        // viewport-relative content (for example padded screen-top captions).
+        if (_tickContext is not null)
+        {
+            ClockGeometry geometry = ClockGeometry.ForSurface(_surface, OledSceneTransform.Identity);
+            _tickContext.SurfaceSize = geometry.Surface;
         }
 
         _animator?.Initialize(_tickContext!);
@@ -552,21 +692,28 @@ public sealed class WarpClockControl : D2DPanel
         }
 
         ClockTimeSnapshot time = _timeModel.CreateSnapshot();
+        ClockTimeZoneSnapshot timeZone = _timeModel.CreateTimeZoneSnapshot(time.Now);
+        ClockAmbientSnapshot ambient = CloneAmbientSnapshot(_ambientContent);
         OledSceneTransform sceneTransform = _oledViewTransform.Advance(frameDelta, _surface, _oledView);
         ClockGeometry geometry = ClockGeometry.ForSurface(_surface, sceneTransform);
         _sceneGeometry = geometry;
         _currentOledViewScale = sceneTransform.Scale;
         _currentOledViewOffset = sceneTransform.Offset;
 
-        RunAnimator(time, dt, geometry.Surface);
+        RunAnimator(time, timeZone, ambient, dt, geometry.Surface);
 
         foreach (ElementRuntime runtime in _runtime.Values)
         {
-            UpdateElement(runtime, time, geometry, dt);
+            UpdateElement(runtime, time, timeZone, ambient, geometry, dt);
         }
     }
 
-    private void RunAnimator(ClockTimeSnapshot time, float dt, SizeF surfaceSize)
+    private void RunAnimator(
+        ClockTimeSnapshot time,
+        ClockTimeZoneSnapshot timeZone,
+        ClockAmbientSnapshot ambient,
+        float dt,
+        SizeF surfaceSize)
     {
         if (_animator is null || _tickContext is null)
         {
@@ -577,14 +724,30 @@ public sealed class WarpClockControl : D2DPanel
         // parameter-driven motion such as a theme's wandering numerals is as smooth as the
         // engine-driven hands, which are also recomputed every frame.
         _tickContext.Time = time;
+        _tickContext.TimeZone = timeZone;
+        _tickContext.Ambient = ambient;
         _tickContext.FrameDelta = TimeSpan.FromSeconds(dt);
         _tickContext.SurfaceSize = surfaceSize;
         _tickContext.FaceRotationDegrees = _faceRotation;
+
+        if (_hasAnimatorTimeZone && !_lastAnimatorTimeZone.Equals(timeZone))
+        {
+            _animator.OnTimeZoneChanged(_tickContext, _lastAnimatorTimeZone, timeZone);
+        }
+
+        _lastAnimatorTimeZone = timeZone;
+        _hasAnimatorTimeZone = true;
         _animator.OnTick(_tickContext);
         _faceRotation = _tickContext.FaceRotationDegrees;
     }
 
-    private void UpdateElement(ElementRuntime runtime, ClockTimeSnapshot time, ClockGeometry geometry, float dt)
+    private void UpdateElement(
+        ElementRuntime runtime,
+        ClockTimeSnapshot time,
+        ClockTimeZoneSnapshot timeZone,
+        ClockAmbientSnapshot ambient,
+        ClockGeometry geometry,
+        float dt)
     {
         if (runtime.Visual is null)
         {
@@ -616,7 +779,8 @@ public sealed class WarpClockControl : D2DPanel
         // Transparent / Invisible numerals are placed (so magnetic aiming can still target
         // a Transparent one) but not drawn; only a Visible+Visible element shows its visual.
         runtime.Visual.Visible = parameters.Visible
-            && parameters.Visibility == ClockNumeralVisibility.Visible;
+            && parameters.Visibility == ClockNumeralVisibility.Visible
+            && IsAuxiliaryVisible(descriptor.Id);
 
         float selfRotation = ComputeSelfRotation(descriptor, parameters, time, anchor, geometry, dt);
 
@@ -640,6 +804,8 @@ public sealed class WarpClockControl : D2DPanel
             runtime.PivotPixels = pivotPixels;
             runtime.ContentScale = scale;
             runtime.ContentTime = time;
+            runtime.ContentTimeZone = timeZone;
+            runtime.ContentAmbient = ambient;
             runtime.Visual.InvalidateContent();
             parameters.RedrawRequested = false;
         }
@@ -677,23 +843,37 @@ public sealed class WarpClockControl : D2DPanel
         }
 
         bool freeFloating = _theme!.Capabilities.FreeFloating;
+        ClockHandMotion motion = descriptor.Hand == ClockHandKind.SubSecond
+            ? ClockHandMotion.Crawling
+            : MotionFor(descriptor.Hand);
+        ClockHandTargetMode targetMode = HandTargetModeResolver.Resolve(
+            descriptor.Hand,
+            parameters.HandTargetMode,
+            freeFloating);
         float target;
 
-        if (freeFloating)
+        if (targetMode == ClockHandTargetMode.FreeFloating)
         {
             target = HandPointingSolver.FreeFloatingTargetAngle(
-                descriptor.Hand, anchor, time, id => ResolveAnchor(id, geometry));
+                descriptor.Hand,
+                anchor,
+                time,
+                motion,
+                _glideDurationSeconds,
+                id => ResolveAnchor(id, geometry));
         }
         else
         {
-            target = HandPointingSolver.RadialTargetAngle(time, descriptor.Hand, MotionFor(descriptor.Hand), _glideDurationSeconds);
+            target = HandPointingSolver.RadialTargetAngle(time, descriptor.Hand, motion, _glideDurationSeconds);
             if (_theme.Capabilities.HandsFollowFaceRotation)
             {
                 target += _faceRotation;
             }
         }
 
-        float displayed = _solver.Solve(descriptor.Hand, target, _graceSeconds, freeFloating, dt);
+        bool smoothFollow = targetMode == ClockHandTargetMode.FreeFloating
+            && motion != ClockHandMotion.Crawling;
+        float displayed = _solver.Solve(descriptor.Hand, target, _graceSeconds, smoothFollow, dt);
 
         // Hand wobble is clamped so a theme can never misrepresent the time.
         float wobble = Math.Clamp(parameters.ExtraRotationDegrees, -5f, 5f);
@@ -748,6 +928,21 @@ public sealed class WarpClockControl : D2DPanel
         return anchor;
     }
 
+    private bool IsAuxiliaryVisible(ClockElementId id)
+        => IsAuxiliaryVisible(id.Kind, _auxiliaryVisibility);
+
+    internal static bool IsAuxiliaryVisible(ClockElementKind kind, ClockAuxiliaryVisibility visibility)
+        => kind switch
+        {
+            ClockElementKind.TimeZone => visibility.ShowTimeZone,
+            ClockElementKind.Day => visibility.ShowDay,
+            ClockElementKind.Weekday => visibility.ShowWeekday,
+            ClockElementKind.FractionSecondDial or ClockElementKind.SubSecondHand => visibility.ShowFractionSecond,
+            ClockElementKind.OverlayMessage => visibility.ShowOverlayMessage,
+            ClockElementKind.IndexedImage => visibility.ShowIndexedImages,
+            _ => true,
+        };
+
     private void RedrawElement(ElementRuntime runtime, ID2DGraphics graphics)
     {
         if (_renderer is null)
@@ -760,6 +955,8 @@ public sealed class WarpClockControl : D2DPanel
         _renderContext.Pivot = runtime.PivotPixels;
         _renderContext.Parameters = runtime.Parameters;
         _renderContext.Time = runtime.ContentTime;
+        _renderContext.TimeZone = runtime.ContentTimeZone;
+        _renderContext.Ambient = runtime.ContentAmbient;
         _renderContext.Scale = runtime.ContentScale;
         _renderer.DrawElement(graphics, _renderContext);
         runtime.ContentDrawn = true;
@@ -782,6 +979,19 @@ public sealed class WarpClockControl : D2DPanel
             RenderFrame(e.FrameDelta);
             e.Graphics.Clear(Color.Transparent);
 
+            if (_theme is not null
+                && TimeZoneHeadlineOverlay.ShouldRender(
+                    _timeZoneHeadlineFallbackEnabled,
+                    _timeZoneHeadlineText,
+                    _descriptors))
+            {
+                _timeZoneHeadlineOverlay.Render(
+                    e.Graphics,
+                    Size.Round(_surface),
+                    _timeZoneHeadlineText,
+                    _timeZoneHeadlineNightMode);
+            }
+
             if (_oledView != OledViewMode.Off
                 || _renderThemeInfo == RenderThemeInfo.Never
                 || _theme is null)
@@ -798,4 +1008,15 @@ public sealed class WarpClockControl : D2DPanel
                 _sceneGeometry.Bounds);
         }
     }
+
+    private static ClockAmbientSnapshot CloneAmbientSnapshot(ClockAmbientSnapshot snapshot)
+        => new()
+        {
+            OverlayMessage = snapshot.OverlayMessage,
+            TickerText = snapshot.TickerText,
+            TimeZoneAlias = snapshot.TimeZoneAlias,
+            TimeZoneDesignation = snapshot.TimeZoneDesignation,
+            PresentationState = snapshot.PresentationState,
+            IndexedImages = snapshot.IndexedImages?.ToArray() ?? Array.Empty<ClockIndexedImageSnapshot>(),
+        };
 }

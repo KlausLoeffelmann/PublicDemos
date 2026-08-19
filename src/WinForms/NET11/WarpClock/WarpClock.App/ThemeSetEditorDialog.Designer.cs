@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace WarpClock.App;
 
-partial class ThemeListEditorDialog
+partial class ThemeSetEditorDialog
 {
     private IContainer components;
 
@@ -397,7 +397,7 @@ partial class ThemeListEditorDialog
         _cancelButton.Text = "Cancel";
         _cancelButton.UseVisualStyleBackColor = true;
         // 
-        // ThemeListEditorDialog
+        // ThemeSetEditorDialog
         // 
         AcceptButton = _okButton;
         AutoScaleDimensions = new SizeF(13F, 32F);
@@ -406,7 +406,7 @@ partial class ThemeListEditorDialog
         ClientSize = new Size(1100, 760);
         Controls.Add(_layoutPanel);
         MinimumSize = new Size(900, 660);
-        Name = "ThemeListEditorDialog";
+        Name = "ThemeSetEditorDialog";
         StartPosition = FormStartPosition.CenterParent;
         Text = "Theme list";
         VisualStylesMode = VisualStylesMode.Net11;

@@ -35,6 +35,8 @@ public interface IClockTheme
     string Author { get; }
     ThemeCapabilities Capabilities { get; }
     IReadOnlyList<ClockElementDescriptor> CreateElements();
+    IReadOnlyList<ClockThemeVariantKind> SupportedVariants { get; } // default: Day only
+    IClockTheme ResolveVariant(ClockThemeVariantKind variant);      // default supports Day
     IClockLayout CreateLayout();
     IClockElementRenderer CreateRenderer();
     IThemeAnimator? CreateAnimator();   // null for a static theme
@@ -50,7 +52,8 @@ Key types:
   **Hands must be authored pointing straight up (toward 12) from the pivot.**
 - **`ClockElementId`** — `Face`, `HourMarker(0..11)` (0 = the 12 position),
   `MinuteTick(0..59)`, `HourHand`, `MinuteHand`, `SecondHand`, `Arbour`,
-  `CustomElement(n)`, etc.
+  plus optional `TimeZone`, `Day`, `Weekday`, `OverlayMessage`,
+  `IndexedImage(n)`, `FractionSecondDial`, and `SubSecondHand` visuals.
 - **`IClockLayout.TryGetAnchor(id, surface, out anchor)`** — return `true` with a
   pixel anchor to relocate an element; return `false` to use the engine's default
   radial placement. Anchors you relocate are what hands aim at.
@@ -58,12 +61,60 @@ Key types:
   draw the element in its local pixel space (origin top-left of `ctx.ContentSize`).
   The surface is pre-cleared and `BeginDraw` already issued; do **not** call
   BeginDraw/EndDraw. Scale design→pixels with `ctx.Scale`.
-- **`IThemeAnimator.OnTick(IClockTickContext ctx)`** — called ~10×/second. Read
-  `ctx.Time` (authoritative, read-only). Mutate `ctx.GetParameters(id)` and
-  `ctx.FaceRotationDegrees`. Never try to set hand angles.
+- **`IThemeAnimator.OnTick(IClockTickContext ctx)`** — called once per rendered frame
+  on the dedicated render thread. Integrate with `ctx.FrameDelta`; read `ctx.Time`,
+  `ctx.TimeZone`, `ctx.Ambient`, and `ctx.SurfaceSize`. Mutate
+  `ctx.GetParameters(id)` and `ctx.FaceRotationDegrees`. Never set hand angles.
+- **`IThemeAnimator.OnTimeZoneChanged(...)`** — optional default interface callback
+  for animating a host-selected timezone or DST-offset transition.
+- **`IClockRenderContext`** also exposes the authoritative `TimeZone` and immutable
+  host `Ambient` snapshot. Ambient data can contain timezone alias/designation,
+  default/alternate presentation state, ticker text, overlay text, and ordered image
+  paths. Treat it as read-only and do not perform file I/O in the renderer.
 - **`ClockElementParameters`** — the only runtime levers: `Visible`,
   `AnchorOffset` (design units), `Scale`, `SkewDegrees`, `ExtraRotationDegrees`
-  (clamped to ±5° for hands), `Opacity`, `Text`, `Progress`, `RedrawRequested`.
+  (clamped to ±5° for hands), `Opacity`, `Text`, `Progress`, `RedrawRequested`,
+  and `HandTargetMode`. A hand may request `Radial` or `FreeFloating`; the engine
+  still computes the authoritative angle and safely rejects unsupported requests.
+
+## Variants and OLED
+
+Existing plug-ins remain compatible: default interface members make them Day-only.
+New families can expose `ClockThemeVariants.DayNight` or
+`ClockThemeVariants.DayNightOled` and return a concrete instance from
+`ResolveVariant`. Day is the compatibility default. Night palettes must avoid bright
+faces and harsh yellow/red accents. OLED variants should use a pitch-black background
+and restrained contrast. If no dedicated OLED variant exists, the host applies
+engine-owned pixel drift and slow scale movement.
+
+## Optional visuals
+
+Declare only the visuals the theme actually renders. The host can independently gate
+timezone, date, weekday, fraction-second, overlay/ticker, and indexed-image elements.
+Use `RedrawPerFrame = true` when text depends on current time or ambient content.
+Timezone labels should prefer `ctx.Ambient.TimeZoneAlias`, then designation, then the
+engine snapshot. Do not convert UTC or cache offsets in a theme; the engine supplies
+DST-correct displayed time and calls `OnTimeZoneChanged`.
+
+The app-owned bottom ticker is separate from a theme-owned `OverlayMessage` visual:
+the app ticker consumes layout space below the clock, while a theme visual remains
+inside the DirectComposition scene.
+
+## Custom theme properties
+
+Theme-specific values can appear in the safe Properties proxy and persist across
+variants. Every exposed property must be public, convertible through a
+`TypeConverter`, have a public getter and setter, and include all three attributes:
+
+```csharp
+[Browsable(true)]
+[Description("Controls the accent used for numerals and hands.")]
+[Category("Custom Properties")]
+public Color AccentColor { get; set; }
+```
+
+Use the same public property on every concrete variant. The host stores values by
+logical family/property name and reapplies them after variant resolution.
 
 ## Radial vs free-floating
 
@@ -71,14 +122,14 @@ Key types:
   angle. `ClockHandMotion.Crawling`/`Sweep`/`Tick` apply. Best for classic looks.
 - **Free-floating** (`Capabilities.FreeFloating = true`): you place anchors anywhere
   and hands *aim at them*, so a hand's tip follows a relocated visual. The engine
-  **disables Crawling** here and uses **grace catch-up** (1–30s) so hands ease toward
-  a moved target. Set `HandsFollowFaceRotation` to choose whether the hands rotate
-  with a spinning face.
+  applies the configured Crawl/Sweep/Tick quantization to the engine-owned target and
+  uses the global **grace catch-up** (1–30s) where smoothing is needed. Set
+  `HandsFollowFaceRotation` to choose whether hands rotate with a spinning face.
 
 ## Scaffold a new theme
 
 1. Create a project `src/WinForms/NET11/WarpClock/WarpClock.Themes.<Name>` modeled on
-   `WarpClock.Themes.Nerd` (TFM `net11.0-windows10.0.22000.0`; reference
+   `WarpClock.Themes.SunFlower` (TFM `net11.0-windows10.0.22000.0`; reference
    `WarpClock.Abstractions` and `WarpToolkit.WinForms.DirectX` with `Private="false"`).
 2. Add it to `WarpClock.App.csproj` as a `ReferenceOutputAssembly=false` ProjectReference
    and to the `CopyClockPlugins` target so its dll is copied to `bin/.../plugins`.
@@ -132,14 +183,21 @@ dotnet build src/WinForms/NET11/WarpClock/WarpClock.slnx
 
 The plug-in dll is copied to
 `WarpClock.App/bin/Debug/net11.0-windows10.0.22000.0/plugins`. Run `WarpClock.exe`
-and pick the theme from the **Theme** menu (or use **Plug-ins ▸ Reload** after
-dropping a freshly built dll into the `plugins` folder).
+and pick the theme from the **Theme** menu (or use **File ▸ Reload Plug-Ins** after
+dropping a freshly built DLL into the theme folder configured under
+**Tools ▸ Options ▸ Folders**).
+
+The app schedules theme families with JSON **Themesets** (`*.themeset.json`). A
+Themeset defines Day/Night thresholds, rotation timing, theme membership, and
+day-only/night-only eligibility. This scheduling is host behavior; plug-ins do not
+read or modify Themeset files.
 
 ## Anti-patterns
 
 - **Do not** compute or set a hand angle. Move anchors instead.
 - **Do not** call `BeginDraw`/`EndDraw` in a renderer — the engine does that.
-- **Do not** block in `OnTick` — it runs on the UI thread at ~10 Hz.
+- **Do not** block, access controls, or perform file/network I/O in `OnTick` or
+  `DrawElement` — both run on the dedicated render thread.
 - **Do not** copy `WarpClock.Abstractions`/`WarpToolkit.WinForms.DirectX` next to the
   plug-in (`Private="false"`); they must bind to the host's copies.
-- **Do not** enable `Crawling` for a free-floating theme — the engine overrides it.
+- **Do not** implement timezone conversion in a theme — consume the host snapshot.

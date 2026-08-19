@@ -26,11 +26,29 @@ public readonly record struct ClockElementId(ClockElementKind Kind, int Index = 
     /// <summary>The background element id.</summary>
     public static ClockElementId Background { get; } = new(ClockElementKind.Background);
 
+    /// <summary>The time-zone element id.</summary>
+    public static ClockElementId TimeZone { get; } = new(ClockElementKind.TimeZone);
+
+    /// <summary>The day element id.</summary>
+    public static ClockElementId Day { get; } = new(ClockElementKind.Day);
+
+    /// <summary>The weekday element id.</summary>
+    public static ClockElementId Weekday { get; } = new(ClockElementKind.Weekday);
+
+    /// <summary>The overlay-message element id.</summary>
+    public static ClockElementId OverlayMessage { get; } = new(ClockElementKind.OverlayMessage);
+
+    /// <summary>The fractional-second dial element id.</summary>
+    public static ClockElementId FractionSecondDial { get; } = new(ClockElementKind.FractionSecondDial);
+
     /// <summary>Creates an hour-marker id (index 0..11, where 0 = the 12 position).</summary>
     public static ClockElementId HourMarker(int index) => new(ClockElementKind.HourMarker, index);
 
     /// <summary>Creates a minute-tick id (index 0..59).</summary>
     public static ClockElementId MinuteTick(int index) => new(ClockElementKind.MinuteTick, index);
+
+    /// <summary>Creates an indexed-image id.</summary>
+    public static ClockElementId IndexedImage(int index) => new(ClockElementKind.IndexedImage, index);
 
     /// <summary>Creates a custom element id.</summary>
     public static ClockElementId CustomElement(int index) => new(ClockElementKind.Custom, index);

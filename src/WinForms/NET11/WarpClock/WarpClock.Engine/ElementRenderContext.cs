@@ -20,5 +20,9 @@ internal sealed class ElementRenderContext : IClockRenderContext
 
     public ClockTimeSnapshot Time { get; set; }
 
+    public ClockTimeZoneSnapshot TimeZone { get; set; } = ClockTimeZoneSnapshot.Create(TimeZoneInfo.Local, DateTime.Now);
+
+    public ClockAmbientSnapshot Ambient { get; set; } = ClockAmbientSnapshot.Empty;
+
     public float Scale { get; set; } = 1f;
 }

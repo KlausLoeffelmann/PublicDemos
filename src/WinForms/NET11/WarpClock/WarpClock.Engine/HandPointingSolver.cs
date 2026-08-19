@@ -44,52 +44,56 @@ public sealed class HandPointingSolver
             return time.SubSecondAngle;
         }
 
-        // The continuous authoritative angle and how many degrees one "unit" spans
-        // (a second for the second hand, a minute for the minute hand, an hour for the
-        // hour hand). The continuous unit value is recovered as angle / degreesPerUnit.
-        (float continuousAngle, float degreesPerUnit, float secondsPerUnit) = hand switch
+        float degreesPerUnit = GetContinuousUnitMetrics(time, hand).DegreesPerUnit;
+        float unitPosition = SelectUnitPosition(time, hand, motion, glideDurationSeconds);
+        return ClockMath.Normalize360(unitPosition * degreesPerUnit);
+    }
+
+    internal static float SelectUnitPosition(
+        ClockTimeSnapshot time,
+        ClockHandKind hand,
+        ClockHandMotion motion,
+        float glideDurationSeconds = 0.5f)
+    {
+        if (hand == ClockHandKind.SubSecond)
         {
-            ClockHandKind.Hour => (time.HourAngle, 30f, 3600f),
-            ClockHandKind.Minute => (time.MinuteAngle, 6f, 60f),
-            _ => (time.SecondAngle, 6f, 1f),
-        };
+            return FractionalSecond(time) % 1f;
+        }
+
+        (float continuousUnit, _, float secondsPerUnit) = GetContinuousUnitMetrics(time, hand);
 
         return motion switch
         {
-            ClockHandMotion.Crawling => continuousAngle,
-            ClockHandMotion.Tick => MathF.Floor(continuousAngle / degreesPerUnit) * degreesPerUnit,
-            ClockHandMotion.FastTick => QuantizeFast(continuousAngle, degreesPerUnit),
-            ClockHandMotion.Sweep => Glide(continuousAngle, degreesPerUnit, secondsPerUnit, glideDurationSeconds),
-            _ => continuousAngle,
+            ClockHandMotion.Crawling => continuousUnit,
+            ClockHandMotion.Tick => MathF.Floor(continuousUnit),
+            ClockHandMotion.FastTick => MathF.Floor(continuousUnit * 4f) / 4f,
+            ClockHandMotion.Sweep => GlideUnit(continuousUnit, secondsPerUnit, glideDurationSeconds),
+            _ => continuousUnit,
         };
     }
 
-    /// <summary>Four discrete steps per unit (the legacy "Sweep" feel).</summary>
-    private static float QuantizeFast(float continuousAngle, float degreesPerUnit)
-    {
-        float step = degreesPerUnit / 4f;
-        return MathF.Floor(continuousAngle / step) * step;
-    }
+    private static (float ContinuousUnit, float DegreesPerUnit, float SecondsPerUnit) GetContinuousUnitMetrics(
+        ClockTimeSnapshot time,
+        ClockHandKind hand)
+        => hand switch
+        {
+            ClockHandKind.Hour => (FractionalHour(time), 30f, 3600f),
+            ClockHandKind.Minute => (FractionalMinute(time), 6f, 60f),
+            _ => (FractionalSecond(time), 6f, 1f),
+        };
 
     /// <summary>
     ///  Eases the hand from the previous mark to the next over the first
     ///  <paramref name="glideDurationSeconds"/> of each unit, then holds on the mark.
-    ///  The hand reaches the mark at the half-way point of a one-second unit, leaving the
-    ///  remaining time to rest on the numeral.
     /// </summary>
-    private static float Glide(float continuousAngle, float degreesPerUnit, float secondsPerUnit, float glideDurationSeconds)
+    private static float GlideUnit(float continuousUnit, float secondsPerUnit, float glideDurationSeconds)
     {
-        float unit = continuousAngle / degreesPerUnit;   // continuous units (e.g. 0..60 for seconds)
-        float whole = MathF.Floor(unit);                 // the mark we are arriving at
-        float frac = unit - whole;                       // progress (0..1) through the current unit
-
-        // Convert the wall-clock glide duration into a fraction of this hand's unit.
+        float whole = MathF.Floor(continuousUnit);
+        float frac = continuousUnit - whole;
         float glideFraction = Math.Clamp(glideDurationSeconds / MathF.Max(secondsPerUnit, 1e-4f), 0f, 1f);
         float glideT = glideFraction <= 0f ? 1f : Math.Clamp(frac / glideFraction, 0f, 1f);
-
-        // Glide from the previous mark (whole - 1) up to the current mark (whole).
         float eased = ClockMath.EaseInOut(glideT);
-        return (whole - 1f + eased) * degreesPerUnit;
+        return whole - 1f + eased;
     }
 
     /// <summary>
@@ -106,22 +110,41 @@ public sealed class HandPointingSolver
         PointF pivot,
         ClockTimeSnapshot time,
         Func<ClockElementId, PointF> anchorOf)
+        => FreeFloatingTargetAngle(hand, pivot, time, ClockHandMotion.Crawling, 0.5f, anchorOf);
+
+    /// <summary>
+    ///  Computes the free-floating target angle for a hand while honoring the chosen
+    ///  motion style when selecting or interpolating target slots.
+    /// </summary>
+    public static float FreeFloatingTargetAngle(
+        ClockHandKind hand,
+        PointF pivot,
+        ClockTimeSnapshot time,
+        ClockHandMotion motion,
+        float glideDurationSeconds,
+        Func<ClockElementId, PointF> anchorOf)
     {
+        if (hand == ClockHandKind.SubSecond)
+        {
+            return time.SubSecondAngle;
+        }
+
+        float unitPosition = SelectUnitPosition(time, hand, motion, glideDurationSeconds);
         PointF target = hand switch
         {
             ClockHandKind.Hour => InterpolateSlot(
-                ClockElementKind.HourMarker, 12, FractionalHour(time), anchorOf),
+                ClockElementKind.HourMarker, 12, unitPosition, anchorOf),
             ClockHandKind.Minute => InterpolateSlot(
-                ClockElementKind.MinuteTick, 60, FractionalMinute(time), anchorOf),
+                ClockElementKind.MinuteTick, 60, unitPosition, anchorOf),
             ClockHandKind.Second => InterpolateSlot(
-                ClockElementKind.MinuteTick, 60, FractionalSecond(time), anchorOf),
+                ClockElementKind.MinuteTick, 60, unitPosition, anchorOf),
             _ => pivot,
         };
 
         if (target == pivot)
         {
             // Degenerate (e.g. sub-second) — fall back to the radial angle.
-            return RadialTargetAngle(time, hand, ClockHandMotion.Crawling);
+            return RadialTargetAngle(time, hand, motion, glideDurationSeconds);
         }
 
         return ClockMath.AngleTo(pivot, target);
