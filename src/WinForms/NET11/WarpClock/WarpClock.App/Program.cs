@@ -32,6 +32,8 @@ internal static class Program
         {
             WinFormsApplicationBuilder builder = WinFormsApplication.CreateBuilder(args);
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.SetDefaultFormRevealMode(FormRevealMode.Deferred);
+            Application.SetDefaultVisualStylesMode(VisualStylesMode.Net11);
 
             builder
                 .UseColorMode(SystemColorMode.System)
