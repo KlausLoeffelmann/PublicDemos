@@ -365,7 +365,8 @@ public sealed class ThemePropertyGridAdapter(object baseSettings) : ICustomTypeD
 
     PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) => GetProperties(attributes);
 
-    object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd) => this;
+    object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
+        => pd?.ComponentType == typeof(ThemePropertyGridAdapter) ? this : _baseSettings;
 
     private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
     {

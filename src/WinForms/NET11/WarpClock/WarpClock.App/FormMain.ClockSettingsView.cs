@@ -1,5 +1,6 @@
 using System.ComponentModel;
 
+using WarpClock.Abstractions;
 using WarpClock.Engine;
 
 namespace WarpClock.App;
@@ -30,6 +31,33 @@ public partial class FormMain
         {
             get => clock.HourMotion;
             set => clock.HourMotion = value;
+        }
+
+        [Category("Hand targeting")]
+        [DisplayName("Second hand")]
+        [Description("ThemeDefault uses the active theme's choice; otherwise forces the selected targeting mode.")]
+        public ClockHandTargetMode SecondTargetMode
+        {
+            get => clock.SecondTargetMode;
+            set => clock.SecondTargetMode = value;
+        }
+
+        [Category("Hand targeting")]
+        [DisplayName("Minute hand")]
+        [Description("ThemeDefault uses the active theme's choice; otherwise forces the selected targeting mode.")]
+        public ClockHandTargetMode MinuteTargetMode
+        {
+            get => clock.MinuteTargetMode;
+            set => clock.MinuteTargetMode = value;
+        }
+
+        [Category("Hand targeting")]
+        [DisplayName("Hour hand")]
+        [Description("ThemeDefault uses the active theme's choice; otherwise forces the selected targeting mode.")]
+        public ClockHandTargetMode HourTargetMode
+        {
+            get => clock.HourTargetMode;
+            set => clock.HourTargetMode = value;
         }
 
         [Category("Animation")]

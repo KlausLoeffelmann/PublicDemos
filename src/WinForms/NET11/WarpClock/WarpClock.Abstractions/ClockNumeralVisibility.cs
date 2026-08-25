@@ -10,8 +10,8 @@ namespace WarpClock.Abstractions;
 ///   <item><see cref="Visible"/> — drawn and a valid magnetic target.</item>
 ///   <item><see cref="Transparent"/> — not drawn, but still placed on the canvas and
 ///    still a valid magnetic target (the hands take it into account).</item>
-///   <item><see cref="Invisible"/> — not drawn and <b>not</b> a target: a hand that
-///    would otherwise step onto it skips it and stays where it is.</item>
+///   <item><see cref="Invisible"/> — not drawn and <b>not</b> a new target: a hand keeps
+///    its last valid numeral reference while authoritative clockwise progress continues.</item>
 ///  </list>
 /// </remarks>
 public enum ClockNumeralVisibility
@@ -22,6 +22,6 @@ public enum ClockNumeralVisibility
     /// <summary>Not drawn but still placed and targetable.</summary>
     Transparent,
 
-    /// <summary>Not drawn and skipped by magnetic aiming (the hand stays put).</summary>
+    /// <summary>Not drawn and skipped as a new magnetic reference.</summary>
     Invisible,
 }

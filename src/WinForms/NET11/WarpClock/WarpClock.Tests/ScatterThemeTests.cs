@@ -36,6 +36,38 @@ public sealed class ScatterThemeTests
     }
 
     [Fact]
+    public void ScatterPalette_DistinguishesDateAndWeekdayFromNumeralBadges()
+    {
+        foreach (ClockThemeVariantKind variant in ClockThemeVariants.DayNightOled)
+        {
+            ScatterThemePalette palette = ScatterTheme.CreatePalette(variant);
+
+            Assert.NotEqual(palette.MagnetFill.ToArgb(), palette.InfoFill.ToArgb());
+            Assert.NotEqual(palette.MagnetRim.ToArgb(), palette.InfoRim.ToArgb());
+        }
+    }
+
+    [Fact]
+    public void ScatterLayout_PlacesWeekdayAndDateOutsideUpperClockCorners()
+    {
+        IClockLayout layout = new ScatterTheme().CreateLayout();
+        SizeF surface = new(1600f, 1000f);
+        PointF center = new(surface.Width / 2f, surface.Height / 2f);
+        float radius = MathF.Min(surface.Width, surface.Height) / 2f;
+
+        Assert.True(layout.TryGetAnchor(ClockElementId.Weekday, surface, out PointF weekday));
+        Assert.True(layout.TryGetAnchor(ClockElementId.Day, surface, out PointF day));
+        Assert.False(layout.TryGetAnchor(ClockElementId.HourMarker(0), surface, out _));
+
+        Assert.True(weekday.X < center.X);
+        Assert.True(day.X > center.X);
+        Assert.True(weekday.Y < center.Y);
+        Assert.True(day.Y < center.Y);
+        Assert.True(Distance(weekday, center) > radius);
+        Assert.True(Distance(day, center) > radius);
+    }
+
+    [Fact]
     public void ScatterTheme_CustomPropertiesExposeRequestedDisplayNames_AndFlowAcrossVariants()
     {
         ScatterTheme theme = new();
@@ -46,27 +78,149 @@ public sealed class ScatterThemeTests
 
         Assert.Equal(
         [
+            "Begin Numerals Shuffeling After (sec)",
             "Clock-Face Background",
+            "Fly Numerals To Origins After (min)",
             "Hands",
+            "Hour Hand",
+            "Minute Hand",
             "Numeral Background",
             "Numeral Border",
             "Numeral Foreground",
+            "Second Hand",
         ],
         properties.Select(property => property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? property.Name)
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray());
 
         theme.ClockFaceBackground = Color.MidnightBlue;
+        theme.FlyNumeralsToOriginsAfterMin = 3;
         theme.Hands = Color.LightGoldenrodYellow;
+        theme.MinuteHand = Color.CadetBlue;
+        theme.BeginNumeralsShuffelingAfterSec = 2;
         theme.NumeralForeground = Color.HotPink;
 
         ScatterTheme night = Assert.IsType<ScatterTheme>(theme.ResolveVariant(ClockThemeVariantKind.Night));
         ScatterThemePalette expectedNightDefaults = ScatterTheme.CreatePalette(ClockThemeVariantKind.Night);
 
         Assert.Equal(Color.MidnightBlue.ToArgb(), night.ClockFaceBackground.ToArgb());
-        Assert.Equal(Color.LightGoldenrodYellow.ToArgb(), night.Hands.ToArgb());
+        Assert.Equal(3, night.FlyNumeralsToOriginsAfterMin);
+        Assert.Equal(Color.LightGoldenrodYellow.ToArgb(), night.HourHand.ToArgb());
+        Assert.Equal(Color.CadetBlue.ToArgb(), night.MinuteHand.ToArgb());
+        Assert.Equal(Color.LightGoldenrodYellow.ToArgb(), night.SecondHand.ToArgb());
+        Assert.Equal(5, night.BeginNumeralsShuffelingAfterSec);
         Assert.Equal(Color.HotPink.ToArgb(), night.NumeralForeground.ToArgb());
         Assert.Equal(expectedNightDefaults.MagnetRim.ToArgb(), night.NumeralBorder.ToArgb());
+    }
+
+    [Fact]
+    public void ScatterAnimator_KeepsEveryNumeralVisible()
+    {
+        ScatterTheme theme = new();
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+
+        animator.Initialize(context);
+        Advance(animator, context, seconds: 60f, stepSeconds: 0.2f);
+
+        Assert.All(
+            Enumerable.Range(0, 12),
+            index => Assert.True(context.GetParameters(ClockElementId.HourMarker(index)).Visible));
+    }
+
+    [Fact]
+    public void ScatterAnimator_DelaysShufflingAndKeepsSecondHandRadial()
+    {
+        ScatterTheme theme = new();
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+
+        animator.Initialize(context);
+
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.HourHand).HandTargetMode);
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.MinuteHand).HandTargetMode);
+        Assert.Equal(ClockHandTargetMode.Radial, context.GetParameters(ClockElementId.SecondHand).HandTargetMode);
+
+        Advance(animator, context, seconds: 14.8f, stepSeconds: 0.2f);
+        Assert.All(CaptureOffsets(context), offset => Assert.Equal(PointF.Empty, offset));
+
+        Advance(animator, context, seconds: 0.6f, stepSeconds: 0.2f);
+
+        Assert.Contains(CaptureOffsets(context), offset => Distance(offset, PointF.Empty) > 0.01f);
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.MinuteHand).HandTargetMode);
+        Assert.Equal(ClockHandTargetMode.Radial, context.GetParameters(ClockElementId.SecondHand).HandTargetMode);
+    }
+
+    [Fact]
+    public void ScatterAnimator_ReturnsHomeAndRepeatsConfiguredCycle()
+    {
+        ScatterTheme theme = new()
+        {
+            BeginNumeralsShuffelingAfterSec = 5,
+            FlyNumeralsToOriginsAfterMin = 1,
+        };
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+
+        animator.Initialize(context);
+        Advance(animator, context, seconds: 5.6f, stepSeconds: 0.2f);
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.MinuteHand).HandTargetMode);
+
+        Advance(animator, context, seconds: 62f, stepSeconds: 0.2f);
+
+        Assert.All(CaptureOffsets(context), offset => Assert.True(Distance(offset, PointF.Empty) < 0.01f));
+        Assert.True(Distance(
+            context.GetParameters(ClockElementId.Day).AnchorOffset,
+            PointF.Empty) < 0.01f);
+        Assert.True(Distance(
+            context.GetParameters(ClockElementId.Weekday).AnchorOffset,
+            PointF.Empty) < 0.01f);
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.MinuteHand).HandTargetMode);
+
+        Advance(animator, context, seconds: 5.6f, stepSeconds: 0.2f);
+        Assert.Contains(CaptureOffsets(context), offset => Distance(offset, PointF.Empty) > 0.01f);
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.MinuteHand).HandTargetMode);
+    }
+
+    [Fact]
+    public void ScatterAnimator_AnimatesRatherThanJumpsBackToOrigins()
+    {
+        ScatterTheme theme = new()
+        {
+            BeginNumeralsShuffelingAfterSec = 5,
+            FlyNumeralsToOriginsAfterMin = 1,
+        };
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+
+        animator.Initialize(context);
+        Advance(animator, context, seconds: 64.8f, stepSeconds: 0.2f);
+        float before = CaptureOffsets(context).Sum(offset => Distance(offset, PointF.Empty));
+        Assert.True(before > 1f);
+
+        Advance(animator, context, seconds: 1f, stepSeconds: 0.2f);
+        float during = CaptureOffsets(context).Sum(offset => Distance(offset, PointF.Empty));
+
+        Assert.InRange(during, 0.01f, before - 0.01f);
+    }
+
+    [Fact]
+    public void ScatterAnimator_ZeroFlyHomeIntervalKeepsShuffling()
+    {
+        ScatterTheme theme = new()
+        {
+            BeginNumeralsShuffelingAfterSec = 5,
+            FlyNumeralsToOriginsAfterMin = 0,
+        };
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+
+        animator.Initialize(context);
+        Advance(animator, context, seconds: 185f, stepSeconds: 0.5f);
+
+        Assert.Contains(CaptureOffsets(context), offset => Distance(offset, PointF.Empty) > 0.01f);
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.MinuteHand).HandTargetMode);
+        Assert.Equal(ClockHandTargetMode.Radial, context.GetParameters(ClockElementId.SecondHand).HandTargetMode);
     }
 
     [Fact]
@@ -115,8 +269,9 @@ public sealed class ScatterThemeTests
         animator.OnTimeZoneChanged(context, previous, current);
         Advance(animator, context, seconds: 2.05f, stepSeconds: 0.05f);
 
-        Assert.Equal(ClockHandTargetMode.FreeFloating, context.GetParameters(ClockElementId.HourHand).HandTargetMode);
-        Assert.Equal(ClockHandTargetMode.FreeFloating, context.GetParameters(ClockElementId.MinuteHand).HandTargetMode);
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.HourHand).HandTargetMode);
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, context.GetParameters(ClockElementId.MinuteHand).HandTargetMode);
+        Assert.Equal(ClockHandTargetMode.Radial, context.GetParameters(ClockElementId.SecondHand).HandTargetMode);
 
         PointF[] afterOffsets = CaptureOffsets(context);
         for (int i = 0; i < afterOffsets.Length; i++)
@@ -130,6 +285,13 @@ public sealed class ScatterThemeTests
     }
 
     private static PointF Add(PointF left, PointF right) => new(left.X + right.X, left.Y + right.Y);
+
+    private static float Distance(PointF left, PointF right)
+    {
+        float dx = left.X - right.X;
+        float dy = left.Y - right.Y;
+        return MathF.Sqrt((dx * dx) + (dy * dy));
+    }
 
     private static void Advance(IThemeAnimator animator, TestTickContext context, float seconds, float stepSeconds)
     {

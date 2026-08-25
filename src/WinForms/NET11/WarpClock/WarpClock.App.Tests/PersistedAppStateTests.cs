@@ -1,4 +1,5 @@
 using System.Text.Json;
+using WarpClock.Abstractions;
 using WarpClock.Engine;
 
 namespace WarpClock.App.Tests;
@@ -122,5 +123,27 @@ public sealed class PersistedAppStateTests
         Assert.Equal(ClockHandMotion.Sweep, state.Options.Hands.HourMotion);
         Assert.True(state.Options.Display.TickerEnabled);
         Assert.Equal("Status", state.Options.Display.CustomTickerMessage);
+    }
+
+    [Fact]
+    public void HandTargetOverridesRoundTrip()
+    {
+        PersistedAppState expected = new()
+        {
+            Clock = new PersistedClockSettings
+            {
+                SecondTargetMode = ClockHandTargetMode.MagneticNumerals,
+                MinuteTargetMode = ClockHandTargetMode.Radial,
+                HourTargetMode = ClockHandTargetMode.FreeFloating,
+            },
+        };
+
+        string json = JsonSerializer.Serialize(expected);
+        PersistedAppState actual = JsonSerializer.Deserialize<PersistedAppState>(json)
+            ?? throw new InvalidOperationException("Could not deserialize persisted state.");
+
+        Assert.Equal(ClockHandTargetMode.MagneticNumerals, actual.Clock.SecondTargetMode);
+        Assert.Equal(ClockHandTargetMode.Radial, actual.Clock.MinuteTargetMode);
+        Assert.Equal(ClockHandTargetMode.FreeFloating, actual.Clock.HourTargetMode);
     }
 }

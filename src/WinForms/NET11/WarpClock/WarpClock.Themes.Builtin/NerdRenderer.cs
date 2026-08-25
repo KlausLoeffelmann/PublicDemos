@@ -17,11 +17,8 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
                 float radius = 490f * ctx.Scale;
                 g.FillEllipse(palette.Face, ctx.Pivot.X - radius, ctx.Pivot.Y - radius, radius * 2f, radius * 2f);
                 break;
-            case ClockElementKind.HourMarker:
-                DrawOctal(g, ctx);
-                break;
-            case ClockElementKind.SecondHand:
-                DrawBinaryHand(g, ctx);
+            case ClockElementKind.Custom:
+                DrawDisplayHand(g, ctx);
                 break;
             case ClockElementKind.Arbour:
                 float r = ctx.ContentSize.Width / 2f;
@@ -30,77 +27,147 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
         }
     }
 
-    private void DrawOctal(ID2DGraphics g, IClockRenderContext ctx)
+    private void DrawDisplayHand(ID2DGraphics g, IClockRenderContext ctx)
     {
-        int index = ((ctx.Id.Index % 12) + 12) % 12;
-        int hourValue = index == 0 ? 12 : index;
-        string text = Convert.ToString(hourValue, 8);
-
-        float fontSize = ctx.ContentSize.Height * 0.7f;
-        using var font = new Font("Consolas", fontSize, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var brush = new SolidBrush(palette.Grid);
-        using var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-        g.DrawString(text, font, brush, new RectangleF(0, 0, ctx.ContentSize.Width, ctx.ContentSize.Height), format);
-    }
-
-    private void DrawBinaryHand(ID2DGraphics g, IClockRenderContext ctx)
-    {
-        float scale = ctx.Scale;
+        NerdThemePalette displayPalette = ApplyOpacity(palette, ctx.Parameters.Opacity);
         float cx = ctx.ContentSize.Width / 2f;
-        float tipY = NerdThemeGeometry.TipInset * scale;
         float pivotY = ctx.Pivot.Y;
-        float shoulderY = tipY + (NerdThemeGeometry.ShoulderInset * scale);
-        float lowerY = pivotY - (58f * scale);
-        float shoulderHalf = NerdThemeGeometry.ShoulderHalfWidth * scale;
-        float lowerHalf = NerdThemeGeometry.LowerHalfWidth * scale;
-        float tailHalf = NerdThemeGeometry.TailHalfWidth * scale;
+        float scale = ctx.Scale;
+        float bladeTop = pivotY - (NerdThemeGeometry.BladeTopRadius * scale);
+        float bladeHalf = NerdThemeGeometry.BladeHalfWidth * scale;
 
-        using (var blade = new SolidBrush(palette.Blade))
+        using (var blade = new SolidBrush(displayPalette.Blade))
         {
             g.FillPolygon(blade,
             [
-                new PointF(cx, tipY),
-                new PointF(cx + shoulderHalf, shoulderY),
-                new PointF(cx + lowerHalf, lowerY),
-                new PointF(cx + tailHalf, pivotY + (NerdThemeGeometry.TailDepth * scale)),
-                new PointF(cx - tailHalf, pivotY + (NerdThemeGeometry.TailDepth * scale)),
-                new PointF(cx - lowerHalf, lowerY),
-                new PointF(cx - shoulderHalf, shoulderY),
+                new PointF(cx - (bladeHalf * 0.7f), bladeTop),
+                new PointF(cx + (bladeHalf * 0.7f), bladeTop),
+                new PointF(cx + bladeHalf, pivotY),
+                new PointF(cx + (bladeHalf * 0.55f), pivotY + (NerdThemeGeometry.BladeTailDepth * scale)),
+                new PointF(cx - (bladeHalf * 0.55f), pivotY + (NerdThemeGeometry.BladeTailDepth * scale)),
+                new PointF(cx - bladeHalf, pivotY),
             ]);
+
+            g.FillPolygon(blade, CreateSledPolygon(cx, pivotY, scale));
         }
 
-        int hour = ctx.Time.Now.Hour;
-        int minute = ctx.Time.Now.Minute;
-
-        float dotR = NerdThemeGeometry.DotRadius * scale;
-        float top = NerdThemeGeometry.DotTop * scale;
-        float bottom = NerdThemeGeometry.DotBottom * scale;
-        float offset = NerdThemeGeometry.BitColumnOffset * scale;
-
-        DrawBitColumn(g, cx - offset, top, bottom, dotR, minute, NerdThemeGeometry.MinuteBitCount, palette.MinuteOn, palette.MinuteOff);
-        DrawBitColumn(g, cx + offset, top, bottom, dotR, hour, NerdThemeGeometry.HourBitCount, palette.HourOn, palette.HourOff);
+        DrawRadialBank(
+            g,
+            cx,
+            pivotY,
+            scale,
+            ctx.Time.Now.Hour,
+            NerdThemeGeometry.HourBitCount,
+            NerdThemeGeometry.HourBankInnerRadius,
+            displayPalette.HourOn,
+            displayPalette.HourOff);
+        DrawRadialBank(
+            g,
+            cx,
+            pivotY,
+            scale,
+            ctx.Time.Now.Minute,
+            NerdThemeGeometry.MinuteBitCount,
+            NerdThemeGeometry.MinuteBankInnerRadius,
+            displayPalette.MinuteOn,
+            displayPalette.MinuteOff);
+        DrawSecondsSled(g, cx, pivotY, scale, ctx.Time.Now.Second, displayPalette);
     }
 
-    private static void DrawBitColumn(
+    private static PointF[] CreateSledPolygon(float cx, float pivotY, float scale)
+    {
+        const int segments = 12;
+        var points = new PointF[(segments + 1) * 2];
+        float innerRadius = (NerdThemeGeometry.SledRadius - NerdThemeGeometry.SledHalfThickness) * scale;
+        float outerRadius = (NerdThemeGeometry.SledRadius + NerdThemeGeometry.SledHalfThickness) * scale;
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float t = i / (float)segments;
+            float angle = -NerdThemeGeometry.SledHalfSpanDegrees
+                + (2f * NerdThemeGeometry.SledHalfSpanDegrees * t);
+            points[i] = PointOnHandArc(cx, pivotY, outerRadius, angle);
+            points[points.Length - 1 - i] = PointOnHandArc(cx, pivotY, innerRadius, angle);
+        }
+
+        return points;
+    }
+
+    private static void DrawRadialBank(
         ID2DGraphics g,
         float cx,
-        float top,
-        float bottom,
-        float r,
+        float pivotY,
+        float scale,
         int value,
         int bitCount,
+        float innerRadius,
         Color on,
         Color off)
     {
-        float step = bitCount > 1 ? (bottom - top) / (bitCount - 1) : 0f;
-        for (int b = bitCount - 1, slot = 0; b >= 0; b--, slot++)
+        float radius = NerdThemeGeometry.LedRadius * scale;
+        for (int slot = 0; slot < bitCount; slot++)
         {
+            float distance = (innerRadius + (slot * NerdThemeGeometry.BladeLedPitch)) * scale;
             g.FillEllipse(
-                (value & (1 << b)) != 0 ? on : off,
-                cx - r,
-                top + (step * slot) - r,
-                r * 2f,
-                r * 2f);
+                NerdBinaryLayout.IsBitOn(value, slot, bitCount, leastSignificantBitFirst: true) ? on : off,
+                cx - radius,
+                pivotY - distance - radius,
+                radius * 2f,
+                radius * 2f);
         }
+    }
+
+    private void DrawSecondsSled(
+        ID2DGraphics g,
+        float cx,
+        float pivotY,
+        float scale,
+        int second,
+        NerdThemePalette displayPalette)
+    {
+        float radius = NerdThemeGeometry.SledRadius * scale;
+        float ledRadius = NerdThemeGeometry.LedRadius * scale;
+        bool lsbFirst = NerdBinaryLayout.SecondsUseLeastSignificantBitFirst(second);
+
+        for (int slot = 0; slot < NerdThemeGeometry.SecondBitCount; slot++)
+        {
+            float t = slot / (float)(NerdThemeGeometry.SecondBitCount - 1);
+            float angle = -NerdThemeGeometry.SledLedHalfSpanDegrees
+                + (2f * NerdThemeGeometry.SledLedHalfSpanDegrees * t);
+            PointF center = PointOnHandArc(cx, pivotY, radius, angle);
+            g.FillEllipse(
+                NerdBinaryLayout.IsBitOn(second, slot, NerdThemeGeometry.SecondBitCount, lsbFirst)
+                    ? displayPalette.SecondOn
+                    : displayPalette.SecondOff,
+                center.X - ledRadius,
+                center.Y - ledRadius,
+                ledRadius * 2f,
+                ledRadius * 2f);
+        }
+    }
+
+    private static PointF PointOnHandArc(float cx, float pivotY, float radius, float angleDegrees)
+    {
+        float radians = angleDegrees * (MathF.PI / 180f);
+        return new PointF(
+            cx + (MathF.Sin(radians) * radius),
+            pivotY - (MathF.Cos(radians) * radius));
+    }
+
+    private static NerdThemePalette ApplyOpacity(NerdThemePalette source, float opacity)
+    {
+        int alpha = (int)MathF.Round(Math.Clamp(opacity, 0f, 1f) * 255f);
+        Color Fade(Color color) => Color.FromArgb(alpha * color.A / 255, color);
+
+        return source with
+        {
+            Blade = Fade(source.Blade),
+            HourOn = Fade(source.HourOn),
+            HourOff = Fade(source.HourOff),
+            MinuteOn = Fade(source.MinuteOn),
+            MinuteOff = Fade(source.MinuteOff),
+            SecondOn = Fade(source.SecondOn),
+            SecondOff = Fade(source.SecondOff),
+        };
     }
 }

@@ -12,5 +12,13 @@ public enum ClockHandTargetMode
     Radial,
 
     /// <summary>Point at free-floating interpolated target anchors when safely supported.</summary>
-    FreeFloating
+    FreeFloating,
+
+    /// <summary>
+    ///  Point from the current hour numeral wherever the theme placed it, then advance
+    ///  clockwise through that numeral's interval at the hand's authoritative rate.
+    ///  Unlike the other modes this one is honored even when the host's global
+    ///  magnetic-numerals switch is off.
+    /// </summary>
+    MagneticNumerals,
 }

@@ -29,6 +29,12 @@ public sealed record ThemeCapabilities
     ///  when this theme is selected (the user can still toggle it afterwards). Magnetism
     ///  itself remains a property of the clock control, not of the theme.
     /// </summary>
+    /// <remarks>
+    ///  Because it is only a hint, a host may ignore it (for example when a persisted
+    ///  user setting wins). A theme whose design depends on magnetic aiming must also
+    ///  request <see cref="ClockHandTargetMode.MagneticNumerals"/> for the hands
+    ///  concerned, which the engine honors unconditionally.
+    /// </remarks>
     public bool MagneticByDefault { get; init; }
 
     /// <summary>The default themes' capabilities (radial, hands follow face).</summary>

@@ -16,8 +16,7 @@ public sealed class WarpClockControl : D2DPanel
 {
     private readonly Lock _sync = new();
     private readonly ClockTimeModel _timeModel = new();
-    private readonly HandPointingSolver _solver = new();
-    private readonly MagneticNumeralSolver _magneticSolver = new();
+    private readonly HandRotationSolver _handRotation = new();
     private readonly OledViewTransformController _oledViewTransform = new();
     private readonly DefaultClockLayout _defaultLayout = new();
     private readonly Dictionary<ClockElementId, ElementRuntime> _runtime = [];
@@ -46,6 +45,9 @@ public sealed class WarpClockControl : D2DPanel
     private ClockHandMotion _secondMotion = ClockHandMotion.Crawling;
     private ClockHandMotion _minuteMotion = ClockHandMotion.Crawling;
     private ClockHandMotion _hourMotion = ClockHandMotion.Crawling;
+    private ClockHandTargetMode _secondTargetMode = ClockHandTargetMode.ThemeDefault;
+    private ClockHandTargetMode _minuteTargetMode = ClockHandTargetMode.ThemeDefault;
+    private ClockHandTargetMode _hourTargetMode = ClockHandTargetMode.ThemeDefault;
     private bool _magneticNumerals;
     private OledViewMode _oledView;
     private float _currentOledViewScale = 1f;
@@ -351,10 +353,36 @@ public sealed class WarpClockControl : D2DPanel
         }
     }
 
+    /// <summary>Global second-hand target override, or the active theme's choice.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public ClockHandTargetMode SecondTargetMode
+    {
+        get { lock (_sync) { return _secondTargetMode; } }
+        set { lock (_sync) { _secondTargetMode = value; _handRotation.Reset(); } }
+    }
+
+    /// <summary>Global minute-hand target override, or the active theme's choice.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public ClockHandTargetMode MinuteTargetMode
+    {
+        get { lock (_sync) { return _minuteTargetMode; } }
+        set { lock (_sync) { _minuteTargetMode = value; _handRotation.Reset(); } }
+    }
+
+    /// <summary>Global hour-hand target override, or the active theme's choice.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public ClockHandTargetMode HourTargetMode
+    {
+        get { lock (_sync) { return _hourTargetMode; } }
+        set { lock (_sync) { _hourTargetMode = value; _handRotation.Reset(); } }
+    }
+
     /// <summary>
-    ///  The ease-in-out glide duration (seconds) used by <see cref="ClockHandMotion.Sweep"/>
-    ///  and by the magnetic-numeral aiming. A second-hand glide of 0.5s reaches the next
-    ///  mark half-way through the second and rests for the remainder. Clamped to 0.1..5s.
+    ///  The ease-in-out glide duration (seconds) used by <see cref="ClockHandMotion.Sweep"/>.
+    ///  Clamped to 0.1..5s.
     /// </summary>
     [Browsable(true)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -485,13 +513,17 @@ public sealed class WarpClockControl : D2DPanel
     }
 
     /// <summary>
-    ///  When <see langword="true"/>, every hand "finds" the hour numerals wherever the
-    ///  theme has placed them on the canvas and swings to the next one at its own rate
-    ///  (second-by-second, minute-by-minute, hour-by-hour). Numerals marked
-    ///  <see cref="ClockNumeralVisibility.Invisible"/> (or absent) are skipped — a hand
-    ///  that would land on one stays where it is. Independent of the per-hand
-    ///  <see cref="ClockHandMotion"/>; the glide uses <see cref="GlideDurationSeconds"/>.
+    ///  The global default: when <see langword="true"/>, every hand that did not request
+    ///  <see cref="ClockHandTargetMode.Radial"/> uses the current live hour numeral as
+    ///  its reference and adds the hand's authoritative clockwise progress through that
+    ///  numeral's 30-degree interval.
     /// </summary>
+    /// <remarks>
+    ///  This is only a default. A hand that explicitly requests
+    ///  <see cref="ClockHandTargetMode.MagneticNumerals"/> stays magnetic even while this
+    ///  is <see langword="false"/>, so a theme built around magnetic aiming keeps working
+    ///  in a host that never switched the mode on.
+    /// </remarks>
     [Browsable(true)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool MagneticNumerals
@@ -515,8 +547,7 @@ public sealed class WarpClockControl : D2DPanel
                 _magneticNumerals = value;
 
                 // Drop stale per-hand state so the hands don't jump from an old solver's pose.
-                _magneticSolver.Reset();
-                _solver.Reset();
+                _handRotation.Reset();
             }
         }
     }
@@ -584,8 +615,7 @@ public sealed class WarpClockControl : D2DPanel
     private void ActivateTheme()
     {
         TeardownScene();
-        _solver.Reset();
-        _magneticSolver.Reset();
+        _handRotation.Reset();
         _faceRotation = 0f;
         _themeChangePending = false;
         _hasAnimatorTimeZone = false;
@@ -825,59 +855,28 @@ public sealed class WarpClockControl : D2DPanel
             return _faceRotation + parameters.ExtraRotationDegrees;
         }
 
-        // Magnetic mode overrides ordinary pointing: the hand aims at scattered hour
-        // numerals (skipping Invisible ones) and glides/tracks their live positions.
-        if (_magneticNumerals)
+        ThemeCapabilities capabilities = _theme!.Capabilities;
+
+        return _handRotation.Solve(new HandRotationRequest
         {
-            float magnetic = _magneticSolver.Solve(
-                descriptor.Hand,
-                anchor,
-                time,
-                _glideDurationSeconds,
-                dt,
-                NumeralVisibilityAt,
-                index => ResolveAnchor(ClockElementId.HourMarker(index), geometry));
-
-            float magneticWobble = Math.Clamp(parameters.ExtraRotationDegrees, -5f, 5f);
-            return magnetic + magneticWobble;
-        }
-
-        bool freeFloating = _theme!.Capabilities.FreeFloating;
-        ClockHandMotion motion = descriptor.Hand == ClockHandKind.SubSecond
-            ? ClockHandMotion.Crawling
-            : MotionFor(descriptor.Hand);
-        ClockHandTargetMode targetMode = HandTargetModeResolver.Resolve(
-            descriptor.Hand,
-            parameters.HandTargetMode,
-            freeFloating);
-        float target;
-
-        if (targetMode == ClockHandTargetMode.FreeFloating)
-        {
-            target = HandPointingSolver.FreeFloatingTargetAngle(
-                descriptor.Hand,
-                anchor,
-                time,
-                motion,
-                _glideDurationSeconds,
-                id => ResolveAnchor(id, geometry));
-        }
-        else
-        {
-            target = HandPointingSolver.RadialTargetAngle(time, descriptor.Hand, motion, _glideDurationSeconds);
-            if (_theme.Capabilities.HandsFollowFaceRotation)
-            {
-                target += _faceRotation;
-            }
-        }
-
-        bool smoothFollow = targetMode == ClockHandTargetMode.FreeFloating
-            && motion != ClockHandMotion.Crawling;
-        float displayed = _solver.Solve(descriptor.Hand, target, _graceSeconds, smoothFollow, dt);
-
-        // Hand wobble is clamped so a theme can never misrepresent the time.
-        float wobble = Math.Clamp(parameters.ExtraRotationDegrees, -5f, 5f);
-        return displayed + wobble;
+            Hand = descriptor.Hand,
+            Pivot = anchor,
+            Time = time,
+            RequestedTargetMode = TargetModeFor(descriptor.Hand, parameters.HandTargetMode),
+            Motion = descriptor.Hand == ClockHandKind.SubSecond
+                ? ClockHandMotion.Crawling
+                : MotionFor(descriptor.Hand),
+            ThemeSupportsFreeFloating = capabilities.FreeFloating,
+            HandsFollowFaceRotation = capabilities.HandsFollowFaceRotation,
+            MagneticNumeralsEnabled = _magneticNumerals,
+            AnchorOf = id => ResolveAnchor(id, geometry),
+            NumeralVisibilityOf = NumeralVisibilityAt,
+            FaceRotationDegrees = _faceRotation,
+            ExtraRotationDegrees = parameters.ExtraRotationDegrees,
+            GraceSeconds = _graceSeconds,
+            GlideDurationSeconds = _glideDurationSeconds,
+            DeltaSeconds = dt,
+        });
     }
 
     private ClockHandMotion MotionFor(ClockHandKind hand)
@@ -887,6 +886,21 @@ public sealed class WarpClockControl : D2DPanel
             ClockHandKind.Minute => MinuteMotion,
             _ => SecondMotion,
         };
+
+    private ClockHandTargetMode TargetModeFor(
+        ClockHandKind hand,
+        ClockHandTargetMode themeMode)
+    {
+        ClockHandTargetMode overrideMode = hand switch
+        {
+            ClockHandKind.Hour => _hourTargetMode,
+            ClockHandKind.Minute => _minuteTargetMode,
+            ClockHandKind.Second => _secondTargetMode,
+            _ => ClockHandTargetMode.ThemeDefault,
+        };
+
+        return overrideMode == ClockHandTargetMode.ThemeDefault ? themeMode : overrideMode;
+    }
 
     /// <summary>
     ///  Returns the visibility of hour numeral <paramref name="index"/> (0..11), or
@@ -899,34 +913,14 @@ public sealed class WarpClockControl : D2DPanel
             : null;
 
     private PointF ResolveAnchor(ClockElementId id, ClockGeometry geometry)
-    {
-        if (_activeLayout is not null && _activeLayout.TryGetAnchor(id, geometry.Surface, out PointF anchor))
-        {
-            anchor = new PointF(anchor.X + geometry.Origin.X, anchor.Y + geometry.Origin.Y);
-        }
-        else
-        {
-            anchor = DefaultClockLayout.ResolveAnchor(id, geometry);
-        }
-
-        if (_runtime.TryGetValue(id, out ElementRuntime? runtime))
-        {
-            PointF offset = runtime.Parameters.AnchorOffset;
-            float scale = geometry.DesignScale;
-            anchor = new PointF(anchor.X + offset.X * scale, anchor.Y + offset.Y * scale);
-        }
-
-        // Face rotation orbits non-hand elements about the dial center.
-        if (_faceRotation != 0f && id.Kind is not (ClockElementKind.HourHand
-            or ClockElementKind.MinuteHand 
-            or ClockElementKind.SecondHand 
-            or ClockElementKind.SubSecondHand))
-        {
-            anchor = ClockMath.RotateAbout(anchor, geometry.Center, _faceRotation);
-        }
-
-        return anchor;
-    }
+        => ClockElementAnchorResolver.Resolve(
+            id,
+            geometry,
+            _activeLayout,
+            _runtime.TryGetValue(id, out ElementRuntime? runtime)
+                ? runtime.Parameters.AnchorOffset
+                : PointF.Empty,
+            _faceRotation);
 
     private bool IsAuxiliaryVisible(ClockElementId id)
         => IsAuxiliaryVisible(id.Kind, _auxiliaryVisibility);

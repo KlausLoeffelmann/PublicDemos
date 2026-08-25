@@ -39,7 +39,7 @@ internal sealed class ScatterRenderer(ScatterThemePalette palette) : IClockEleme
                 DrawNeedle(g, ctx, palette.Hand, 0.42f);
                 break;
             case ClockElementKind.MinuteHand:
-                DrawNeedle(g, ctx, palette.Hand, 0.30f);
+                DrawNeedle(g, ctx, palette.MinuteHand, 0.30f);
                 break;
             case ClockElementKind.SecondHand:
                 DrawNeedle(g, ctx, palette.Second, 0.22f);
@@ -83,19 +83,23 @@ internal sealed class ScatterRenderer(ScatterThemePalette palette) : IClockEleme
 
     private void DrawBadge(ID2DGraphics g, IClockRenderContext ctx, string text, float fontFraction)
     {
+        bool informationBadge = ctx.Id.Kind is ClockElementKind.Day or ClockElementKind.Weekday;
+        Color rim = informationBadge ? palette.InfoRim : palette.MagnetRim;
+        Color fill = informationBadge ? palette.InfoFill : palette.MagnetFill;
+        Color label = informationBadge ? palette.InfoLabel : palette.Label;
         float cx = ctx.ContentSize.Width / 2f;
         float cy = ctx.ContentSize.Height / 2f;
         float radiusX = (ctx.ContentSize.Width * 0.5f) - (4f * ctx.Scale);
         float radiusY = (ctx.ContentSize.Height * 0.5f) - (4f * ctx.Scale);
 
-        g.FillEllipse(palette.MagnetRim, cx - radiusX, cy - radiusY, radiusX * 2f, radiusY * 2f);
+        g.FillEllipse(rim, cx - radiusX, cy - radiusY, radiusX * 2f, radiusY * 2f);
         float innerX = radiusX - (5f * ctx.Scale);
         float innerY = radiusY - (5f * ctx.Scale);
-        g.FillEllipse(palette.MagnetFill, cx - innerX, cy - innerY, innerX * 2f, innerY * 2f);
+        g.FillEllipse(fill, cx - innerX, cy - innerY, innerX * 2f, innerY * 2f);
 
         float fontSize = MathF.Max(14f * ctx.Scale, ctx.ContentSize.Height * fontFraction);
         using var font = new Font("Segoe UI", fontSize, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var brush = new SolidBrush(palette.Label);
+        using var brush = new SolidBrush(label);
         using var format = new StringFormat
         {
             Alignment = StringAlignment.Center,

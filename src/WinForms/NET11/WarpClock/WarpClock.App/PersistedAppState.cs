@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using WarpClock.Abstractions;
 using WarpClock.Engine;
 
 namespace WarpClock.App;
@@ -97,6 +98,12 @@ public sealed class PersistedClockSettings
     public ClockHandMotion MinuteMotion { get; set; } = ClockHandMotion.Crawling;
 
     public ClockHandMotion HourMotion { get; set; } = ClockHandMotion.Crawling;
+
+    public ClockHandTargetMode SecondTargetMode { get; set; } = ClockHandTargetMode.ThemeDefault;
+
+    public ClockHandTargetMode MinuteTargetMode { get; set; } = ClockHandTargetMode.ThemeDefault;
+
+    public ClockHandTargetMode HourTargetMode { get; set; } = ClockHandTargetMode.ThemeDefault;
 
     public int GraceSeconds { get; set; } = 5;
 

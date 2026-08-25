@@ -74,7 +74,7 @@ public sealed class ThemeVariantTests
             new("Railway Classic", BuiltInThemes.RailwayClassic, 77, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Modern Minimal", BuiltInThemes.ModernMinimal, 69, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Antique Worn", BuiltInThemes.AntiqueWorn, 77, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
-            new("NERD", BuiltInThemes.Nerd, 15, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
+            new("NERD", BuiltInThemes.Nerd, 6, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Scatter (Magnetic)", BuiltInThemes.Scatter, 20, new ThemeCapabilities
             {
                 FreeFloating = true,

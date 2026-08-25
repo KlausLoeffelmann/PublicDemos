@@ -74,8 +74,19 @@ Key types:
 - **`ClockElementParameters`** — the only runtime levers: `Visible`,
   `AnchorOffset` (design units), `Scale`, `SkewDegrees`, `ExtraRotationDegrees`
   (clamped to ±5° for hands), `Opacity`, `Text`, `Progress`, `RedrawRequested`,
-  and `HandTargetMode`. A hand may request `Radial` or `FreeFloating`; the engine
-  still computes the authoritative angle and safely rejects unsupported requests.
+  and `HandTargetMode`. A hand may request `Radial`, `FreeFloating`, or
+  `MagneticNumerals`; the engine still computes the authoritative angle and safely
+  rejects unsupported requests. `FreeFloating` aims the hour hand at the `HourMarker`
+  anchors but the minute/second hands at the 60 `MinuteTick` anchors — a theme that
+  does not materialize minute ticks gets the engine's default radial ring for those
+  hands. `MagneticNumerals` uses only the current live hour-numeral anchor, then adds
+  the authoritative clockwise progress through that numeral's 30-degree interval.
+  Hour hands use one numeral per hour; minute and second hands use one numeral per
+  five units. Exact boundaries point at the numeral center, and the next numeral is
+  never used as an interpolation target. A theme whose design depends on this aiming
+  must request `MagneticNumerals` explicitly: that mode is honored even when the
+  host's global magnetic switch is off, whereas `ThemeCapabilities.MagneticByDefault`
+  is only a hint the host may ignore.
 
 ## Variants and OLED
 

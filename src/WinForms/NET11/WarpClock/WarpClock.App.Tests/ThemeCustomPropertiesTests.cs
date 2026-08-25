@@ -132,6 +132,8 @@ public sealed class ThemeCustomPropertiesTests
         Assert.NotNull(properties[nameof(BaseSettings.BaseSetting)]);
         Assert.NotNull(properties[nameof(VariantTheme.AccentColor)]);
         Assert.False(typeof(Control).IsAssignableFrom(adapter.GetType()));
+        Assert.IsType<BaseSettings>(
+            ((ICustomTypeDescriptor)adapter).GetPropertyOwner(properties[nameof(BaseSettings.BaseSetting)]));
         Assert.Same(adapter, ((ICustomTypeDescriptor)adapter).GetPropertyOwner(properties[nameof(VariantTheme.AccentColor)]));
     }
 

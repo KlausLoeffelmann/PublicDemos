@@ -10,13 +10,19 @@ internal sealed record ScatterThemePalette(
     Color MagnetFill,
     Color MagnetRim,
     Color Label,
+    Color InfoFill,
+    Color InfoRim,
+    Color InfoLabel,
     Color Hand,
+    Color MinuteHand,
     Color Second,
     Color Arbour);
 
 internal sealed record ScatterThemeColorOverrides(
     Color? Face = null,
-    Color? Hand = null,
+    Color? HourHand = null,
+    Color? MinuteHand = null,
+    Color? SecondHand = null,
     Color? MagnetFill = null,
     Color? MagnetRim = null,
     Color? Label = null);
@@ -25,23 +31,25 @@ internal sealed record ScatterThemeColorOverrides(
 ///  A demo for the engine's <b>Magnetic numerals</b> mode (which this theme turns on by
 ///  default). The twelve hour numerals begin in their normal clock positions and then
 ///  wander: at most four at a time slide smoothly to a new spot somewhere on the dial and
-///  rest there before drifting again. Because the numerals are the "leading" instances the
-///  hands point at, every hand behaves like a compass needle — it sweeps to wherever the
-///  next numeral now sits and then keeps following it. One numeral periodically goes
-///  <see cref="ClockNumeralVisibility.Invisible"/> to show that the hands skip a missing
-///  numeral and stay put.
+///  rest there before drifting again. The second hand remains radial. The hour hand follows
+///  the live hour numeral, while the minute hand advances magnetically every five minutes.
 /// </summary>
 public sealed class ScatterTheme : IClockTheme
 {
     private const string BaseName = "Scatter (Magnetic)";
     private const string BaseDescription =
-        "Numerals, weekday/day badges, and timezone wander while the hands magnetically chase the face.";
+        "Numerals and badges wander while the hour and minute hands react to their positions.";
     private const float DesignRadius = 500f;
     private const float HomeRadius = DesignRadius * 0.78f;
+    private const float CornerPadding = 24f;
+    private static readonly SizeF DaySize = new(120f, 72f);
+    private static readonly SizeF WeekdaySize = new(156f, 72f);
 
     private readonly ClockThemeVariantKind _variant;
     private ScatterThemeColorOverrides _overrides;
     private ScatterThemePalette _palette;
+    private int _flyNumeralsToOriginsAfterMin;
+    private int _beginNumeralsShuffelingAfterSec = 15;
 
     public ScatterTheme()
         : this(ClockThemeVariantKind.Day)
@@ -53,7 +61,11 @@ public sealed class ScatterTheme : IClockTheme
     {
     }
 
-    internal ScatterTheme(ClockThemeVariantKind variant, ScatterThemeColorOverrides? overrides)
+    internal ScatterTheme(
+        ClockThemeVariantKind variant,
+        ScatterThemeColorOverrides? overrides,
+        int flyNumeralsToOriginsAfterMin = 0,
+        int beginNumeralsShuffelingAfterSec = 15)
     {
         if (!ClockThemeVariants.Supports(ClockThemeVariants.DayNightOled, variant))
         {
@@ -63,6 +75,8 @@ public sealed class ScatterTheme : IClockTheme
         _variant = variant;
         _overrides = overrides ?? new();
         _palette = CreatePalette(variant, _overrides);
+        FlyNumeralsToOriginsAfterMin = flyNumeralsToOriginsAfterMin;
+        BeginNumeralsShuffelingAfterSec = beginNumeralsShuffelingAfterSec;
     }
 
     /// <inheritdoc/>
@@ -102,7 +116,42 @@ public sealed class ScatterTheme : IClockTheme
     public Color Hands
     {
         get => _palette.Hand;
-        set => SetOverrides(_overrides with { Hand = value });
+        set => SetOverrides(_overrides with
+        {
+            HourHand = value,
+            MinuteHand = value,
+            SecondHand = value,
+        });
+    }
+
+    [Browsable(true)]
+    [Category("Custom Properties")]
+    [DisplayName("Hour Hand")]
+    [Description("Color of the Scatter hour hand.")]
+    public Color HourHand
+    {
+        get => _palette.Hand;
+        set => SetOverrides(_overrides with { HourHand = value });
+    }
+
+    [Browsable(true)]
+    [Category("Custom Properties")]
+    [DisplayName("Minute Hand")]
+    [Description("Color of the Scatter minute hand.")]
+    public Color MinuteHand
+    {
+        get => _palette.MinuteHand;
+        set => SetOverrides(_overrides with { MinuteHand = value });
+    }
+
+    [Browsable(true)]
+    [Category("Custom Properties")]
+    [DisplayName("Second Hand")]
+    [Description("Color of the Scatter second hand.")]
+    public Color SecondHand
+    {
+        get => _palette.Second;
+        set => SetOverrides(_overrides with { SecondHand = value });
     }
 
     [Browsable(true)]
@@ -135,6 +184,26 @@ public sealed class ScatterTheme : IClockTheme
         set => SetOverrides(_overrides with { Label = value });
     }
 
+    [Browsable(true)]
+    [Category("Custom Properties")]
+    [DisplayName("Fly Numerals To Origins After (min)")]
+    [Description("Minutes spent shuffling before all moving elements return to their origins. Zero disables the return.")]
+    public int FlyNumeralsToOriginsAfterMin
+    {
+        get => _flyNumeralsToOriginsAfterMin;
+        set => _flyNumeralsToOriginsAfterMin = Math.Max(0, value);
+    }
+
+    [Browsable(true)]
+    [Category("Custom Properties")]
+    [DisplayName("Begin Numerals Shuffeling After (sec)")]
+    [Description("Seconds spent at the origins before numeral shuffling begins. The minimum is five seconds.")]
+    public int BeginNumeralsShuffelingAfterSec
+    {
+        get => _beginNumeralsShuffelingAfterSec;
+        set => _beginNumeralsShuffelingAfterSec = Math.Max(5, value);
+    }
+
     /// <inheritdoc/>
     public IClockTheme ResolveVariant(ClockThemeVariantKind variant)
     {
@@ -143,7 +212,13 @@ public sealed class ScatterTheme : IClockTheme
             throw ClockThemeVariants.CreateUnsupportedVariantException(BaseName, SupportedVariants, variant);
         }
 
-        return variant == _variant ? this : new ScatterTheme(variant, _overrides);
+        return variant == _variant
+            ? this
+            : new ScatterTheme(
+                variant,
+                _overrides,
+                FlyNumeralsToOriginsAfterMin,
+                BeginNumeralsShuffelingAfterSec);
     }
 
     /// <inheritdoc/>
@@ -153,8 +228,8 @@ public sealed class ScatterTheme : IClockTheme
         {
             new() { Id = ClockElementId.Face, ContentSize = new SizeF(1000, 1000), Pivot = new PointF(500, 500), ZOrder = 0 },
             new() { Id = ClockElementId.TimeZone, ContentSize = new SizeF(250, 78), Pivot = new PointF(125, 39), ZOrder = 18, RedrawPerFrame = true },
-            new() { Id = ClockElementId.Day, ContentSize = new SizeF(120, 72), Pivot = new PointF(60, 36), ZOrder = 18, RedrawPerFrame = true },
-            new() { Id = ClockElementId.Weekday, ContentSize = new SizeF(156, 72), Pivot = new PointF(78, 36), ZOrder = 18, RedrawPerFrame = true },
+            new() { Id = ClockElementId.Day, ContentSize = DaySize, Pivot = new PointF(60, 36), ZOrder = 18, RedrawPerFrame = true },
+            new() { Id = ClockElementId.Weekday, ContentSize = WeekdaySize, Pivot = new PointF(78, 36), ZOrder = 18, RedrawPerFrame = true },
         };
 
         for (int i = 0; i < 12; i++)
@@ -183,7 +258,8 @@ public sealed class ScatterTheme : IClockTheme
     public IClockElementRenderer CreateRenderer() => new ScatterRenderer(_palette);
 
     /// <inheritdoc/>
-    public IThemeAnimator CreateAnimator() => new ScatterAnimator();
+    public IThemeAnimator CreateAnimator()
+        => new ScatterAnimator(FlyNumeralsToOriginsAfterMin, BeginNumeralsShuffelingAfterSec);
 
     internal ScatterThemePalette Palette => _palette;
 
@@ -200,7 +276,11 @@ public sealed class ScatterTheme : IClockTheme
                 MagnetFill: Color.FromArgb(176, 94, 88),
                 MagnetRim: Color.FromArgb(214, 184, 132),
                 Label: Color.FromArgb(43, 45, 50),
+                InfoFill: Color.FromArgb(91, 126, 151),
+                InfoRim: Color.FromArgb(190, 120, 96),
+                InfoLabel: Color.FromArgb(248, 246, 239),
                 Hand: Color.FromArgb(68, 73, 82),
+                MinuteHand: Color.FromArgb(68, 73, 82),
                 Second: Color.FromArgb(181, 116, 71),
                 Arbour: Color.FromArgb(196, 167, 120)),
             ClockThemeVariantKind.Night => new ScatterThemePalette(
@@ -208,7 +288,11 @@ public sealed class ScatterTheme : IClockTheme
                 MagnetFill: Color.FromArgb(146, 82, 96),
                 MagnetRim: Color.FromArgb(110, 126, 148),
                 Label: Color.FromArgb(226, 229, 236),
+                InfoFill: Color.FromArgb(56, 82, 112),
+                InfoRim: Color.FromArgb(146, 82, 96),
+                InfoLabel: Color.FromArgb(234, 238, 245),
                 Hand: Color.FromArgb(214, 216, 221),
+                MinuteHand: Color.FromArgb(214, 216, 221),
                 Second: Color.FromArgb(176, 106, 126),
                 Arbour: Color.FromArgb(132, 141, 156)),
             ClockThemeVariantKind.OledDay => new ScatterThemePalette(
@@ -216,7 +300,11 @@ public sealed class ScatterTheme : IClockTheme
                 MagnetFill: Color.FromArgb(152, 89, 104),
                 MagnetRim: Color.FromArgb(104, 143, 219),
                 Label: Color.FromArgb(232, 239, 250),
+                InfoFill: Color.FromArgb(42, 91, 158),
+                InfoRim: Color.FromArgb(176, 106, 126),
+                InfoLabel: Color.FromArgb(239, 245, 255),
                 Hand: Color.FromArgb(220, 228, 240),
+                MinuteHand: Color.FromArgb(220, 228, 240),
                 Second: Color.FromArgb(192, 120, 148),
                 Arbour: Color.FromArgb(118, 157, 226)),
             ClockThemeVariantKind.OledNight => new ScatterThemePalette(
@@ -224,7 +312,11 @@ public sealed class ScatterTheme : IClockTheme
                 MagnetFill: Color.FromArgb(120, 74, 94),
                 MagnetRim: Color.FromArgb(92, 116, 152),
                 Label: Color.FromArgb(220, 230, 244),
+                InfoFill: Color.FromArgb(36, 58, 88),
+                InfoRim: Color.FromArgb(120, 74, 94),
+                InfoLabel: Color.FromArgb(224, 234, 248),
                 Hand: Color.FromArgb(205, 214, 227),
+                MinuteHand: Color.FromArgb(205, 214, 227),
                 Second: Color.FromArgb(162, 92, 120),
                 Arbour: Color.FromArgb(104, 120, 146)),
             _ => throw ClockThemeVariants.CreateUnsupportedVariantException(BaseName, ClockThemeVariants.DayNightOled, variant),
@@ -238,7 +330,9 @@ public sealed class ScatterTheme : IClockTheme
         return palette with
         {
             Face = overrides.Face ?? palette.Face,
-            Hand = overrides.Hand ?? palette.Hand,
+            Hand = overrides.HourHand ?? palette.Hand,
+            MinuteHand = overrides.MinuteHand ?? palette.MinuteHand,
+            Second = overrides.SecondHand ?? palette.Second,
             MagnetFill = overrides.MagnetFill ?? palette.MagnetFill,
             MagnetRim = overrides.MagnetRim ?? palette.MagnetRim,
             Label = overrides.Label ?? palette.Label,
@@ -267,9 +361,31 @@ public sealed class ScatterTheme : IClockTheme
     {
         public bool TryGetAnchor(ClockElementId id, SizeF surface, out PointF anchor)
         {
+            if (id.Kind is ClockElementKind.Day or ClockElementKind.Weekday)
+            {
+                anchor = GetInformationHomeAnchor(id, surface);
+                return true;
+            }
+
             anchor = default;
             return false;
         }
+    }
+
+    internal static PointF GetInformationHomeAnchor(ClockElementId id, SizeF surface)
+    {
+        float scale = MathF.Min(surface.Width, surface.Height) / (DesignRadius * 2f);
+        float padding = CornerPadding * scale;
+        SizeF contentSize = id.Kind == ClockElementKind.Weekday ? WeekdaySize : DaySize;
+        float halfWidth = contentSize.Width * scale / 2f;
+        float halfHeight = contentSize.Height * scale / 2f;
+
+        return id.Kind switch
+        {
+            ClockElementKind.Weekday => new PointF(padding + halfWidth, padding + halfHeight),
+            ClockElementKind.Day => new PointF(surface.Width - padding - halfWidth, padding + halfHeight),
+            _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Only Day and Weekday have information homes."),
+        };
     }
 
     /// <summary>
@@ -281,9 +397,15 @@ public sealed class ScatterTheme : IClockTheme
     private sealed class ScatterAnimator : IThemeAnimator
     {
         private const int MaxConcurrentMoves = 4;
-        private const int InvisibleNumeral = 9;
         private const float CounterpartMoveDurationSeconds = 1.8f;
         private const float FractionalShiftThreshold = 0.001f;
+
+        private enum MovementPhase
+        {
+            WaitingAtOrigins,
+            Shuffling,
+            ReturningToOrigins,
+        }
 
         private sealed class MoverState
         {
@@ -308,8 +430,19 @@ public sealed class ScatterTheme : IClockTheme
         ];
 
         private readonly Random _rng = new(0xC0FFEE);
+        private readonly float _flyToOriginsAfterSeconds;
+        private readonly float _beginShuffelingAfterSeconds;
         private bool _initialized;
-        private double _visibilityPhase;
+        private MovementPhase _phase = MovementPhase.WaitingAtOrigins;
+        private float _phaseElapsed;
+
+        public ScatterAnimator(
+            int flyNumeralsToOriginsAfterMin,
+            int beginNumeralsShuffelingAfterSec)
+        {
+            _flyToOriginsAfterSeconds = Math.Max(0, flyNumeralsToOriginsAfterMin) * 60f;
+            _beginShuffelingAfterSeconds = Math.Max(5, beginNumeralsShuffelingAfterSec);
+        }
 
         public void Initialize(IClockTickContext context)
         {
@@ -323,7 +456,6 @@ public sealed class ScatterTheme : IClockTheme
             ClockTimeZoneSnapshot current)
         {
             EnsureInitialized();
-            ConfigureHandTargets(context);
 
             float deltaHours = (float)(current.UtcOffset - previous.UtcOffset).TotalHours;
             if (MathF.Abs(deltaHours) < FractionalShiftThreshold)
@@ -356,23 +488,58 @@ public sealed class ScatterTheme : IClockTheme
                     state.Offset = targetOffset;
                 }
             }
+
+            _phase = MovementPhase.Shuffling;
+            _phaseElapsed = 0f;
+            ConfigureHandTargets(context);
         }
 
         public void OnTick(IClockTickContext context)
         {
             EnsureInitialized();
-            ConfigureHandTargets(context);
 
             float dt = (float)Math.Max(context.FrameDelta.TotalSeconds, 0d);
-            int movingCount = 0;
+            switch (_phase)
+            {
+                case MovementPhase.WaitingAtOrigins:
+                    _phaseElapsed += dt;
+                    if (_phaseElapsed >= _beginShuffelingAfterSeconds)
+                    {
+                        BeginShuffling();
+                        RunShuffling(dt, context);
+                    }
+                    else
+                    {
+                        UpdateStates(_numerals, dt, context);
+                        UpdateStates(_auxiliaries, dt, context);
+                    }
 
-            movingCount += UpdateStates(_numerals, dt, context);
-            movingCount += UpdateStates(_auxiliaries, dt, context);
+                    break;
 
-            ScheduleWanders(_numerals, dt, ref movingCount, PickNumeralTarget, 1.6f, 2.2f);
-            ScheduleWanders(_auxiliaries, dt, ref movingCount, PickAuxiliaryTarget, 1.4f, 1.8f);
+                case MovementPhase.Shuffling:
+                    _phaseElapsed += dt;
+                    RunShuffling(dt, context);
+                    if (_flyToOriginsAfterSeconds > 0f
+                        && _phaseElapsed >= _flyToOriginsAfterSeconds)
+                    {
+                        BeginReturnToOrigins();
+                    }
 
-            UpdateVisibilityDemo(context, dt);
+                    break;
+
+                case MovementPhase.ReturningToOrigins:
+                    UpdateStates(_numerals, dt, context);
+                    UpdateStates(_auxiliaries, dt, context);
+                    if (AreAllAtOrigins())
+                    {
+                        _phase = MovementPhase.WaitingAtOrigins;
+                        _phaseElapsed = 0f;
+                    }
+
+                    break;
+            }
+
+            ConfigureHandTargets(context);
         }
 
         private static PointF Add(PointF left, PointF right) => new(left.X + right.X, left.Y + right.Y);
@@ -411,9 +578,14 @@ public sealed class ScatterTheme : IClockTheme
 
         private void ConfigureHandTargets(IClockTickContext context)
         {
-            context.GetParameters(ClockElementId.HourHand).HandTargetMode = ClockHandTargetMode.FreeFloating;
-            context.GetParameters(ClockElementId.MinuteHand).HandTargetMode = ClockHandTargetMode.FreeFloating;
-            context.GetParameters(ClockElementId.SecondHand).HandTargetMode = ClockHandTargetMode.FreeFloating;
+            // Magnetic is requested explicitly (not merely FreeFloating) so both hands keep
+            // chasing the scattered hour numerals even when the host's global magnetic
+            // switch is off. Plain FreeFloating would silently aim the minute hand at the
+            // engine's default minute-tick ring, which this theme never materializes, and
+            // the hand would look like an ordinary radial minute hand.
+            context.GetParameters(ClockElementId.HourHand).HandTargetMode = ClockHandTargetMode.MagneticNumerals;
+            context.GetParameters(ClockElementId.MinuteHand).HandTargetMode = ClockHandTargetMode.MagneticNumerals;
+            context.GetParameters(ClockElementId.SecondHand).HandTargetMode = ClockHandTargetMode.Radial;
         }
 
         private void EnsureInitialized()
@@ -441,16 +613,108 @@ public sealed class ScatterTheme : IClockTheme
             _initialized = true;
         }
 
-        private PointF PickAuxiliaryTarget(MoverState state)
+        private void BeginShuffling()
+        {
+            _phase = MovementPhase.Shuffling;
+            _phaseElapsed = 0f;
+
+            foreach (MoverState state in _numerals)
+            {
+                state.Dwell = 0f;
+            }
+
+            foreach (MoverState state in _auxiliaries)
+            {
+                state.Dwell = 0f;
+            }
+        }
+
+        private void RunShuffling(float dt, IClockTickContext context)
+        {
+            int movingCount = 0;
+            movingCount += UpdateStates(_numerals, dt, context);
+            movingCount += UpdateStates(_auxiliaries, dt, context);
+
+            ScheduleWanders(_numerals, dt, ref movingCount, PickNumeralTarget, 1.6f, 2.2f);
+            ScheduleWanders(
+                _auxiliaries,
+                dt,
+                ref movingCount,
+                state => PickAuxiliaryTarget(state, context.SurfaceSize),
+                1.4f,
+                1.8f);
+        }
+
+        private void BeginReturnToOrigins()
+        {
+            _phase = MovementPhase.ReturningToOrigins;
+            _phaseElapsed = 0f;
+            RetargetOrigins(_numerals);
+            RetargetOrigins(_auxiliaries);
+        }
+
+        private static void RetargetOrigins(IEnumerable<MoverState> states)
+        {
+            foreach (MoverState state in states)
+            {
+                state.MoveStart = state.Offset;
+                state.MoveTarget = PointF.Empty;
+                state.Elapsed = 0f;
+                state.Duration = CounterpartMoveDurationSeconds;
+                state.Moving = Distance(state.Offset, PointF.Empty) >= 0.01f;
+                state.Dwell = 0f;
+
+                if (!state.Moving)
+                {
+                    state.Offset = PointF.Empty;
+                }
+            }
+        }
+
+        private bool AreAllAtOrigins()
+            => AreNumeralsAtOrigins()
+                && _auxiliaries.All(state => !state.Moving && Distance(state.Offset, PointF.Empty) < 0.01f);
+
+        private bool AreNumeralsAtOrigins()
+            => _numerals.All(state => !state.Moving && Distance(state.Offset, PointF.Empty) < 0.01f);
+
+        private PointF PickAuxiliaryTarget(MoverState state, SizeF surface)
         {
             if (_rng.Next(5) == 0)
             {
                 return PointF.Empty;
             }
 
+            if (state.Id.Kind is ClockElementKind.Day or ClockElementKind.Weekday)
+            {
+                return PickInformationTarget(state.Id, surface);
+            }
+
             float x = (((float)_rng.NextDouble() * 2f) - 1f) * state.WanderBounds.Width;
             float y = (((float)_rng.NextDouble() * 2f) - 1f) * state.WanderBounds.Height;
             return new PointF(x, y);
+        }
+
+        private PointF PickInformationTarget(ClockElementId id, SizeF surface)
+        {
+            float scale = MathF.Max(MathF.Min(surface.Width, surface.Height) / (DesignRadius * 2f), 0.001f);
+            SizeF contentSize = id.Kind == ClockElementKind.Weekday ? WeekdaySize : DaySize;
+            float halfWidth = contentSize.Width * scale / 2f;
+            float halfHeight = contentSize.Height * scale / 2f;
+            float padding = CornerPadding * scale;
+
+            float minX = padding + halfWidth;
+            float maxX = MathF.Max(minX, surface.Width - padding - halfWidth);
+            float minY = padding + halfHeight;
+            float maxY = MathF.Max(minY, surface.Height - padding - halfHeight);
+            PointF target = new(
+                minX + ((float)_rng.NextDouble() * (maxX - minX)),
+                minY + ((float)_rng.NextDouble() * (maxY - minY)));
+            PointF home = GetInformationHomeAnchor(id, surface);
+
+            return new PointF(
+                (target.X - home.X) / scale,
+                (target.Y - home.Y) / scale);
         }
 
         private PointF PickNumeralTarget(MoverState state)
@@ -539,14 +803,6 @@ public sealed class ScatterTheme : IClockTheme
             }
 
             return movingCount;
-        }
-
-        private void UpdateVisibilityDemo(IClockTickContext context, float dt)
-        {
-            _visibilityPhase += dt;
-            bool hidden = (_visibilityPhase % 18.0) >= 12.0;
-            context.GetParameters(ClockElementId.HourMarker(InvisibleNumeral)).Visibility =
-                hidden ? ClockNumeralVisibility.Invisible : ClockNumeralVisibility.Visible;
         }
 
         private static PointF Polar(float radius, float angleDegrees)

@@ -21,6 +21,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WarpClock.Engine\WarpClock.Engine.csproj" />
+    <!-- The Scatter aiming regression test drives the real built-in theme through the
+         engine's anchor / hand-rotation pipeline. -->
+    <ProjectReference Include="..\WarpClock.Themes.Builtin\WarpClock.Themes.Builtin.csproj" />
   </ItemGroup>
 
 </Project>

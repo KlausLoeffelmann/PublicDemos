@@ -75,6 +75,9 @@ public partial class FormMain
             PersistedClockSettings settings = _loadedAppState.Clock;
             _clock.GlideDurationSeconds = settings.GlideDurationSeconds;
             _clock.MagneticNumerals = settings.MagneticNumerals;
+            _clock.SecondTargetMode = settings.SecondTargetMode;
+            _clock.MinuteTargetMode = settings.MinuteTargetMode;
+            _clock.HourTargetMode = settings.HourTargetMode;
             _clock.TimeOffset = settings.TimeOffset;
             _clock.SpeedMultiplier = settings.SpeedMultiplier;
             _preferredThemeInfoMode = settings.RenderThemeInfo;
@@ -135,6 +138,9 @@ public partial class FormMain
                 GraceSeconds = _clock.GraceSeconds,
                 GlideDurationSeconds = _clock.GlideDurationSeconds,
                 MagneticNumerals = _clock.MagneticNumerals,
+                SecondTargetMode = _clock.SecondTargetMode,
+                MinuteTargetMode = _clock.MinuteTargetMode,
+                HourTargetMode = _clock.HourTargetMode,
                 TimeOffset = _clock.TimeOffset,
                 SpeedMultiplier = _clock.SpeedMultiplier,
                 RenderThemeInfo = _preferredThemeInfoMode,
