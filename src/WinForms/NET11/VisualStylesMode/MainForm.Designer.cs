@@ -88,14 +88,14 @@ partial class MainForm
         _menuStrip.Location = new Point(0, 0);
         _menuStrip.Name = "_menuStrip";
         _menuStrip.Padding = new Padding(6, 3, 0, 3);
-        _menuStrip.Size = new Size(1394, 45);
+        _menuStrip.Size = new Size(1394, 42);
         _menuStrip.TabIndex = 0;
         // 
         // _fileToolStripMenuItem
         // 
         _fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _saveSettingsToolStripMenuItem, _loadSettingsToolStripMenuItem });
         _fileToolStripMenuItem.Name = "_fileToolStripMenuItem";
-        _fileToolStripMenuItem.Size = new Size(70, 39);
+        _fileToolStripMenuItem.Size = new Size(71, 36);
         _fileToolStripMenuItem.Text = "&File";
         // 
         // _saveSettingsToolStripMenuItem
@@ -116,28 +116,28 @@ partial class MainForm
         // 
         _editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _editModeToolStripMenuItem, _editSelectionSeparator, _selectAllToolStripMenuItem, _deselectAllToolStripMenuItem });
         _editToolStripMenuItem.Name = "_editToolStripMenuItem";
-        _editToolStripMenuItem.Size = new Size(75, 39);
+        _editToolStripMenuItem.Size = new Size(74, 36);
         _editToolStripMenuItem.Text = "&Edit";
         // 
         // _editModeToolStripMenuItem
         // 
         _editModeToolStripMenuItem.Name = "_editModeToolStripMenuItem";
         _editModeToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.E;
-        _editModeToolStripMenuItem.Size = new Size(416, 44);
+        _editModeToolStripMenuItem.Size = new Size(419, 44);
         _editModeToolStripMenuItem.Text = "&Edit mode";
         _editModeToolStripMenuItem.Click += EditModeToolStripMenuItem_Click;
         // 
         // _editSelectionSeparator
         // 
         _editSelectionSeparator.Name = "_editSelectionSeparator";
-        _editSelectionSeparator.Size = new Size(413, 6);
+        _editSelectionSeparator.Size = new Size(416, 6);
         // 
         // _selectAllToolStripMenuItem
         // 
         _selectAllToolStripMenuItem.Enabled = false;
         _selectAllToolStripMenuItem.Name = "_selectAllToolStripMenuItem";
         _selectAllToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.A;
-        _selectAllToolStripMenuItem.Size = new Size(416, 44);
+        _selectAllToolStripMenuItem.Size = new Size(419, 44);
         _selectAllToolStripMenuItem.Text = "Select &All";
         _selectAllToolStripMenuItem.Click += SelectAllToolStripMenuItem_Click;
         // 
@@ -146,7 +146,7 @@ partial class MainForm
         _deselectAllToolStripMenuItem.Enabled = false;
         _deselectAllToolStripMenuItem.Name = "_deselectAllToolStripMenuItem";
         _deselectAllToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Shift | Keys.A;
-        _deselectAllToolStripMenuItem.Size = new Size(416, 44);
+        _deselectAllToolStripMenuItem.Size = new Size(419, 44);
         _deselectAllToolStripMenuItem.Text = "&Deselect All";
         _deselectAllToolStripMenuItem.Click += DeselectAllToolStripMenuItem_Click;
         // 
@@ -154,7 +154,7 @@ partial class MainForm
         // 
         _viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _viewAppearanceSeparator, _classicVisualStylesToolStripMenuItem, _net11VisualStylesToolStripMenuItem, _flatStyleSeparator, _standardFlatStyleToolStripMenuItem, _flatFlatStyleToolStripMenuItem, _popupFlatStyleToolStripMenuItem, _systemFlatStyleToolStripMenuItem, _behaviorSeparator, _useSuspendPaintingScopeToolStripMenuItem, _applyVisualStylesRecursivelyToolStripMenuItem });
         _viewToolStripMenuItem.Name = "_viewToolStripMenuItem";
-        _viewToolStripMenuItem.Size = new Size(86, 39);
+        _viewToolStripMenuItem.Size = new Size(85, 36);
         _viewToolStripMenuItem.Text = "&View";
         // 
         // _viewAppearanceSeparator
@@ -250,7 +250,7 @@ partial class MainForm
         // 
         _toolStrip.ImageScalingSize = new Size(36, 36);
         _toolStrip.Items.AddRange(new ToolStripItem[] { _saveSettingsToolStripButton, _loadSettingsToolStripButton, _fileToolStripSeparator, _editModeToolStripButton, _editToolStripSeparator, _selectAllToolStripButton, _deselectAllToolStripButton });
-        _toolStrip.Location = new Point(0, 45);
+        _toolStrip.Location = new Point(0, 42);
         _toolStrip.Name = "_toolStrip";
         _toolStrip.Padding = new Padding(0, 0, 3, 0);
         _toolStrip.Size = new Size(1394, 25);
@@ -261,7 +261,7 @@ partial class MainForm
         _saveSettingsToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
         _saveSettingsToolStripButton.Enabled = false;
         _saveSettingsToolStripButton.Name = "_saveSettingsToolStripButton";
-        _saveSettingsToolStripButton.Size = new Size(40, 19);
+        _saveSettingsToolStripButton.Size = new Size(46, 19);
         _saveSettingsToolStripButton.Text = "Save property settings";
         _saveSettingsToolStripButton.ToolTipText = "Save property settings";
         _saveSettingsToolStripButton.Click += SaveSettingsToolStripMenuItem_Click;
@@ -270,7 +270,7 @@ partial class MainForm
         // 
         _loadSettingsToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
         _loadSettingsToolStripButton.Name = "_loadSettingsToolStripButton";
-        _loadSettingsToolStripButton.Size = new Size(40, 19);
+        _loadSettingsToolStripButton.Size = new Size(46, 19);
         _loadSettingsToolStripButton.Text = "Load property settings";
         _loadSettingsToolStripButton.ToolTipText = "Load property settings";
         _loadSettingsToolStripButton.Click += LoadSettingsToolStripMenuItem_Click;
@@ -284,7 +284,7 @@ partial class MainForm
         // 
         _editModeToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
         _editModeToolStripButton.Name = "_editModeToolStripButton";
-        _editModeToolStripButton.Size = new Size(40, 19);
+        _editModeToolStripButton.Size = new Size(46, 19);
         _editModeToolStripButton.Text = "Edit mode";
         _editModeToolStripButton.ToolTipText = "Toggle Edit mode (Ctrl+E)";
         _editModeToolStripButton.Click += EditModeToolStripMenuItem_Click;
@@ -299,7 +299,7 @@ partial class MainForm
         _selectAllToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
         _selectAllToolStripButton.Enabled = false;
         _selectAllToolStripButton.Name = "_selectAllToolStripButton";
-        _selectAllToolStripButton.Size = new Size(40, 19);
+        _selectAllToolStripButton.Size = new Size(46, 19);
         _selectAllToolStripButton.Text = "Select All";
         _selectAllToolStripButton.ToolTipText = "Select All (Ctrl+A)";
         _selectAllToolStripButton.Click += SelectAllToolStripMenuItem_Click;
@@ -309,7 +309,7 @@ partial class MainForm
         _deselectAllToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
         _deselectAllToolStripButton.Enabled = false;
         _deselectAllToolStripButton.Name = "_deselectAllToolStripButton";
-        _deselectAllToolStripButton.Size = new Size(40, 19);
+        _deselectAllToolStripButton.Size = new Size(46, 19);
         _deselectAllToolStripButton.Text = "Deselect All";
         _deselectAllToolStripButton.ToolTipText = "Deselect All (Ctrl+Shift+A)";
         _deselectAllToolStripButton.Click += DeselectAllToolStripMenuItem_Click;
@@ -327,38 +327,38 @@ partial class MainForm
         // _formSizeStatusLabel
         // 
         _formSizeStatusLabel.Name = "_formSizeStatusLabel";
-        _formSizeStatusLabel.Size = new Size(126, 36);
+        _formSizeStatusLabel.Size = new Size(121, 35);
         _formSizeStatusLabel.Text = "Form size:";
         // 
         // _formClientSizeStatusLabel
         // 
         _formClientSizeStatusLabel.Name = "_formClientSizeStatusLabel";
-        _formClientSizeStatusLabel.Size = new Size(192, 36);
+        _formClientSizeStatusLabel.Size = new Size(186, 35);
         _formClientSizeStatusLabel.Text = "Form client size:";
         // 
         // _selectedControlStatusLabel
         // 
         _selectedControlStatusLabel.Name = "_selectedControlStatusLabel";
-        _selectedControlStatusLabel.Size = new Size(819, 36);
+        _selectedControlStatusLabel.Size = new Size(523, 35);
         _selectedControlStatusLabel.Spring = true;
         _selectedControlStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // _displayScaleStatusLabel
         // 
         _displayScaleStatusLabel.Name = "_displayScaleStatusLabel";
-        _displayScaleStatusLabel.Size = new Size(167, 36);
+        _displayScaleStatusLabel.Size = new Size(162, 35);
         _displayScaleStatusLabel.Text = "Display: 100%";
         // 
         // _textScaleStatusLabel
         // 
         _textScaleStatusLabel.Name = "_textScaleStatusLabel";
-        _textScaleStatusLabel.Size = new Size(129, 36);
+        _textScaleStatusLabel.Size = new Size(128, 35);
         _textScaleStatusLabel.Text = "Text: 100%";
         // 
         // _accentColorStatusLabel
         // 
         _accentColorStatusLabel.Name = "_accentColorStatusLabel";
-        _accentColorStatusLabel.Size = new Size(219, 36);
+        _accentColorStatusLabel.Size = new Size(214, 35);
         _accentColorStatusLabel.Text = "Accent: #FF000000";
         // 
         // _accentColorSwatchStatusLabel
@@ -366,14 +366,14 @@ partial class MainForm
         _accentColorSwatchStatusLabel.AutoSize = false;
         _accentColorSwatchStatusLabel.BorderSides = ToolStripStatusLabelBorderSides.Left | ToolStripStatusLabelBorderSides.Top | ToolStripStatusLabelBorderSides.Right | ToolStripStatusLabelBorderSides.Bottom;
         _accentColorSwatchStatusLabel.Name = "_accentColorSwatchStatusLabel";
-        _accentColorSwatchStatusLabel.Size = new Size(36, 36);
+        _accentColorSwatchStatusLabel.Size = new Size(36, 35);
         _accentColorSwatchStatusLabel.ToolTipText = "Windows accent color";
         // 
         // _splitContainer
         // 
         _splitContainer.Dock = DockStyle.Fill;
-        _splitContainer.Location = new Point(0, 70);
-        _splitContainer.Margin = new Padding(4, 4, 4, 4);
+        _splitContainer.Location = new Point(0, 67);
+        _splitContainer.Margin = new Padding(4);
         _splitContainer.Name = "_splitContainer";
         // 
         // _splitContainer.Panel1
@@ -384,7 +384,7 @@ partial class MainForm
         // 
         _splitContainer.Panel2.Controls.Add(_propertyGrid);
         _splitContainer.Panel2Collapsed = true;
-        _splitContainer.Size = new Size(1394, 819);
+        _splitContainer.Size = new Size(1394, 822);
         _splitContainer.SplitterDistance = 1162;
         _splitContainer.SplitterWidth = 5;
         _splitContainer.TabIndex = 1;
@@ -394,9 +394,9 @@ partial class MainForm
         _propertyGrid.BackColor = SystemColors.Control;
         _propertyGrid.Dock = DockStyle.Fill;
         _propertyGrid.Location = new Point(0, 0);
-        _propertyGrid.Margin = new Padding(4, 4, 4, 4);
+        _propertyGrid.Margin = new Padding(4);
         _propertyGrid.Name = "_propertyGrid";
-        _propertyGrid.Size = new Size(125, 128);
+        _propertyGrid.Size = new Size(96, 100);
         _propertyGrid.TabIndex = 0;
         _propertyGrid.PropertyValueChanged += PropertyGrid_PropertyValueChanged;
         // 
@@ -414,9 +414,8 @@ partial class MainForm
         Controls.Add(_toolStrip);
         Controls.Add(_menuStrip);
         Controls.Add(_statusStrip);
-        FormRevealMode = FormRevealMode.Deferred;
         MainMenuStrip = _menuStrip;
-        Margin = new Padding(4, 4, 4, 4);
+        Margin = new Padding(4);
         MinimumSize = new Size(1111, 689);
         Name = "MainForm";
         Text = "VisualStylesModeDemo - WinForms NET11 API scratchpad";
