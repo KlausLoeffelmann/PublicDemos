@@ -865,7 +865,7 @@ public sealed class WarpClockControl : D2DPanel
             RequestedTargetMode = TargetModeFor(descriptor.Hand, parameters.HandTargetMode),
             Motion = descriptor.Hand == ClockHandKind.SubSecond
                 ? ClockHandMotion.Crawling
-                : MotionFor(descriptor.Hand),
+                : parameters.HandMotion ?? MotionFor(descriptor.Hand),
             ThemeSupportsFreeFloating = capabilities.FreeFloating,
             HandsFollowFaceRotation = capabilities.HandsFollowFaceRotation,
             MagneticNumeralsEnabled = _magneticNumerals,

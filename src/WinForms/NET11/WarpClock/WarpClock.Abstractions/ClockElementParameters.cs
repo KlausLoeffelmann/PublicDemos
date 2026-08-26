@@ -52,6 +52,12 @@ public sealed class ClockElementParameters
     /// </summary>
     public ClockHandTargetMode HandTargetMode { get; set; } = ClockHandTargetMode.ThemeDefault;
 
+    /// <summary>
+    ///  Optional theme-local hand movement override. A null value leaves movement
+    ///  under host control.
+    /// </summary>
+    public ClockHandMotion? HandMotion { get; set; }
+
     /// <summary>Optional text the renderer may use (e.g. a numeral override during a blend).</summary>
     public string? Text { get; set; }
 

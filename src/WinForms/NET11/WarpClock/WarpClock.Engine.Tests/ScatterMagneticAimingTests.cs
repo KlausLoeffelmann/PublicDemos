@@ -45,7 +45,7 @@ public sealed class ScatterMagneticAimingTests
         AssertAngle(rig.ExpectedMagneticAngle(ClockHandKind.Hour), rig.HourRotation);
 
         // The second hand keeps the authoritative radial angle and never consults a numeral.
-        AssertAngle(rig.Time.SecondAngle, rig.SecondRotation);
+        AssertAngle(rig.ExpectedRadialAngle(ClockHandKind.Second), rig.SecondRotation);
 
         // Free-floating minute targeting — the mode this theme used to request — would
         // have produced the engine's default minute-tick ring instead.
@@ -77,7 +77,7 @@ public sealed class ScatterMagneticAimingTests
             AssertNumeralHasWandered(rig, numeral);
             Assert.Equal(numeral, MagneticNumeralPosition.Resolve(ClockHandKind.Minute, rig.Time).NumeralIndex);
             AssertAngle(rig.ExpectedMagneticAngle(ClockHandKind.Minute), rig.MinuteRotation);
-            AssertAngle(rig.Time.SecondAngle, rig.SecondRotation);
+            AssertAngle(rig.ExpectedRadialAngle(ClockHandKind.Second), rig.SecondRotation);
             Assert.Equal(ClockHandTargetMode.Radial, rig.EffectiveTargetMode(ClockElementId.SecondHand));
         }
     }
@@ -202,7 +202,11 @@ public sealed class ScatterMagneticAimingTests
 
         public float ExpectedMagneticAngle(ClockHandKind hand)
         {
-            MagneticNumeralPosition position = MagneticNumeralPosition.Resolve(hand, _context.Time);
+            MagneticNumeralPosition position = MagneticNumeralPosition.Resolve(
+                hand,
+                _context.Time,
+                ClockHandMotion.Crawling,
+                GlideDurationSeconds);
             ClockElementId handId = hand switch
             {
                 ClockHandKind.Hour => ClockElementId.HourHand,
@@ -215,6 +219,13 @@ public sealed class ScatterMagneticAimingTests
                 ClockMath.AngleTo(AnchorOf(handId), NumeralAnchor(position.NumeralIndex))
                 + position.CompensationDegrees);
         }
+
+        public float ExpectedRadialAngle(ClockHandKind hand)
+            => HandPointingSolver.RadialTargetAngle(
+                _context.Time,
+                hand,
+                ClockHandMotion.Crawling,
+                GlideDurationSeconds);
 
         /// <summary>The angle the discarded free-floating minute targeting would produce.</summary>
         public float FreeFloatingMinuteAngle()

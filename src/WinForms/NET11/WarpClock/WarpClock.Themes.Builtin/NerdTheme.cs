@@ -6,7 +6,9 @@ using WarpClock.Abstractions;
 namespace WarpClock.Themes.Builtin;
 
 internal sealed record NerdThemePalette(
-    Color Face,
+    Color FaceBlue,
+    Color FaceRed,
+    Color FaceGreen,
     Color Grid,
     Color Blade,
     Color HourOn,
@@ -18,8 +20,10 @@ internal sealed record NerdThemePalette(
 
 internal static class NerdThemeGeometry
 {
-    public static readonly SizeF SecondHandContentSize = new(240f, 500f);
-    public static readonly PointF SecondHandPivot = new(120f, 460f);
+    public static readonly SizeF SecondHandContentSize = new(250f, 530f);
+    public static readonly PointF SecondHandPivot = new(125f, 490f);
+    public static readonly SizeF SledContentSize = new(280f, 540f);
+    public static readonly PointF SledPivot = new(140f, 500f);
 
     public const int HourBitCount = 5;
     public const int MinuteBitCount = 6;
@@ -28,33 +32,20 @@ internal static class NerdThemeGeometry
     public const float ArbourRadius = 30f;
     public const float ArbourClearance = 6f;
     public const float LedRadius = 9f;
-    public const float BladeTopRadius = 345f;
+    public const float BladeTopRadius = 420f;
     public const float BladeHalfWidth = 30f;
     public const float BladeTailDepth = 24f;
-    public const float HourBankInnerRadius = 52f;
-    public const float MinuteBankInnerRadius = 174f;
-    public const float BladeLedPitch = 23f;
-    public const float SledRadius = 390f;
-    public const float SledHalfSpanDegrees = 13f;
+    public const float HourBankInnerRadius = 58f;
+    public const float MinuteBankInnerRadius = 218f;
+    public const float BladeLedPitch = 27f;
+    public const float SledRadius = 455f;
+    public const float SledHalfSpanDegrees = 12f;
     public const float SledHalfThickness = 18f;
     public const float SledLedHalfSpanDegrees = 10f;
 }
 
-/// <summary>How Nerd sleds advance around the clockface.</summary>
-public enum NerdSlideMotion
-{
-    /// <summary>Advance in discrete steps.</summary>
-    Tick,
-
-    /// <summary>Move continuously.</summary>
-    Glide,
-}
-
 /// <summary>
-///  A minimalist binary clock whose only hand is a combined display. A curved six-LED
-///  seconds sled runs near the dial perimeter, while its long blade carries five inner
-///  blue hour bits and six outer red minute bits. The complete display rotates with the
-///  authoritative second hand.
+///  A binary second hand with independently gliding curved seconds sleds.
 /// </summary>
 public sealed class NerdTheme : IClockTheme
 {
@@ -105,9 +96,9 @@ public sealed class NerdTheme : IClockTheme
 
     [Browsable(true)]
     [Category("Custom Properties")]
-    [DisplayName("Slide Motion")]
-    [Description("Choose discrete ticking or continuous gliding for the Nerd sleds.")]
-    public NerdSlideMotion SlideMotion { get; set; } = NerdSlideMotion.Tick;
+    [DisplayName("Second Hand Motion")]
+    [Description("Movement of the binary hour/minute hand. Sleds always glide independently.")]
+    public ClockHandMotion SecondHandMotion { get; set; } = ClockHandMotion.Tick;
 
     [Browsable(true)]
     [Category("Custom Properties")]
@@ -202,7 +193,7 @@ public sealed class NerdTheme : IClockTheme
 
         return new NerdTheme(variant)
         {
-            SlideMotion = SlideMotion,
+            SecondHandMotion = SecondHandMotion,
             SpeedUpAfterMin = SpeedUpAfterMin,
             FastDurationMin = FastDurationMin,
             AddSlideEveryMin = AddSlideEveryMin,
@@ -224,13 +215,23 @@ public sealed class NerdTheme : IClockTheme
                 ContentSize = new SizeF(1000, 1000),
                 Pivot = new PointF(500, 500),
                 ZOrder = 0,
+                RedrawPerFrame = true,
+            },
+            new()
+            {
+                Id = ClockElementId.SecondHand,
+                ContentSize = NerdThemeGeometry.SecondHandContentSize,
+                Pivot = NerdThemeGeometry.SecondHandPivot,
+                Hand = ClockHandKind.Second,
+                ZOrder = 30,
+                RedrawPerFrame = true,
             },
             .. Enumerable.Range(0, 4).Select(index => new ClockElementDescriptor
             {
                 Id = ClockElementId.CustomElement(index),
-                ContentSize = NerdThemeGeometry.SecondHandContentSize,
-                Pivot = NerdThemeGeometry.SecondHandPivot,
-                ZOrder = 27 + index,
+                ContentSize = NerdThemeGeometry.SledContentSize,
+                Pivot = NerdThemeGeometry.SledPivot,
+                ZOrder = 24 + index,
                 RedrawPerFrame = true,
             }),
             new()
@@ -252,7 +253,7 @@ public sealed class NerdTheme : IClockTheme
     /// <inheritdoc/>
     public IThemeAnimator CreateAnimator()
         => new NerdAnimator(
-            SlideMotion,
+            SecondHandMotion,
             SpeedUpAfterMin,
             FastDurationMin,
             AddSlideEveryMin,
@@ -265,17 +266,21 @@ public sealed class NerdTheme : IClockTheme
         => variant switch
         {
             ClockThemeVariantKind.Day => new NerdThemePalette(
-                Face: Color.FromArgb(243, 246, 249),
-                Grid: Color.FromArgb(72, 84, 100),
-                Blade: Color.FromArgb(116, 104, 116, 134),
-                HourOn: Color.FromArgb(132, 211, 255),
+                FaceBlue: Color.FromArgb(76, 172, 238),
+                FaceRed: Color.FromArgb(226, 92, 112),
+                FaceGreen: Color.FromArgb(72, 198, 146),
+                Grid: Color.FromArgb(25, 39, 61),
+                Blade: Color.FromArgb(150, 38, 48, 70),
+                HourOn: Color.FromArgb(12, 58, 112),
                 HourOff: Color.FromArgb(206, 229, 244),
-                MinuteOn: Color.FromArgb(246, 156, 156),
+                MinuteOn: Color.FromArgb(122, 18, 34),
                 MinuteOff: Color.FromArgb(241, 210, 210),
-                SecondOn: Color.FromArgb(118, 196, 151),
+                SecondOn: Color.FromArgb(12, 82, 52),
                 SecondOff: Color.FromArgb(207, 228, 216)),
             ClockThemeVariantKind.Night => new NerdThemePalette(
-                Face: Color.FromArgb(13, 16, 21),
+                FaceBlue: Color.FromArgb(18, 56, 91),
+                FaceRed: Color.FromArgb(82, 28, 43),
+                FaceGreen: Color.FromArgb(18, 72, 55),
                 Grid: Color.FromArgb(112, 122, 136),
                 Blade: Color.FromArgb(108, 48, 56, 68),
                 HourOn: Color.FromArgb(102, 176, 216),

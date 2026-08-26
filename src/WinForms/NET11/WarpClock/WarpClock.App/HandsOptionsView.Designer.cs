@@ -139,7 +139,7 @@ partial class HandsOptionsView
         _hourCrawlingRadioButton.Size = new Size(78, 19);
         _hourCrawlingRadioButton.TabIndex = 0;
         _hourCrawlingRadioButton.TabStop = true;
-        _hourCrawlingRadioButton.Text = "Crawling";
+        _hourCrawlingRadioButton.Text = "Crawl (move and pause)";
         _hourCrawlingRadioButton.UseVisualStyleBackColor = true;
         // 
         // _hourSweepRadioButton
@@ -150,7 +150,7 @@ partial class HandsOptionsView
         _hourSweepRadioButton.Size = new Size(109, 19);
         _hourSweepRadioButton.TabIndex = 1;
         _hourSweepRadioButton.TabStop = true;
-        _hourSweepRadioButton.Text = "Sweep (glide)";
+        _hourSweepRadioButton.Text = "Glide continuously";
         _hourSweepRadioButton.UseVisualStyleBackColor = true;
         // 
         // _hourFastTickRadioButton
@@ -215,7 +215,7 @@ partial class HandsOptionsView
         _minuteCrawlingRadioButton.Size = new Size(78, 19);
         _minuteCrawlingRadioButton.TabIndex = 0;
         _minuteCrawlingRadioButton.TabStop = true;
-        _minuteCrawlingRadioButton.Text = "Crawling";
+        _minuteCrawlingRadioButton.Text = "Crawl (move and pause)";
         _minuteCrawlingRadioButton.UseVisualStyleBackColor = true;
         // 
         // _minuteSweepRadioButton
@@ -226,7 +226,7 @@ partial class HandsOptionsView
         _minuteSweepRadioButton.Size = new Size(109, 19);
         _minuteSweepRadioButton.TabIndex = 1;
         _minuteSweepRadioButton.TabStop = true;
-        _minuteSweepRadioButton.Text = "Sweep (glide)";
+        _minuteSweepRadioButton.Text = "Glide continuously";
         _minuteSweepRadioButton.UseVisualStyleBackColor = true;
         // 
         // _minuteFastTickRadioButton
@@ -291,7 +291,7 @@ partial class HandsOptionsView
         _secondCrawlingRadioButton.Size = new Size(78, 19);
         _secondCrawlingRadioButton.TabIndex = 0;
         _secondCrawlingRadioButton.TabStop = true;
-        _secondCrawlingRadioButton.Text = "Crawling";
+        _secondCrawlingRadioButton.Text = "Crawl (move and pause)";
         _secondCrawlingRadioButton.UseVisualStyleBackColor = true;
         // 
         // _secondSweepRadioButton
@@ -302,7 +302,7 @@ partial class HandsOptionsView
         _secondSweepRadioButton.Size = new Size(109, 19);
         _secondSweepRadioButton.TabIndex = 1;
         _secondSweepRadioButton.TabStop = true;
-        _secondSweepRadioButton.Text = "Sweep (glide)";
+        _secondSweepRadioButton.Text = "Glide continuously";
         _secondSweepRadioButton.UseVisualStyleBackColor = true;
         // 
         // _secondFastTickRadioButton

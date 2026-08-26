@@ -165,6 +165,10 @@ public static class BuiltInThemes
                 HourCulture = HourCulture.Roman,
                 HourMarkerStyle = HourMarkerStyle.All,
                 MinuteTickStyle = MinuteTickStyle.Prominent,
+                FontFamily = "Times New Roman",
+                Ornate = true,
+                AgedSurface = true,
+                OrnamentColor = Color.FromArgb(157, 62, 53),
             },
             ClockThemeVariantKind.Night => new StandardClockDesign
             {
@@ -183,6 +187,10 @@ public static class BuiltInThemes
                 HourCulture = HourCulture.Roman,
                 HourMarkerStyle = HourMarkerStyle.All,
                 MinuteTickStyle = MinuteTickStyle.Prominent,
+                FontFamily = "Times New Roman",
+                Ornate = true,
+                AgedSurface = false,
+                OrnamentColor = Color.FromArgb(116, 74, 65),
             },
             _ => throw ClockThemeVariants.CreateUnsupportedVariantException("Antique Worn", ClockThemeVariants.DayNight, variant),
         };

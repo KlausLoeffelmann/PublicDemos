@@ -185,6 +185,7 @@ public partial class FormMain
         _miRecordFramerate.Checked = _recordFramerateEnabled;
         _miMagnetic.Checked = _clock.MagneticNumerals;
         _miVSync.Checked = _clock.VSyncEnabled;
+        RefreshHandMovementChecks();
         OnThemeInfoOpening(this, EventArgs.Empty);
         OnThemeInfoPlacementOpening(this, EventArgs.Empty);
     }

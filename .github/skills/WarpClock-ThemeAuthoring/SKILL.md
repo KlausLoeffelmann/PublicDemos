@@ -74,7 +74,8 @@ Key types:
 - **`ClockElementParameters`** — the only runtime levers: `Visible`,
   `AnchorOffset` (design units), `Scale`, `SkewDegrees`, `ExtraRotationDegrees`
   (clamped to ±5° for hands), `Opacity`, `Text`, `Progress`, `RedrawRequested`,
-  and `HandTargetMode`. A hand may request `Radial`, `FreeFloating`, or
+  `HandTargetMode`, and an optional theme-local `HandMotion`. A hand may request
+  `Radial`, `FreeFloating`, or
   `MagneticNumerals`; the engine still computes the authoritative angle and safely
   rejects unsupported requests. `FreeFloating` aims the hour hand at the `HourMarker`
   anchors but the minute/second hands at the 60 `MinuteTick` anchors — a theme that
@@ -130,7 +131,8 @@ logical family/property name and reapplies them after variant resolution.
 ## Radial vs free-floating
 
 - **Radial** (default): anchors sit on the dial circle; hands use the authoritative
-  angle. `ClockHandMotion.Crawling`/`Sweep`/`Tick` apply. Best for classic looks.
+  angle. `Crawling` eases to each step and pauses, `Sweep` glides continuously,
+  `FastTick` advances in quarter steps, and `Tick` jumps once per step.
 - **Free-floating** (`Capabilities.FreeFloating = true`): you place anchors anywhere
   and hands *aim at them*, so a hand's tip follows a relocated visual. The engine
   applies the configured Crawl/Sweep/Tick quantization to the engine-owned target and

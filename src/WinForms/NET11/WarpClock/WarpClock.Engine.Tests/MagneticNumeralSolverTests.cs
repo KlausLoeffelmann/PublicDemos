@@ -145,16 +145,41 @@ public sealed class MagneticNumeralSolverTests
         Assert.Equal(30f, actual!.Value, 3);
     }
 
+    [Theory]
+    [InlineData(ClockHandMotion.Tick, 12f)]
+    [InlineData(ClockHandMotion.FastTick, 12f)]
+    [InlineData(ClockHandMotion.Crawling, 6.192f)]
+    [InlineData(ClockHandMotion.Sweep, 12.6f)]
+    public void MagneticSecondHandPreservesSelectedMotion(
+        ClockHandMotion motion,
+        float expectedAngle)
+    {
+        MagneticNumeralSolver solver = new();
+        PointF[] anchors = CreateAnchors(index => index * 30f);
+
+        float? actual = Solve(
+            solver,
+            ClockHandKind.Second,
+            CreateTime(20, 9, 2, 100),
+            anchors,
+            motion: motion);
+
+        Assert.Equal(expectedAngle, actual!.Value, 3);
+    }
+
     private static float? Solve(
         MagneticNumeralSolver solver,
         ClockHandKind hand,
         ClockTimeSnapshot time,
         PointF[] anchors,
-        ClockNumeralVisibility[]? visibility = null)
+        ClockNumeralVisibility[]? visibility = null,
+        ClockHandMotion motion = ClockHandMotion.Sweep)
         => solver.Solve(
             hand,
             PointF.Empty,
             time,
+            motion,
+            0.5f,
             index => (visibility ?? VisibleNumerals())[index],
             index => anchors[index]);
 

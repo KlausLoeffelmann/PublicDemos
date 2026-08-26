@@ -104,6 +104,8 @@ internal sealed class HandRotationSolver
                 request.Hand,
                 request.Pivot,
                 request.Time,
+                request.Motion,
+                request.GlideDurationSeconds,
                 request.NumeralVisibilityOf,
                 index => anchorOf(ClockElementId.HourMarker(index)));
 
@@ -144,7 +146,7 @@ internal sealed class HandRotationSolver
         }
 
         bool smoothFollow = targetMode == ClockHandTargetMode.FreeFloating
-            && request.Motion != ClockHandMotion.Crawling;
+            && request.Motion != ClockHandMotion.Sweep;
 
         float displayed = _pointing.Solve(
             request.Hand,

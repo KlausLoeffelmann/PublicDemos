@@ -10,16 +10,22 @@ internal readonly record struct MagneticNumeralPosition(int NumeralIndex, float 
 {
     private const float DegreesPerNumeral = 30f;
 
-    public static MagneticNumeralPosition Resolve(ClockHandKind hand, ClockTimeSnapshot time)
+    public static MagneticNumeralPosition Resolve(
+        ClockHandKind hand,
+        ClockTimeSnapshot time,
+        ClockHandMotion motion = ClockHandMotion.Sweep,
+        float glideDurationSeconds = 0.5f)
     {
-        DateTime now = time.Now;
-        float fractionalSecond = now.Second + (now.Millisecond / 1000f);
-        float fractionalMinute = now.Minute + (fractionalSecond / 60f);
+        float unitPosition = HandPointingSolver.SelectUnitPosition(
+            time,
+            hand,
+            motion,
+            glideDurationSeconds);
         float numeralPosition = hand switch
         {
-            ClockHandKind.Hour => (now.Hour % 12) + (fractionalMinute / 60f),
-            ClockHandKind.Minute => fractionalMinute / 5f,
-            ClockHandKind.Second => fractionalSecond / 5f,
+            ClockHandKind.Hour => unitPosition,
+            ClockHandKind.Minute => unitPosition / 5f,
+            ClockHandKind.Second => unitPosition / 5f,
             _ => throw new ArgumentOutOfRangeException(nameof(hand), hand, "Only hour, minute, and second hands can target magnetic numerals."),
         };
 

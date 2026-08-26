@@ -47,6 +47,11 @@ partial class FormMain
         _miRecordFramerate = new ToolStripMenuItem();
         _miMagnetic = new ToolStripMenuItem();
         _miVSync = new ToolStripMenuItem();
+        _handMovementMenu = new ToolStripMenuItem();
+        _miMotionCrawl = new ToolStripMenuItem();
+        _miMotionGlide = new ToolStripMenuItem();
+        _miMotionFastTick = new ToolStripMenuItem();
+        _miMotionTick = new ToolStripMenuItem();
         _themeInfoMenu = new ToolStripMenuItem();
         _miInfoNever = new ToolStripMenuItem();
         _miInfoFixed = new ToolStripMenuItem();
@@ -234,7 +239,7 @@ partial class FormMain
         // 
         // _viewMenu
         // 
-        _viewMenu.DropDownItems.AddRange(new ToolStripItem[] { _miProperties, _miKiosk, toolStripSeparator1, _miOledView, _miRecordFramerate, _miVSync, _miMagnetic, _themeInfoMenu });
+        _viewMenu.DropDownItems.AddRange(new ToolStripItem[] { _miProperties, _miKiosk, toolStripSeparator1, _miOledView, _miRecordFramerate, _miVSync, _miMagnetic, _handMovementMenu, _themeInfoMenu });
         _viewMenu.Name = "_viewMenu";
         _viewMenu.Size = new Size(85, 36);
         _viewMenu.Text = "&View";
@@ -287,6 +292,45 @@ partial class FormMain
         _miVSync.Size = new Size(352, 44);
         _miVSync.Text = "&VSync";
         _miVSync.Click += OnVSyncClick;
+        //
+        // _handMovementMenu
+        //
+        _handMovementMenu.DropDownItems.AddRange(new ToolStripItem[] { _miMotionCrawl, _miMotionGlide, _miMotionFastTick, _miMotionTick });
+        _handMovementMenu.Name = "_handMovementMenu";
+        _handMovementMenu.Size = new Size(352, 44);
+        _handMovementMenu.Text = "&Hand movement";
+        //
+        // _miMotionCrawl
+        //
+        _miMotionCrawl.Name = "_miMotionCrawl";
+        _miMotionCrawl.Size = new Size(352, 44);
+        _miMotionCrawl.Tag = "Crawling";
+        _miMotionCrawl.Text = "&Crawl (move and pause)";
+        _miMotionCrawl.Click += OnHandMovementClick;
+        //
+        // _miMotionGlide
+        //
+        _miMotionGlide.Name = "_miMotionGlide";
+        _miMotionGlide.Size = new Size(352, 44);
+        _miMotionGlide.Tag = "Sweep";
+        _miMotionGlide.Text = "&Glide continuously";
+        _miMotionGlide.Click += OnHandMovementClick;
+        //
+        // _miMotionFastTick
+        //
+        _miMotionFastTick.Name = "_miMotionFastTick";
+        _miMotionFastTick.Size = new Size(352, 44);
+        _miMotionFastTick.Tag = "FastTick";
+        _miMotionFastTick.Text = "&Fast tick";
+        _miMotionFastTick.Click += OnHandMovementClick;
+        //
+        // _miMotionTick
+        //
+        _miMotionTick.Name = "_miMotionTick";
+        _miMotionTick.Size = new Size(352, 44);
+        _miMotionTick.Tag = "Tick";
+        _miMotionTick.Text = "&Tick";
+        _miMotionTick.Click += OnHandMovementClick;
         // 
         // _themeInfoMenu
         // 
@@ -618,6 +662,11 @@ partial class FormMain
     private ToolStripMenuItem _miRecordFramerate;
     private ToolStripMenuItem _miMagnetic;
     private ToolStripMenuItem _miVSync;
+    private ToolStripMenuItem _handMovementMenu;
+    private ToolStripMenuItem _miMotionCrawl;
+    private ToolStripMenuItem _miMotionGlide;
+    private ToolStripMenuItem _miMotionFastTick;
+    private ToolStripMenuItem _miMotionTick;
     private ToolStripMenuItem _themeInfoMenu;
     private ToolStripMenuItem _miInfoNever;
     private ToolStripMenuItem _miInfoFixed;

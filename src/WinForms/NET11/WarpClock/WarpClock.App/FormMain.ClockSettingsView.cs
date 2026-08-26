@@ -70,8 +70,8 @@ public partial class FormMain
         }
 
         [Category("Animation")]
-        [DisplayName("Glide duration")]
-        [Description("Ease-in-out glide duration, in seconds.")]
+        [DisplayName("Crawl duration")]
+        [Description("Ease-in-out crawl duration before the hand rests on its next step, in seconds.")]
         public float GlideDurationSeconds
         {
             get => clock.GlideDurationSeconds;

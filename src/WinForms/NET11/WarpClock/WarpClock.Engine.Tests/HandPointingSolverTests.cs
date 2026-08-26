@@ -7,10 +7,10 @@ namespace WarpClock.Engine.Tests;
 public sealed class HandPointingSolverTests
 {
     [Theory]
-    [InlineData(ClockHandMotion.Crawling, 12.6f)]
+    [InlineData(ClockHandMotion.Crawling, 6.192f)]
     [InlineData(ClockHandMotion.Tick, 12f)]
     [InlineData(ClockHandMotion.FastTick, 12f)]
-    [InlineData(ClockHandMotion.Sweep, 6.192f)]
+    [InlineData(ClockHandMotion.Sweep, 12.6f)]
     public void RadialTargetAngle_HonorsAllMotions(ClockHandMotion motion, float expectedDegrees)
     {
         ClockTimeSnapshot time = CreateTimeSnapshot(new DateTime(2024, 01, 01, 12, 00, 02, 100));
@@ -18,6 +18,37 @@ public sealed class HandPointingSolverTests
         float angle = HandPointingSolver.RadialTargetAngle(time, ClockHandKind.Second, motion, 0.5f);
 
         Assert.Equal(expectedDegrees, angle, 3);
+    }
+
+    [Theory]
+    [InlineData(ClockHandKind.Hour, ClockHandMotion.Tick, 244.5f)]
+    [InlineData(ClockHandKind.Hour, ClockHandMotion.Sweep, 244.75f)]
+    [InlineData(ClockHandKind.Minute, ClockHandMotion.Tick, 57f)]
+    [InlineData(ClockHandKind.Minute, ClockHandMotion.Sweep, 57.05f)]
+    public void HourAndMinuteHandsAdvanceInLowerUnitFractions(
+        ClockHandKind hand,
+        ClockHandMotion motion,
+        float expectedDegrees)
+    {
+        ClockTimeSnapshot time = CreateTimeSnapshot(new DateTime(2024, 01, 01, 20, 09, 30, 500));
+
+        float angle = HandPointingSolver.RadialTargetAngle(time, hand, motion);
+
+        Assert.Equal(expectedDegrees, angle, 2);
+    }
+
+    [Fact]
+    public void HourCrawlEasesAcrossTheBeginningOfEachMinute()
+    {
+        ClockTimeSnapshot time = CreateTimeSnapshot(new DateTime(2024, 01, 01, 20, 10, 0, 250));
+
+        float angle = HandPointingSolver.RadialTargetAngle(
+            time,
+            ClockHandKind.Hour,
+            ClockHandMotion.Crawling,
+            glideDurationSeconds: 0.5f);
+
+        Assert.InRange(angle, 244.73f, 244.78f);
     }
 
     [Theory]
@@ -118,7 +149,46 @@ public sealed class HandPointingSolverTests
 
         float actual = solver.Solve(request);
 
-        Assert.Equal(time.MinuteAngle, actual, 3);
+        Assert.Equal(
+            HandPointingSolver.RadialTargetAngle(
+                time,
+                ClockHandKind.Minute,
+                ClockHandMotion.Crawling),
+            actual,
+            3);
+    }
+
+    [Fact]
+    public void FreeFloatingContinuousGlideDoesNotAccumulateGraceLag()
+    {
+        HandRotationSolver solver = new();
+        PointF pivot = PointF.Empty;
+        HandRotationRequest request = new()
+        {
+            Hand = ClockHandKind.Second,
+            Pivot = pivot,
+            Time = CreateTimeSnapshot(new DateTime(2024, 01, 01, 12, 0, 2)),
+            RequestedTargetMode = ClockHandTargetMode.FreeFloating,
+            Motion = ClockHandMotion.Sweep,
+            ThemeSupportsFreeFloating = true,
+            HandsFollowFaceRotation = true,
+            MagneticNumeralsEnabled = false,
+            AnchorOf = id => ResolveRadialAnchor(id, pivot, 100f),
+            NumeralVisibilityOf = _ => ClockNumeralVisibility.Visible,
+            GraceSeconds = 5f,
+            GlideDurationSeconds = 0.5f,
+            DeltaSeconds = 1f,
+        };
+
+        solver.Solve(request);
+        request = request with
+        {
+            Time = CreateTimeSnapshot(new DateTime(2024, 01, 01, 12, 0, 3)),
+        };
+
+        float actual = solver.Solve(request);
+
+        Assert.Equal(18f, actual, 3);
     }
 
     private static ClockTimeSnapshot CreateTimeSnapshot(DateTime now)

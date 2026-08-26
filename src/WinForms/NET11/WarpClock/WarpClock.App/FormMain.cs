@@ -712,6 +712,45 @@ public partial class FormMain : Form
         _statusInfo.Text = $"Magnetic numerals: {(_clock.MagneticNumerals ? "On" : "Off")}";
     }
 
+    private void OnHandMovementClick(object? sender, EventArgs e)
+    {
+        if (sender is not ToolStripMenuItem { Tag: string motionName }
+            || !Enum.TryParse(motionName, out ClockHandMotion motion))
+        {
+            return;
+        }
+
+        _clock.HourMotion = motion;
+        _clock.MinuteMotion = motion;
+        _clock.SecondMotion = motion;
+        SynchronizeHandOptionsFromClock();
+        MarkClockSettingsCustomized();
+        _statusInfo.Text = $"Hand movement: {HandMovementDisplayName(motion)}";
+    }
+
+    private void RefreshHandMovementChecks()
+    {
+        ClockHandMotion? common = _clock.HourMotion == _clock.MinuteMotion
+            && _clock.MinuteMotion == _clock.SecondMotion
+                ? _clock.SecondMotion
+                : null;
+
+        _miMotionCrawl.Checked = common == ClockHandMotion.Crawling;
+        _miMotionGlide.Checked = common == ClockHandMotion.Sweep;
+        _miMotionFastTick.Checked = common == ClockHandMotion.FastTick;
+        _miMotionTick.Checked = common == ClockHandMotion.Tick;
+    }
+
+    private static string HandMovementDisplayName(ClockHandMotion motion)
+        => motion switch
+        {
+            ClockHandMotion.Crawling => "Crawl",
+            ClockHandMotion.Sweep => "Glide",
+            ClockHandMotion.FastTick => "Fast tick",
+            ClockHandMotion.Tick => "Tick",
+            _ => motion.ToString(),
+        };
+
     private void OnVSyncClick(object? sender, EventArgs e)
     {
         _clock.VSyncEnabled = !_clock.VSyncEnabled;

@@ -60,10 +60,16 @@ internal sealed class MagneticNumeralSolver
         ClockHandKind hand,
         PointF pivot,
         ClockTimeSnapshot time,
+        ClockHandMotion motion,
+        float glideDurationSeconds,
         Func<int, ClockNumeralVisibility?> visibilityOf,
         Func<int, PointF> anchorOf)
     {
-        MagneticNumeralPosition position = MagneticNumeralPosition.Resolve(hand, time);
+        MagneticNumeralPosition position = MagneticNumeralPosition.Resolve(
+            hand,
+            time,
+            motion,
+            glideDurationSeconds);
 
         if (!_hands.TryGetValue(hand, out HandState? state))
         {

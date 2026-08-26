@@ -146,18 +146,39 @@ public static class HandGeometry
 
     private static HandShape BuildAntique(float length, float tail, float halfWidth)
     {
-        var f = Frame(length, tail, halfWidth + 4f);
-        float w = halfWidth + 4f;
-        // Spade / fleur shape: a diamond belly tapering to a lance tip.
-        PointF[] spade =
+        float w = (halfWidth + 6f) * 1.65f;
+        var f = Frame(length, tail, w);
+        float shoulderY = f.PivotY - (f.PivotY - f.TipY) * 0.42f;
+        float neckY = f.PivotY - (f.PivotY - f.TipY) * 0.70f;
+        PointF[] body =
         [
-            new(f.Cx, f.TailY),
-            new(f.Cx + w * 0.6f, f.PivotY),
-            new(f.Cx + w, f.PivotY - (f.PivotY - f.TipY) * 0.45f),
+            new(f.Cx - w * 0.28f, f.TailY),
+            new(f.Cx + w * 0.28f, f.TailY),
+            new(f.Cx + w * 0.55f, f.PivotY),
+            new(f.Cx + w, shoulderY),
+            new(f.Cx + w * 0.42f, neckY),
             new(f.Cx, f.TipY),
-            new(f.Cx - w, f.PivotY - (f.PivotY - f.TipY) * 0.45f),
-            new(f.Cx - w * 0.6f, f.PivotY),
+            new(f.Cx - w * 0.42f, neckY),
+            new(f.Cx - w, shoulderY),
+            new(f.Cx - w * 0.55f, f.PivotY),
         ];
-        return new HandShape { Size = f.Size, Pivot = f.Pivot, Polygons = [spade] };
+        PointF[] rightWing =
+        [
+            new(f.Cx + w * 0.18f, f.PivotY - 8f),
+            new(f.Cx + w * 1.15f, f.PivotY - 48f),
+            new(f.Cx + w * 0.62f, f.PivotY - 88f),
+            new(f.Cx + w * 0.25f, f.PivotY - 58f),
+        ];
+        PointF[] leftWing = rightWing
+            .Select(point => new PointF((2f * f.Cx) - point.X, point.Y))
+            .ToArray();
+        float ringY = f.PivotY - (f.PivotY - f.TipY) * 0.50f;
+        return new HandShape
+        {
+            Size = f.Size,
+            Pivot = f.Pivot,
+            Polygons = [body, rightWing, leftWing],
+            Rings = [(new PointF(f.Cx, ringY), w * 0.34f, 3f)],
+        };
     }
 }

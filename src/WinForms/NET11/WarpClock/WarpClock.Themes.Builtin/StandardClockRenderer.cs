@@ -61,6 +61,11 @@ public sealed class StandardClockRenderer : IClockElementRenderer
 
         g.FillEllipse(_design.FaceColor, c.X - radius, c.Y - radius, radius * 2f, radius * 2f);
 
+        if (_design.Ornate)
+        {
+            DrawOrnateFace(g, c, radius, scale);
+        }
+
         if (_design.FaceBorderWidth > 0f)
         {
             float bw = _design.FaceBorderWidth * scale;
@@ -76,7 +81,7 @@ public sealed class StandardClockRenderer : IClockElementRenderer
         int index = ((ctx.Id.Index % 12) + 12) % 12;
         string text = labels[index];
 
-        float fontSize = ctx.ContentSize.Height * 0.6f;
+        float fontSize = ctx.ContentSize.Height * (_design.Ornate ? 0.72f : 0.6f);
         using var font = new Font(_design.FontFamily, fontSize, FontStyle.Bold, GraphicsUnit.Pixel);
         using var brush = new SolidBrush(_design.HourMarkerColor);
         using var format = new StringFormat
@@ -85,7 +90,14 @@ public sealed class StandardClockRenderer : IClockElementRenderer
             LineAlignment = StringAlignment.Center,
         };
 
-        g.DrawString(text, font, brush, new RectangleF(0, 0, ctx.ContentSize.Width, ctx.ContentSize.Height), format);
+        RectangleF bounds = new(0, 0, ctx.ContentSize.Width, ctx.ContentSize.Height);
+        if (_design.Ornate)
+        {
+            using var shadow = new SolidBrush(Color.FromArgb(90, _design.OrnamentColor));
+            g.DrawString(text, font, shadow, new RectangleF(2f, 3f, bounds.Width, bounds.Height), format);
+        }
+
+        g.DrawString(text, font, brush, bounds, format);
     }
 
     private void DrawMinuteTick(ID2DGraphics g, IClockRenderContext ctx)
@@ -129,7 +141,27 @@ public sealed class StandardClockRenderer : IClockElementRenderer
                 scaled[i] = new PointF(polygon[i].X * scale, polygon[i].Y * scale);
             }
 
+            if (_design.Ornate)
+            {
+                PointF[] shadow = scaled
+                    .Select(point => new PointF(point.X + (3f * scale), point.Y + (4f * scale)))
+                    .ToArray();
+                using var shadowBrush = new SolidBrush(Color.FromArgb(95, 20, 14, 10));
+                g.FillPolygon(shadowBrush, shadow);
+            }
+
             g.FillPolygon(brush, scaled);
+
+            if (_design.Ornate)
+            {
+                using var outline = new Pen(_design.OrnamentColor, 1.8f * scale);
+                for (int i = 0; i < scaled.Length; i++)
+                {
+                    PointF from = scaled[i];
+                    PointF to = scaled[(i + 1) % scaled.Length];
+                    g.DrawLine(outline, from.X, from.Y, to.X, to.Y);
+                }
+            }
         }
 
         foreach ((PointF center, float r) in shape.Discs)
@@ -143,6 +175,90 @@ public sealed class StandardClockRenderer : IClockElementRenderer
             float rr = r * scale;
             using var pen = new Pen(color, stroke * scale);
             g.DrawEllipse(pen, new RectangleF(center.X * scale - rr, center.Y * scale - rr, rr * 2f, rr * 2f));
+        }
+    }
+
+    private void DrawOrnateFace(ID2DGraphics g, PointF center, float radius, float scale)
+    {
+        float bandOuter = radius - (32f * scale);
+        float bandInner = radius - (82f * scale);
+        using var ornamentPen = new Pen(_design.OrnamentColor, 8f * scale);
+        using var darkPen = new Pen(_design.FaceBorderColor, 3f * scale);
+        g.DrawEllipse(ornamentPen, new RectangleF(
+            center.X - bandOuter,
+            center.Y - bandOuter,
+            bandOuter * 2f,
+            bandOuter * 2f));
+        g.DrawEllipse(darkPen, new RectangleF(
+            center.X - bandInner,
+            center.Y - bandInner,
+            bandInner * 2f,
+            bandInner * 2f));
+
+        for (int index = 0; index < 12; index++)
+        {
+            float angle = index * 30f;
+            PointF root = PointAt(center, bandInner - (10f * scale), angle);
+            PointF left = PointAt(root, 28f * scale, angle - 68f);
+            PointF right = PointAt(root, 28f * scale, angle + 68f);
+            PointF tip = PointAt(root, 42f * scale, angle + 180f);
+            using var flourish = new Pen(_design.OrnamentColor, 3f * scale);
+            g.DrawLine(flourish, root.X, root.Y, left.X, left.Y);
+            g.DrawLine(flourish, root.X, root.Y, right.X, right.Y);
+            g.DrawLine(flourish, root.X, root.Y, tip.X, tip.Y);
+            float berry = 5f * scale;
+            g.FillEllipse(_design.OrnamentColor, left.X - berry, left.Y - berry, berry * 2f, berry * 2f);
+            g.FillEllipse(_design.OrnamentColor, right.X - berry, right.Y - berry, berry * 2f, berry * 2f);
+        }
+
+        DrawCenterScrollwork(g, center, scale);
+        if (_design.AgedSurface)
+        {
+            DrawAgedSurface(g, center, radius, scale);
+        }
+    }
+
+    private void DrawCenterScrollwork(ID2DGraphics g, PointF center, float scale)
+    {
+        using var pen = new Pen(Color.FromArgb(125, _design.FaceBorderColor), 3f * scale);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            for (int row = 0; row < 4; row++)
+            {
+                float y = center.Y + ((row - 1.5f) * 54f * scale);
+                float x = center.X + (side * (55f + (row * 18f)) * scale);
+                float r = (20f + (row * 5f)) * scale;
+                g.DrawEllipse(pen, new RectangleF(x - r, y - r, r * 2f, r * 2f));
+                g.DrawLine(pen, center.X, y, x, y - (18f * scale));
+            }
+        }
+    }
+
+    private static void DrawAgedSurface(ID2DGraphics g, PointF center, float radius, float scale)
+    {
+        for (int index = 0; index < 34; index++)
+        {
+            float angle = (index * 137.50777f) % 360f;
+            float distance = radius * (0.12f + (((index * 47) % 73) / 100f));
+            PointF spot = PointAt(center, distance, angle);
+            float spotRadius = (2f + ((index * 11) % 13)) * scale;
+            int alpha = 12 + ((index * 17) % 25);
+            Color stain = index % 3 == 0
+                ? Color.FromArgb(alpha, 116, 54, 35)
+                : Color.FromArgb(alpha, 72, 53, 35);
+            g.FillEllipse(
+                stain,
+                spot.X - spotRadius,
+                spot.Y - (spotRadius * 0.65f),
+                spotRadius * 2f,
+                spotRadius * 1.3f);
+        }
+
+        for (int ring = 0; ring < 5; ring++)
+        {
+            float r = radius - ((94f + (ring * 13f)) * scale);
+            using var wear = new Pen(Color.FromArgb(22 - (ring * 3), 105, 66, 39), (2f + ring) * scale);
+            g.DrawEllipse(wear, new RectangleF(center.X - r, center.Y - r, r * 2f, r * 2f));
         }
     }
 

@@ -30,7 +30,7 @@ public sealed class HandPointingSolver
     /// <param name="hand">The hand to aim.</param>
     /// <param name="motion">The motion style for this hand.</param>
     /// <param name="glideDurationSeconds">
-    ///  The ease-in-out glide duration (wall-clock seconds) used by <see cref="ClockHandMotion.Sweep"/>.
+    ///  The ease-in-out crawl duration (wall-clock seconds) used by <see cref="ClockHandMotion.Crawling"/>.
     /// </param>
     public static float RadialTargetAngle(
         ClockTimeSnapshot time,
@@ -60,14 +60,21 @@ public sealed class HandPointingSolver
             return FractionalSecond(time) % 1f;
         }
 
-        (float continuousUnit, _, float secondsPerUnit) = GetContinuousUnitMetrics(time, hand);
+        (float continuousUnit, _, float secondsPerStep) = GetContinuousUnitMetrics(time, hand);
+        float stepsPerUnit = hand switch
+        {
+            ClockHandKind.Hour => 60f,
+            ClockHandKind.Minute => 60f,
+            _ => 1f,
+        };
+        float stepPosition = continuousUnit * stepsPerUnit;
 
         return motion switch
         {
-            ClockHandMotion.Crawling => continuousUnit,
-            ClockHandMotion.Tick => MathF.Floor(continuousUnit),
-            ClockHandMotion.FastTick => MathF.Floor(continuousUnit * 4f) / 4f,
-            ClockHandMotion.Sweep => GlideUnit(continuousUnit, secondsPerUnit, glideDurationSeconds),
+            ClockHandMotion.Crawling => CrawlUnit(stepPosition, secondsPerStep, glideDurationSeconds) / stepsPerUnit,
+            ClockHandMotion.Tick => MathF.Floor(stepPosition) / stepsPerUnit,
+            ClockHandMotion.FastTick => MathF.Floor(stepPosition * 4f) / (stepsPerUnit * 4f),
+            ClockHandMotion.Sweep => continuousUnit,
             _ => continuousUnit,
         };
     }
@@ -77,8 +84,8 @@ public sealed class HandPointingSolver
         ClockHandKind hand)
         => hand switch
         {
-            ClockHandKind.Hour => (FractionalHour(time), 30f, 3600f),
-            ClockHandKind.Minute => (FractionalMinute(time), 6f, 60f),
+            ClockHandKind.Hour => (FractionalHour(time), 30f, 60f),
+            ClockHandKind.Minute => (FractionalMinute(time), 6f, 1f),
             _ => (FractionalSecond(time), 6f, 1f),
         };
 
@@ -86,7 +93,7 @@ public sealed class HandPointingSolver
     ///  Eases the hand from the previous mark to the next over the first
     ///  <paramref name="glideDurationSeconds"/> of each unit, then holds on the mark.
     /// </summary>
-    private static float GlideUnit(float continuousUnit, float secondsPerUnit, float glideDurationSeconds)
+    private static float CrawlUnit(float continuousUnit, float secondsPerUnit, float glideDurationSeconds)
     {
         float whole = MathF.Floor(continuousUnit);
         float frac = continuousUnit - whole;
@@ -152,8 +159,8 @@ public sealed class HandPointingSolver
 
     /// <summary>
     ///  Applies grace catch-up: eases the hand's displayed angle toward
-    ///  <paramref name="targetAngle"/>. When <paramref name="smooth"/> is false (radial
-    ///  crawl), the hand tracks the target exactly.
+    ///  <paramref name="targetAngle"/>. When <paramref name="smooth"/> is false, the
+    ///  hand tracks a continuously moving target exactly.
     /// </summary>
     /// <param name="hand">The hand.</param>
     /// <param name="targetAngle">The desired target angle (degrees).</param>
@@ -215,7 +222,9 @@ public sealed class HandPointingSolver
     }
 
     private static float FractionalHour(ClockTimeSnapshot time)
-        => (time.Now.Hour % 12) + time.Now.Minute / 60f + time.Now.Second / 3600f;
+        => (time.Now.Hour % 12)
+            + time.Now.Minute / 60f
+            + (time.Now.Second + (time.Now.Millisecond / 1000f)) / 3600f;
 
     private static float FractionalMinute(ClockTimeSnapshot time)
         => time.Now.Minute + (time.Now.Second + time.Now.Millisecond / 1000f) / 60f;

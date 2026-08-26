@@ -21,22 +21,28 @@ public sealed class NerdThemeTests
     }
 
     [Fact]
-    public void NerdPublishesOnlyFaceDisplayHandAndArbour()
+    public void NerdPublishesOneBinaryHandAndFourIndependentSleds()
     {
         IReadOnlyList<ClockElementDescriptor> elements = new NerdTheme().CreateElements();
+        ClockElementDescriptor secondHand = Assert.Single(
+            elements,
+            element => element.Id == ClockElementId.SecondHand);
         ClockElementDescriptor[] slides = elements
             .Where(element => element.Id.Kind == ClockElementKind.Custom)
             .ToArray();
 
-        Assert.Equal(6, elements.Count);
+        Assert.Equal(7, elements.Count);
         Assert.Equal(4, slides.Length);
         Assert.DoesNotContain(elements, element => element.Id.Kind == ClockElementKind.HourMarker);
+        Assert.Equal(ClockHandKind.Second, secondHand.Hand);
+        Assert.Equal(NerdThemeGeometry.SecondHandContentSize, secondHand.ContentSize);
+        Assert.Equal(NerdThemeGeometry.SecondHandPivot, secondHand.Pivot);
         Assert.All(slides, slide =>
         {
             Assert.Equal(ClockHandKind.None, slide.Hand);
             Assert.True(slide.RedrawPerFrame);
-            Assert.Equal(NerdThemeGeometry.SecondHandContentSize, slide.ContentSize);
-            Assert.Equal(NerdThemeGeometry.SecondHandPivot, slide.Pivot);
+            Assert.Equal(NerdThemeGeometry.SledContentSize, slide.ContentSize);
+            Assert.Equal(NerdThemeGeometry.SledPivot, slide.Pivot);
         });
     }
 
@@ -71,13 +77,55 @@ public sealed class NerdThemeTests
     }
 
     [Fact]
-    public void NerdSlideMotionCanTickOrGlide()
+    public void NerdSledAlwaysGlidesWhileSecondHandUsesConfiguredMotion()
     {
-        float tick = AngleAfterHalfSecond(NerdSlideMotion.Tick);
-        float glide = AngleAfterHalfSecond(NerdSlideMotion.Glide);
+        NerdTheme theme = new() { SecondHandMotion = ClockHandMotion.Tick };
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+        animator.Initialize(context);
+        Advance(animator, context, TimeSpan.FromSeconds(0.5), TimeSpan.FromSeconds(0.5));
 
-        Assert.Equal(0f, tick, 3);
-        Assert.Equal(3f, glide, 3);
+        Assert.Equal(3f, context.GetParameters(ClockElementId.CustomElement(0)).ExtraRotationDegrees, 3);
+        Assert.Equal(ClockHandMotion.Tick, context.GetParameters(ClockElementId.SecondHand).HandMotion);
+    }
+
+    [Fact]
+    public void NerdCompanionSledUsesAnIndependentSpeed()
+    {
+        NerdTheme theme = new()
+        {
+            AddSlideEveryMin = 1,
+            SpeedUpAfterMin = 5,
+        };
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+        animator.Initialize(context);
+        Advance(animator, context, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+
+        float primaryBefore = context.GetParameters(ClockElementId.CustomElement(0)).ExtraRotationDegrees;
+        float companionBefore = context.GetParameters(ClockElementId.CustomElement(1)).ExtraRotationDegrees;
+        Advance(animator, context, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        float primaryDelta = AngularDelta(
+            primaryBefore,
+            context.GetParameters(ClockElementId.CustomElement(0)).ExtraRotationDegrees);
+        float companionDelta = AngularDelta(
+            companionBefore,
+            context.GetParameters(ClockElementId.CustomElement(1)).ExtraRotationDegrees);
+
+        Assert.NotEqual(primaryDelta, companionDelta, precision: 2);
+    }
+
+    [Fact]
+    public void NerdBackgroundAnimationAdvancesContinuously()
+    {
+        NerdTheme theme = new();
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+        animator.Initialize(context);
+
+        Advance(animator, context, TimeSpan.FromSeconds(2.5), TimeSpan.FromSeconds(0.5));
+
+        Assert.Equal(2.5f, context.GetParameters(ClockElementId.Face).Progress, 3);
     }
 
     [Fact]
@@ -92,7 +140,7 @@ public sealed class NerdThemeTests
             MaximumSlides = 9,
             MinimumFastMultiplier = 1f,
             MaximumFastMultiplier = 9f,
-            SlideMotion = NerdSlideMotion.Glide,
+            SecondHandMotion = ClockHandMotion.Sweep,
         };
 
         NerdTheme night = Assert.IsType<NerdTheme>(theme.ResolveVariant(ClockThemeVariantKind.Night));
@@ -104,7 +152,7 @@ public sealed class NerdThemeTests
         Assert.Equal(4, night.MaximumSlides);
         Assert.Equal(1.5f, night.MinimumFastMultiplier);
         Assert.Equal(5f, night.MaximumFastMultiplier);
-        Assert.Equal(NerdSlideMotion.Glide, night.SlideMotion);
+        Assert.Equal(ClockHandMotion.Sweep, night.SecondHandMotion);
     }
 
     [Theory]
@@ -177,19 +225,15 @@ public sealed class NerdThemeTests
             .Select(slot => NerdBinaryLayout.IsBitOn(value, slot, bitCount, lsbFirst))
             .ToArray();
 
+    private static float AngularDelta(float before, float after)
+    {
+        float delta = (after - before) % 360f;
+        return delta < 0f ? delta + 360f : delta;
+    }
+
     private static int ActiveSlides(TestTickContext context)
         => Enumerable.Range(0, 4)
             .Count(index => context.GetParameters(ClockElementId.CustomElement(index)).Visible);
-
-    private static float AngleAfterHalfSecond(NerdSlideMotion motion)
-    {
-        NerdTheme theme = new() { SlideMotion = motion };
-        IThemeAnimator animator = theme.CreateAnimator();
-        TestTickContext context = new(theme.CreateElements());
-        animator.Initialize(context);
-        Advance(animator, context, TimeSpan.FromSeconds(0.5), TimeSpan.FromSeconds(0.5));
-        return context.GetParameters(ClockElementId.CustomElement(0)).ExtraRotationDegrees;
-    }
 
     private static void Advance(
         IThemeAnimator animator,

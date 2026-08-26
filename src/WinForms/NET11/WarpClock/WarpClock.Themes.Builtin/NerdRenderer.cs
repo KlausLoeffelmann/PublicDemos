@@ -14,11 +14,13 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
         switch (ctx.Id.Kind)
         {
             case ClockElementKind.Face:
-                float radius = 490f * ctx.Scale;
-                g.FillEllipse(palette.Face, ctx.Pivot.X - radius, ctx.Pivot.Y - radius, radius * 2f, radius * 2f);
+                DrawAnimatedFace(g, ctx);
+                break;
+            case ClockElementKind.SecondHand:
+                DrawDisplayHand(g, ctx);
                 break;
             case ClockElementKind.Custom:
-                DrawDisplayHand(g, ctx);
+                DrawSecondsSled(g, ctx);
                 break;
             case ClockElementKind.Arbour:
                 float r = ctx.ContentSize.Width / 2f;
@@ -27,28 +29,59 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
         }
     }
 
+    private void DrawAnimatedFace(ID2DGraphics g, IClockRenderContext ctx)
+    {
+        const float holdSeconds = 7f;
+        const float transitionSeconds = 7f;
+        const float segmentSeconds = holdSeconds + transitionSeconds;
+        Color[] colors = [palette.FaceBlue, palette.FaceRed, palette.FaceGreen];
+        float progress = ctx.Parameters.Progress % (segmentSeconds * colors.Length);
+        int index = (int)(progress / segmentSeconds) % colors.Length;
+        float local = progress - (index * segmentSeconds);
+        float transition = Math.Clamp((local - holdSeconds) / transitionSeconds, 0f, 1f);
+        Color current = colors[index];
+        Color next = colors[(index + 1) % colors.Length];
+        float radius = 490f * ctx.Scale;
+
+        g.FillEllipse(current, ctx.Pivot.X - radius, ctx.Pivot.Y - radius, radius * 2f, radius * 2f);
+
+        const int rings = 28;
+        for (int ring = 0; ring < rings; ring++)
+        {
+            float inward = ring / (float)(rings - 1);
+            float wave = Math.Clamp((transition - (inward * 0.72f)) / 0.28f, 0f, 1f);
+            float eased = wave * wave * (3f - (2f * wave));
+            float ringRadius = radius * (1f - (inward * 0.92f));
+            Color color = Blend(current, next, eased);
+            g.FillEllipse(
+                color,
+                ctx.Pivot.X - ringRadius,
+                ctx.Pivot.Y - ringRadius,
+                ringRadius * 2f,
+                ringRadius * 2f);
+        }
+    }
+
     private void DrawDisplayHand(ID2DGraphics g, IClockRenderContext ctx)
     {
-        NerdThemePalette displayPalette = ApplyOpacity(palette, ctx.Parameters.Opacity);
         float cx = ctx.ContentSize.Width / 2f;
         float pivotY = ctx.Pivot.Y;
         float scale = ctx.Scale;
         float bladeTop = pivotY - (NerdThemeGeometry.BladeTopRadius * scale);
         float bladeHalf = NerdThemeGeometry.BladeHalfWidth * scale;
 
-        using (var blade = new SolidBrush(displayPalette.Blade))
+        using (var blade = new SolidBrush(palette.Blade))
         {
             g.FillPolygon(blade,
             [
-                new PointF(cx - (bladeHalf * 0.7f), bladeTop),
-                new PointF(cx + (bladeHalf * 0.7f), bladeTop),
+                new PointF(cx, bladeTop),
+                new PointF(cx + (bladeHalf * 0.35f), bladeTop + (34f * scale)),
                 new PointF(cx + bladeHalf, pivotY),
                 new PointF(cx + (bladeHalf * 0.55f), pivotY + (NerdThemeGeometry.BladeTailDepth * scale)),
                 new PointF(cx - (bladeHalf * 0.55f), pivotY + (NerdThemeGeometry.BladeTailDepth * scale)),
                 new PointF(cx - bladeHalf, pivotY),
+                new PointF(cx - (bladeHalf * 0.35f), bladeTop + (34f * scale)),
             ]);
-
-            g.FillPolygon(blade, CreateSledPolygon(cx, pivotY, scale));
         }
 
         DrawRadialBank(
@@ -59,8 +92,8 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
             ctx.Time.Now.Hour,
             NerdThemeGeometry.HourBitCount,
             NerdThemeGeometry.HourBankInnerRadius,
-            displayPalette.HourOn,
-            displayPalette.HourOff);
+            palette.HourOn,
+            palette.HourOff);
         DrawRadialBank(
             g,
             cx,
@@ -69,9 +102,19 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
             ctx.Time.Now.Minute,
             NerdThemeGeometry.MinuteBitCount,
             NerdThemeGeometry.MinuteBankInnerRadius,
-            displayPalette.MinuteOn,
-            displayPalette.MinuteOff);
-        DrawSecondsSled(g, cx, pivotY, scale, ctx.Time.Now.Second, displayPalette);
+            palette.MinuteOn,
+            palette.MinuteOff);
+    }
+
+    private void DrawSecondsSled(ID2DGraphics g, IClockRenderContext ctx)
+    {
+        NerdThemePalette displayPalette = ApplyOpacity(palette, ctx.Parameters.Opacity);
+        float cx = ctx.ContentSize.Width / 2f;
+        float pivotY = ctx.Pivot.Y;
+        float scale = ctx.Scale;
+        using var blade = new SolidBrush(displayPalette.Blade);
+        g.FillPolygon(blade, CreateSledPolygon(cx, pivotY, scale));
+        DrawSecondsLeds(g, cx, pivotY, scale, ctx.Time.Now.Second, displayPalette);
     }
 
     private static PointF[] CreateSledPolygon(float cx, float pivotY, float scale)
@@ -117,7 +160,7 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
         }
     }
 
-    private void DrawSecondsSled(
+    private void DrawSecondsLeds(
         ID2DGraphics g,
         float cx,
         float pivotY,
@@ -144,6 +187,17 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
                 ledRadius * 2f,
                 ledRadius * 2f);
         }
+    }
+
+    private static Color Blend(Color from, Color to, float amount)
+    {
+        amount = Math.Clamp(amount, 0f, 1f);
+        int Mix(int left, int right) => (int)MathF.Round(left + ((right - left) * amount));
+        return Color.FromArgb(
+            Mix(from.A, to.A),
+            Mix(from.R, to.R),
+            Mix(from.G, to.G),
+            Mix(from.B, to.B));
     }
 
     private static PointF PointOnHandArc(float cx, float pivotY, float radius, float angleDegrees)

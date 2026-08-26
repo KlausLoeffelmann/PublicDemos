@@ -92,11 +92,12 @@ public sealed class StandardClockTheme : IClockTheme
 
         foreach (int hour in HourIndices())
         {
+            float markerSize = _design.Ornate ? 190f : 150f;
             elements.Add(new ClockElementDescriptor
             {
                 Id = ClockElementId.HourMarker(hour),
-                ContentSize = new SizeF(150f, 150f),
-                Pivot = new PointF(75f, 75f),
+                ContentSize = new SizeF(markerSize, markerSize),
+                Pivot = new PointF(markerSize / 2f, markerSize / 2f),
                 ZOrder = 20,
             });
         }

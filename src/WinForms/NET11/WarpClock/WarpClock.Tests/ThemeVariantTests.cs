@@ -74,7 +74,7 @@ public sealed class ThemeVariantTests
             new("Railway Classic", BuiltInThemes.RailwayClassic, 77, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Modern Minimal", BuiltInThemes.ModernMinimal, 69, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Antique Worn", BuiltInThemes.AntiqueWorn, 77, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
-            new("NERD", BuiltInThemes.Nerd, 6, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
+            new("NERD", BuiltInThemes.Nerd, 7, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Scatter (Magnetic)", BuiltInThemes.Scatter, 20, new ThemeCapabilities
             {
                 FreeFloating = true,
@@ -106,6 +106,25 @@ public sealed class ThemeVariantTests
                 Assert.Equal(expectation.ElementCount, sibling.CreateElements().Count);
                 Assert.Equal(expectation.Capabilities, sibling.Capabilities);
             }
+        }
+    }
+
+    [Fact]
+    public void AntiqueThemeUsesOversizedNumeralsAndMightyHandsInBothVariants()
+    {
+        foreach (ClockThemeVariantKind variant in ClockThemeVariants.DayNight)
+        {
+            IClockTheme antique = BuiltInThemes.AntiqueWorn(variant);
+            IReadOnlyList<ClockElementDescriptor> elements = antique.CreateElements();
+            ClockElementDescriptor marker = Assert.Single(
+                elements,
+                element => element.Id == ClockElementId.HourMarker(0));
+            ClockElementDescriptor hourHand = Assert.Single(
+                elements,
+                element => element.Id == ClockElementId.HourHand);
+
+            Assert.Equal(new SizeF(190f, 190f), marker.ContentSize);
+            Assert.True(hourHand.ContentSize.Width > 70f);
         }
     }
 

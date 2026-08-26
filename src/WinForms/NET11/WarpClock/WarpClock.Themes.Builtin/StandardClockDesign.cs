@@ -88,4 +88,13 @@ public sealed record StandardClockDesign
 
     /// <summary>The numeral font family.</summary>
     public string FontFamily { get; init; } = "Segoe UI";
+
+    /// <summary>Use layered period ornamentation for face, numerals, and hands.</summary>
+    public bool Ornate { get; init; }
+
+    /// <summary>Add deterministic patina and wear to the day face.</summary>
+    public bool AgedSurface { get; init; }
+
+    /// <summary>Accent color for ornamental bands and flourishes.</summary>
+    public Color OrnamentColor { get; init; } = Color.FromArgb(142, 55, 49);
 }
