@@ -15,6 +15,7 @@ internal sealed class NerdAnimator : IThemeAnimator
         public float NormalSpeed;
         public float FastSpeed;
         public float BeamProgress;
+        public float CurrentTrack;
     }
 
     private readonly ClockHandMotion _secondHandMotion;
@@ -25,8 +26,10 @@ internal sealed class NerdAnimator : IThemeAnimator
     private readonly int _maximumSlides;
     private readonly float _minimumFastMultiplier;
     private readonly float _maximumFastMultiplier;
+    private readonly bool _cheatMode;
     private readonly Random _random = new(0x4E455244);
     private readonly SlideState[] _slides = Enumerable.Range(0, 4).Select(_ => new SlideState()).ToArray();
+    private readonly NerdSlideTrackPlanner _trackPlanner = new();
     private float _spawnElapsed;
     private float _soloElapsed;
     private double _speedElapsed;
@@ -43,7 +46,8 @@ internal sealed class NerdAnimator : IThemeAnimator
         int soloRecoveryMin,
         int maximumSlides,
         float minimumFastMultiplier,
-        float maximumFastMultiplier)
+        float maximumFastMultiplier,
+        bool cheatMode)
     {
         _secondHandMotion = secondHandMotion;
         _normalSeconds = Math.Max(1, speedUpAfterMin) * 60f;
@@ -53,6 +57,7 @@ internal sealed class NerdAnimator : IThemeAnimator
         _maximumSlides = Math.Clamp(maximumSlides, 1, 4);
         _minimumFastMultiplier = Math.Clamp(minimumFastMultiplier, 1.5f, 5f);
         _maximumFastMultiplier = Math.Clamp(maximumFastMultiplier, _minimumFastMultiplier, 5f);
+        _cheatMode = cheatMode;
     }
 
     public void Initialize(IClockTickContext context)
@@ -63,6 +68,7 @@ internal sealed class NerdAnimator : IThemeAnimator
         primary.NormalSpeed = 1f;
         primary.FastSpeed = NextDistinctFastSpeed(primary);
         primary.BeamProgress = 1f;
+        primary.CurrentTrack = 0f;
         Apply(context);
     }
 
@@ -75,9 +81,27 @@ internal sealed class NerdAnimator : IThemeAnimator
 
         foreach (SlideState slide in _slides.Where(slide => slide.Active))
         {
-            float speed = _fastPhase ? slide.FastSpeed : slide.NormalSpeed;
+            float speed = CurrentSpeed(slide);
             slide.Angle = ClockMathLikeNormalize(slide.Angle + (DegreesPerSecond * speed * dt));
             UpdateBeam(slide, dt);
+        }
+
+        NerdSlideSnapshot[] snapshots = CreateSnapshots();
+        int[] targetTracks = _trackPlanner.Plan(snapshots);
+        float maximumTrackDelta = dt / NerdThemeGeometry.SledTrackTransitionSeconds;
+        for (int index = 0; index < _slides.Length; index++)
+        {
+            SlideState slide = _slides[index];
+            if (!slide.Active)
+            {
+                slide.CurrentTrack = 0f;
+                continue;
+            }
+
+            slide.CurrentTrack = MoveTowards(
+                slide.CurrentTrack,
+                targetTracks[index],
+                maximumTrackDelta);
         }
 
         Apply(context);
@@ -146,10 +170,11 @@ internal sealed class NerdAnimator : IThemeAnimator
         }
 
         slide.Active = true;
-        slide.Angle = (float)_random.NextDouble() * 360f;
+        slide.Angle = NerdSlideTrackPlanner.FindSafeSpawnAngle(CreateSnapshots());
         slide.NormalSpeed = NextDistinctNormalSpeed(slide);
         slide.FastSpeed = NextDistinctFastSpeed(slide);
         slide.BeamProgress = 0.001f;
+        slide.CurrentTrack = 0f;
     }
 
     private void UpdateSpeed(float dt)
@@ -163,7 +188,7 @@ internal sealed class NerdAnimator : IThemeAnimator
         }
 
         _fastPhase = _speedElapsed >= _normalSeconds;
-        if (_fastPhase && !wasFast)
+        if (!_fastPhase && wasFast)
         {
             foreach (SlideState slide in _slides.Where(slide => slide.Active))
             {
@@ -191,7 +216,13 @@ internal sealed class NerdAnimator : IThemeAnimator
 
     private void Apply(IClockTickContext context)
     {
-        context.GetParameters(ClockElementId.SecondHand).HandMotion = _secondHandMotion;
+        NerdCheatSample cheat = NerdCheatSequence.Sample(context.Time.Now, _cheatMode);
+        ClockElementParameters secondHand = context.GetParameters(ClockElementId.SecondHand);
+        secondHand.HandMotion = _secondHandMotion;
+        secondHand.Tag = new NerdHandRenderState(
+            context.Time.SecondAngle,
+            cheat.HourOpacity,
+            cheat.MinuteOpacity);
         context.GetParameters(ClockElementId.Face).Progress = (float)_backgroundElapsed;
 
         for (int i = 0; i < _slides.Length; i++)
@@ -203,8 +234,39 @@ internal sealed class NerdAnimator : IThemeAnimator
 
             float beam = state.BeamProgress < 0f ? 1f + state.BeamProgress : state.BeamProgress;
             parameters.Opacity = Math.Clamp(beam, 0f, 1f);
-            parameters.Scale = 0.72f + (0.28f * Math.Clamp(beam, 0f, 1f));
+            parameters.Scale = 1f;
+            parameters.Tag = new NerdSlideRenderState(
+                state.Angle,
+                NerdThemeGeometry.GetSledTrackRadius(state.CurrentTrack),
+                0.72f + (0.28f * Math.Clamp(beam, 0f, 1f)),
+                NerdBinaryLayout.SecondAtAngle(state.Angle),
+                cheat.SledOpacity * Math.Clamp(beam, 0f, 1f));
         }
+    }
+
+    private NerdSlideSnapshot[] CreateSnapshots()
+        => _slides
+            .Select((slide, index) => new NerdSlideSnapshot(
+                index,
+                slide.Active,
+                slide.Angle,
+                PlanningSpeed(slide)))
+            .ToArray();
+
+    private float CurrentSpeed(SlideState slide)
+        => _fastPhase ? slide.FastSpeed : slide.NormalSpeed;
+
+    private float PlanningSpeed(SlideState slide)
+    {
+        if (_fastPhase)
+        {
+            return slide.FastSpeed;
+        }
+
+        double secondsUntilFastPhase = _normalSeconds - _speedElapsed;
+        return secondsUntilFastPhase <= NerdThemeGeometry.SledMaximumTrackTransitionSeconds
+            ? slide.FastSpeed
+            : slide.NormalSpeed;
     }
 
     private float NextDistinctNormalSpeed(SlideState target)
@@ -234,5 +296,16 @@ internal sealed class NerdAnimator : IThemeAnimator
     {
         degrees %= 360f;
         return degrees < 0f ? degrees + 360f : degrees;
+    }
+
+    private static float MoveTowards(float current, float target, float maximumDelta)
+    {
+        float delta = target - current;
+        if (MathF.Abs(delta) <= maximumDelta)
+        {
+            return target;
+        }
+
+        return current + (MathF.Sign(delta) * maximumDelta);
     }
 }

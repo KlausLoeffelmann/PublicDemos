@@ -145,7 +145,7 @@ public static class BuiltInThemes
             _ => throw ClockThemeVariants.CreateUnsupportedVariantException("Modern Minimal", ClockThemeVariants.DayNight, variant),
         };
 
-    private static StandardClockDesign CreateAntiqueWornDesign(ClockThemeVariantKind variant)
+    internal static StandardClockDesign CreateAntiqueWornDesign(ClockThemeVariantKind variant)
         => variant switch
         {
             ClockThemeVariantKind.Day => new StandardClockDesign
@@ -165,8 +165,16 @@ public static class BuiltInThemes
                 HourCulture = HourCulture.Roman,
                 HourMarkerStyle = HourMarkerStyle.All,
                 MinuteTickStyle = MinuteTickStyle.Prominent,
-                FontFamily = "Times New Roman",
+                FontFamily = "Bahnschrift Condensed",
+                FontStyle = FontStyle.Regular,
+                HourMarkerSize = 170f,
+                HourMarkerFontScale = 0.56f,
+                HourMarkerRadiusRatio = 0.68f,
+                MinuteTickRadiusRatio = 0.80f,
+                FaceRadius = 430f,
                 Ornate = true,
+                OrnateCase = true,
+                CaseOuterRadius = 492f,
                 AgedSurface = true,
                 OrnamentColor = Color.FromArgb(157, 62, 53),
             },
@@ -187,8 +195,16 @@ public static class BuiltInThemes
                 HourCulture = HourCulture.Roman,
                 HourMarkerStyle = HourMarkerStyle.All,
                 MinuteTickStyle = MinuteTickStyle.Prominent,
-                FontFamily = "Times New Roman",
+                FontFamily = "Bahnschrift Condensed",
+                FontStyle = FontStyle.Regular,
+                HourMarkerSize = 170f,
+                HourMarkerFontScale = 0.56f,
+                HourMarkerRadiusRatio = 0.68f,
+                MinuteTickRadiusRatio = 0.80f,
+                FaceRadius = 430f,
                 Ornate = true,
+                OrnateCase = true,
+                CaseOuterRadius = 492f,
                 AgedSurface = false,
                 OrnamentColor = Color.FromArgb(116, 74, 65),
             },

@@ -29,6 +29,9 @@ public sealed class StandardClockRenderer : IClockElementRenderer
 
         switch (context.Id.Kind)
         {
+            case ClockElementKind.Case:
+                DrawCase(graphics, context);
+                break;
             case ClockElementKind.Face:
                 DrawFace(graphics, context);
                 break;
@@ -56,7 +59,7 @@ public sealed class StandardClockRenderer : IClockElementRenderer
     private void DrawFace(ID2DGraphics g, IClockRenderContext ctx)
     {
         float scale = ctx.Scale;
-        float radius = 490f * scale;
+        float radius = _design.FaceRadius * scale;
         PointF c = ctx.Pivot;
 
         g.FillEllipse(_design.FaceColor, c.X - radius, c.Y - radius, radius * 2f, radius * 2f);
@@ -81,13 +84,13 @@ public sealed class StandardClockRenderer : IClockElementRenderer
         int index = ((ctx.Id.Index % 12) + 12) % 12;
         string text = labels[index];
 
-        float fontSize = ctx.ContentSize.Height * (_design.Ornate ? 0.72f : 0.6f);
-        using var font = new Font(_design.FontFamily, fontSize, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var font = CreateHourMarkerFont(g, text, ctx.ContentSize);
         using var brush = new SolidBrush(_design.HourMarkerColor);
         using var format = new StringFormat
         {
             Alignment = StringAlignment.Center,
             LineAlignment = StringAlignment.Center,
+            FormatFlags = StringFormatFlags.NoWrap,
         };
 
         RectangleF bounds = new(0, 0, ctx.ContentSize.Width, ctx.ContentSize.Height);
@@ -98,6 +101,36 @@ public sealed class StandardClockRenderer : IClockElementRenderer
         }
 
         g.DrawString(text, font, brush, bounds, format);
+    }
+
+    private Font CreateHourMarkerFont(ID2DGraphics g, string text, SizeF contentSize)
+    {
+        float fontSize = contentSize.Height * _design.HourMarkerFontScale;
+        var font = new Font(
+            _design.FontFamily,
+            fontSize,
+            _design.FontStyle,
+            GraphicsUnit.Pixel);
+        SizeF measured = g.MeasureString(text, font);
+        float widthScale = measured.Width > 0f
+            ? (contentSize.Width * 0.84f) / measured.Width
+            : 1f;
+        float heightScale = measured.Height > 0f
+            ? (contentSize.Height * 0.84f) / measured.Height
+            : 1f;
+        float fitScale = Math.Min(1f, Math.Min(widthScale, heightScale));
+
+        if (fitScale >= 0.999f)
+        {
+            return font;
+        }
+
+        font.Dispose();
+        return new Font(
+            _design.FontFamily,
+            MathF.Max(1f, fontSize * fitScale),
+            _design.FontStyle,
+            GraphicsUnit.Pixel);
     }
 
     private void DrawMinuteTick(ID2DGraphics g, IClockRenderContext ctx)
@@ -162,6 +195,7 @@ public sealed class StandardClockRenderer : IClockElementRenderer
                     g.DrawLine(outline, from.X, from.Y, to.X, to.Y);
                 }
             }
+
         }
 
         foreach ((PointF center, float r) in shape.Discs)
@@ -176,6 +210,132 @@ public sealed class StandardClockRenderer : IClockElementRenderer
             using var pen = new Pen(color, stroke * scale);
             g.DrawEllipse(pen, new RectangleF(center.X * scale - rr, center.Y * scale - rr, rr * 2f, rr * 2f));
         }
+    }
+
+    private void DrawCase(ID2DGraphics g, IClockRenderContext ctx)
+    {
+        float scale = ctx.Scale;
+        PointF center = ctx.Pivot;
+        float outerRadius = _design.CaseOuterRadius * scale;
+        float middleRadius = outerRadius - (13f * scale);
+        float innerRadius = outerRadius - (35f * scale);
+
+        g.FillEllipse(
+            _design.FaceBorderColor,
+            center.X - outerRadius,
+            center.Y - outerRadius,
+            outerRadius * 2f,
+            outerRadius * 2f);
+        g.FillEllipse(
+            _design.OrnamentColor,
+            center.X - middleRadius,
+            center.Y - middleRadius,
+            middleRadius * 2f,
+            middleRadius * 2f);
+        g.FillEllipse(
+            _design.FaceBorderColor,
+            center.X - innerRadius,
+            center.Y - innerRadius,
+            innerRadius * 2f,
+            innerRadius * 2f);
+
+        using var highlight = new Pen(Color.FromArgb(150, 230, 190, 125), 3f * scale);
+        using var shadow = new Pen(Color.FromArgb(150, 48, 30, 20), 4f * scale);
+        float highlightRadius = outerRadius - (7f * scale);
+        float shadowRadius = innerRadius + (8f * scale);
+        g.DrawEllipse(
+            highlight,
+            new RectangleF(
+                center.X - highlightRadius,
+                center.Y - highlightRadius,
+                highlightRadius * 2f,
+                highlightRadius * 2f));
+        g.DrawEllipse(
+            shadow,
+            new RectangleF(
+                center.X - shadowRadius,
+                center.Y - shadowRadius,
+                shadowRadius * 2f,
+                shadowRadius * 2f));
+
+        for (int index = 0; index < 12; index++)
+        {
+            DrawCaseFlourish(g, center, outerRadius, index * 30f, scale);
+        }
+
+        for (int index = 0; index < 4; index++)
+        {
+            DrawCaseCartouche(g, center, outerRadius, index * 90f, scale);
+        }
+    }
+
+    private void DrawCaseFlourish(
+        ID2DGraphics g,
+        PointF center,
+        float outerRadius,
+        float angle,
+        float scale)
+    {
+        PointF root = PointAt(center, outerRadius - (46f * scale), angle);
+        PointF left = PointAt(root, 29f * scale, angle - 62f);
+        PointF right = PointAt(root, 29f * scale, angle + 62f);
+        PointF leftCurl = PointAt(left, 17f * scale, angle - 120f);
+        PointF rightCurl = PointAt(right, 17f * scale, angle + 120f);
+
+        using var pen = new Pen(Color.FromArgb(220, _design.OrnamentColor), 3.2f * scale);
+        g.DrawLine(pen, root.X, root.Y, left.X, left.Y);
+        g.DrawLine(pen, root.X, root.Y, right.X, right.Y);
+        g.DrawLine(pen, left.X, left.Y, leftCurl.X, leftCurl.Y);
+        g.DrawLine(pen, right.X, right.Y, rightCurl.X, rightCurl.Y);
+
+        float curlRadius = 7f * scale;
+        g.DrawEllipse(
+            pen,
+            new RectangleF(
+                leftCurl.X - curlRadius,
+                leftCurl.Y - curlRadius,
+                curlRadius * 2f,
+                curlRadius * 2f));
+        g.DrawEllipse(
+            pen,
+            new RectangleF(
+                rightCurl.X - curlRadius,
+                rightCurl.Y - curlRadius,
+                curlRadius * 2f,
+                curlRadius * 2f));
+    }
+
+    private void DrawCaseCartouche(
+        ID2DGraphics g,
+        PointF center,
+        float outerRadius,
+        float angle,
+        float scale)
+    {
+        PointF crown = PointAt(center, outerRadius - (3f * scale), angle);
+        PointF shoulder = PointAt(center, outerRadius - (31f * scale), angle);
+        PointF left = PointAt(shoulder, 42f * scale, angle - 90f);
+        PointF inset = PointAt(center, outerRadius - (62f * scale), angle);
+        PointF right = PointAt(shoulder, 42f * scale, angle + 90f);
+
+        using var fill = new SolidBrush(Color.FromArgb(235, _design.OrnamentColor));
+        PointF[] points = [crown, left, inset, right];
+        g.FillPolygon(fill, points);
+        using var outline = new Pen(Color.FromArgb(190, 55, 34, 22), 3f * scale);
+        for (int index = 0; index < points.Length; index++)
+        {
+            PointF from = points[index];
+            PointF to = points[(index + 1) % points.Length];
+            g.DrawLine(outline, from.X, from.Y, to.X, to.Y);
+        }
+
+        float jewelRadius = 6f * scale;
+        g.FillEllipse(
+            Color.FromArgb(210, 218, 177, 102),
+            inset.X - jewelRadius,
+            inset.Y - jewelRadius,
+            jewelRadius * 2f,
+            jewelRadius * 2f);
     }
 
     private void DrawOrnateFace(ID2DGraphics g, PointF center, float radius, float scale)

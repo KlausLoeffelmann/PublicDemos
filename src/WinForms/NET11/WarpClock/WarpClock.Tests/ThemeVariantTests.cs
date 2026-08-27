@@ -73,7 +73,7 @@ public sealed class ThemeVariantTests
         [
             new("Railway Classic", BuiltInThemes.RailwayClassic, 77, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Modern Minimal", BuiltInThemes.ModernMinimal, 69, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
-            new("Antique Worn", BuiltInThemes.AntiqueWorn, 77, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
+            new("Antique Worn", BuiltInThemes.AntiqueWorn, 78, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("NERD", BuiltInThemes.Nerd, 7, ThemeCapabilities.Default, ClockThemeVariants.DayNight),
             new("Scatter (Magnetic)", BuiltInThemes.Scatter, 20, new ThemeCapabilities
             {
@@ -110,11 +110,12 @@ public sealed class ThemeVariantTests
     }
 
     [Fact]
-    public void AntiqueThemeUsesOversizedNumeralsAndMightyHandsInBothVariants()
+    public void AntiqueThemeUsesFittedRomanNumeralsAndDedicatedCaseInBothVariants()
     {
         foreach (ClockThemeVariantKind variant in ClockThemeVariants.DayNight)
         {
             IClockTheme antique = BuiltInThemes.AntiqueWorn(variant);
+            StandardClockDesign design = BuiltInThemes.CreateAntiqueWornDesign(variant);
             IReadOnlyList<ClockElementDescriptor> elements = antique.CreateElements();
             ClockElementDescriptor marker = Assert.Single(
                 elements,
@@ -122,9 +123,19 @@ public sealed class ThemeVariantTests
             ClockElementDescriptor hourHand = Assert.Single(
                 elements,
                 element => element.Id == ClockElementId.HourHand);
+            ClockElementDescriptor casing = Assert.Single(
+                elements,
+                element => element.Id.Kind == ClockElementKind.Case);
 
-            Assert.Equal(new SizeF(190f, 190f), marker.ContentSize);
+            Assert.Equal(new SizeF(170f, 170f), marker.ContentSize);
             Assert.True(hourHand.ContentSize.Width > 70f);
+            Assert.Equal(new SizeF(1000f, 1000f), casing.ContentSize);
+            Assert.Equal("Bahnschrift Condensed", design.FontFamily);
+            Assert.Equal(FontStyle.Regular, design.FontStyle);
+            Assert.Equal(0.56f, design.HourMarkerFontScale);
+            Assert.True(design.FaceRadius < design.CaseOuterRadius);
+            Assert.True(design.HourMarkerRadiusRatio < 0.78f);
+            Assert.True(design.MinuteTickRadiusRatio < 0.93f);
         }
     }
 

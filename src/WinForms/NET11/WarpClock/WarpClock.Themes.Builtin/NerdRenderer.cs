@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Globalization;
 
 using WarpClock.Abstractions;
 using WarpToolkit.WinForms.DirectX.D2D;
@@ -104,31 +105,61 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
             NerdThemeGeometry.MinuteBankInnerRadius,
             palette.MinuteOn,
             palette.MinuteOff);
+
+        NerdHandRenderState cheat = ctx.Parameters.Tag is NerdHandRenderState state
+            ? state
+            : new NerdHandRenderState(ctx.Time.SecondAngle, 0f, 0f);
+        DrawHandCheatLabels(g, ctx, cheat, cx, pivotY, scale);
     }
 
     private void DrawSecondsSled(ID2DGraphics g, IClockRenderContext ctx)
     {
+        NerdSlideRenderState state = ctx.Parameters.Tag is NerdSlideRenderState renderState
+            ? renderState
+            : new NerdSlideRenderState(
+                ctx.Parameters.ExtraRotationDegrees,
+                NerdThemeGeometry.SledRadius,
+                1f,
+                NerdBinaryLayout.SecondAtAngle(ctx.Parameters.ExtraRotationDegrees),
+                0f);
         NerdThemePalette displayPalette = ApplyOpacity(palette, ctx.Parameters.Opacity);
         float cx = ctx.ContentSize.Width / 2f;
         float pivotY = ctx.Pivot.Y;
         float scale = ctx.Scale;
         using var blade = new SolidBrush(displayPalette.Blade);
-        g.FillPolygon(blade, CreateSledPolygon(cx, pivotY, scale));
-        DrawSecondsLeds(g, cx, pivotY, scale, ctx.Time.Now.Second, displayPalette);
+        g.FillPolygon(
+            blade,
+            CreateSledPolygon(cx, pivotY, scale, state.TrackRadius, state.BeamScale));
+        DrawSecondsLeds(
+            g,
+            cx,
+            pivotY,
+            scale,
+            state.TrackRadius,
+            state.BeamScale,
+            state.PositionSecond,
+            displayPalette);
+        DrawSledCheatLabel(g, state, cx, pivotY, scale);
     }
 
-    private static PointF[] CreateSledPolygon(float cx, float pivotY, float scale)
+    private static PointF[] CreateSledPolygon(
+        float cx,
+        float pivotY,
+        float scale,
+        float trackRadius,
+        float beamScale)
     {
         const int segments = 12;
         var points = new PointF[(segments + 1) * 2];
-        float innerRadius = (NerdThemeGeometry.SledRadius - NerdThemeGeometry.SledHalfThickness) * scale;
-        float outerRadius = (NerdThemeGeometry.SledRadius + NerdThemeGeometry.SledHalfThickness) * scale;
+        float halfThickness = NerdThemeGeometry.SledHalfThickness * beamScale;
+        float innerRadius = (trackRadius - halfThickness) * scale;
+        float outerRadius = (trackRadius + halfThickness) * scale;
+        float halfSpan = NerdThemeGeometry.SledHalfSpanDegrees * beamScale;
 
         for (int i = 0; i <= segments; i++)
         {
             float t = i / (float)segments;
-            float angle = -NerdThemeGeometry.SledHalfSpanDegrees
-                + (2f * NerdThemeGeometry.SledHalfSpanDegrees * t);
+            float angle = -halfSpan + (2f * halfSpan * t);
             points[i] = PointOnHandArc(cx, pivotY, outerRadius, angle);
             points[points.Length - 1 - i] = PointOnHandArc(cx, pivotY, innerRadius, angle);
         }
@@ -165,18 +196,20 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
         float cx,
         float pivotY,
         float scale,
+        float trackRadius,
+        float beamScale,
         int second,
         NerdThemePalette displayPalette)
     {
-        float radius = NerdThemeGeometry.SledRadius * scale;
-        float ledRadius = NerdThemeGeometry.LedRadius * scale;
+        float radius = trackRadius * scale;
+        float ledRadius = NerdThemeGeometry.LedRadius * beamScale * scale;
         bool lsbFirst = NerdBinaryLayout.SecondsUseLeastSignificantBitFirst(second);
 
         for (int slot = 0; slot < NerdThemeGeometry.SecondBitCount; slot++)
         {
             float t = slot / (float)(NerdThemeGeometry.SecondBitCount - 1);
-            float angle = -NerdThemeGeometry.SledLedHalfSpanDegrees
-                + (2f * NerdThemeGeometry.SledLedHalfSpanDegrees * t);
+            float halfSpan = NerdThemeGeometry.SledLedHalfSpanDegrees * beamScale;
+            float angle = -halfSpan + (2f * halfSpan * t);
             PointF center = PointOnHandArc(cx, pivotY, radius, angle);
             g.FillEllipse(
                 NerdBinaryLayout.IsBitOn(second, slot, NerdThemeGeometry.SecondBitCount, lsbFirst)
@@ -187,6 +220,121 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
                 ledRadius * 2f,
                 ledRadius * 2f);
         }
+    }
+
+    private void DrawHandCheatLabels(
+        ID2DGraphics g,
+        IClockRenderContext ctx,
+        NerdHandRenderState state,
+        float cx,
+        float pivotY,
+        float scale)
+    {
+        float hourRadius = NerdThemeGeometry.HourBankInnerRadius
+            + (((NerdThemeGeometry.HourBitCount - 1) * NerdThemeGeometry.BladeLedPitch) / 2f);
+        DrawDecimalLabel(
+            g,
+            ctx.Time.Now.Hour.ToString("00", CultureInfo.InvariantCulture),
+            new PointF(cx, pivotY - (hourRadius * scale)),
+            new SizeF(72f * scale, 38f * scale),
+            palette.HourOn,
+            state.HourCheatOpacity,
+            rotationDegrees: IsLowerHalf(state.Angle) ? 180f : 0f);
+
+        float minuteRadius = NerdThemeGeometry.MinuteBankInnerRadius
+            + (((NerdThemeGeometry.MinuteBitCount - 1) * NerdThemeGeometry.BladeLedPitch) / 2f);
+        bool lowerHalf = IsLowerHalf(state.Angle);
+        DrawDecimalLabel(
+            g,
+            ctx.Time.Now.Minute.ToString("00", CultureInfo.InvariantCulture),
+            new PointF(cx + (38f * scale), pivotY - (minuteRadius * scale)),
+            new SizeF(76f * scale, 38f * scale),
+            palette.MinuteOn,
+            state.MinuteCheatOpacity,
+            rotationDegrees: 90f + (lowerHalf ? 180f : 0f));
+    }
+
+    private void DrawSledCheatLabel(
+        ID2DGraphics g,
+        NerdSlideRenderState state,
+        float cx,
+        float pivotY,
+        float scale)
+    {
+        float labelRadius =
+            state.TrackRadius - NerdThemeGeometry.SledHalfThickness - 28f;
+        DrawDecimalLabel(
+            g,
+            state.PositionSecond.ToString("00", CultureInfo.InvariantCulture),
+            new PointF(cx, pivotY - (labelRadius * scale)),
+            new SizeF(72f * scale, 36f * scale),
+            palette.SecondOn,
+            state.CheatOpacity,
+            IsLowerHalf(state.Angle) ? 180f : 0f);
+    }
+
+    private static void DrawDecimalLabel(
+        ID2DGraphics g,
+        string text,
+        PointF center,
+        SizeF size,
+        Color color,
+        float opacity,
+        float rotationDegrees)
+    {
+        opacity = Math.Clamp(opacity, 0f, 1f);
+        if (opacity <= 0.001f)
+        {
+            return;
+        }
+
+        using var font = new Font(
+            "Consolas",
+            size.Height * 0.72f,
+            FontStyle.Bold,
+            GraphicsUnit.Pixel);
+        using var shadow = new SolidBrush(Color.FromArgb(
+            (int)MathF.Round(150f * opacity),
+            5,
+            8,
+            12));
+        using var brush = new SolidBrush(ApplyOpacity(color, opacity));
+        using var format = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center,
+            FormatFlags = StringFormatFlags.NoWrap,
+        };
+
+        var bounds = new RectangleF(
+            center.X - (size.Width / 2f),
+            center.Y - (size.Height / 2f),
+            size.Width,
+            size.Height);
+
+        g.ResetTransform();
+        g.TranslateTransform(center.X, center.Y);
+        g.RotateTransform(rotationDegrees);
+        g.TranslateTransform(-center.X, -center.Y);
+        g.DrawString(
+            text,
+            font,
+            shadow,
+            new RectangleF(bounds.X + 2f, bounds.Y + 2f, bounds.Width, bounds.Height),
+            format);
+        g.DrawString(text, font, brush, bounds, format);
+        g.ResetTransform();
+    }
+
+    private static bool IsLowerHalf(float angle)
+    {
+        angle %= 360f;
+        if (angle < 0f)
+        {
+            angle += 360f;
+        }
+
+        return angle > 90f && angle < 270f;
     }
 
     private static Color Blend(Color from, Color to, float amount)
@@ -224,4 +372,11 @@ internal sealed class NerdRenderer(NerdThemePalette palette) : IClockElementRend
             SecondOff = Fade(source.SecondOff),
         };
     }
+
+    private static Color ApplyOpacity(Color color, float opacity)
+        => Color.FromArgb(
+            Math.Clamp((int)MathF.Round(color.A * Math.Clamp(opacity, 0f, 1f)), 0, 255),
+            color.R,
+            color.G,
+            color.B);
 }

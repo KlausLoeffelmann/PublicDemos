@@ -89,6 +89,45 @@ public sealed class NerdThemeTests
         Assert.Equal(ClockHandMotion.Tick, context.GetParameters(ClockElementId.SecondHand).HandMotion);
     }
 
+    [Theory]
+    [InlineData(0f, 0, "000000")]
+    [InlineData(90f, 15, "001111")]
+    [InlineData(240f, 40, "101000")]
+    [InlineData(354f, 59, "111011")]
+    [InlineData(360f, 0, "000000")]
+    [InlineData(-6f, 59, "111011")]
+    public void NerdSledValueComesFromItsAngularPosition(
+        float angle,
+        int expectedSecond,
+        string expectedBinary)
+    {
+        int second = NerdBinaryLayout.SecondAtAngle(angle);
+
+        Assert.Equal(expectedSecond, second);
+        Assert.Equal(expectedBinary, Convert.ToString(second, 2).PadLeft(6, '0'));
+    }
+
+    [Fact]
+    public void NerdSledAtTripleSpeedAdvancesThreeDisplayedPositionsPerSecond()
+    {
+        NerdTheme theme = new()
+        {
+            SpeedUpAfterMin = 1,
+            MinimumFastMultiplier = 3f,
+            MaximumFastMultiplier = 3f,
+        };
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+        animator.Initialize(context);
+
+        Advance(animator, context, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        int before = SledState(context, 0).PositionSecond;
+        Advance(animator, context, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        int after = SledState(context, 0).PositionSecond;
+
+        Assert.Equal(3, (after - before + 60) % 60);
+    }
+
     [Fact]
     public void NerdCompanionSledUsesAnIndependentSpeed()
     {
@@ -141,6 +180,7 @@ public sealed class NerdThemeTests
             MinimumFastMultiplier = 1f,
             MaximumFastMultiplier = 9f,
             SecondHandMotion = ClockHandMotion.Sweep,
+            CheatMode = true,
         };
 
         NerdTheme night = Assert.IsType<NerdTheme>(theme.ResolveVariant(ClockThemeVariantKind.Night));
@@ -153,6 +193,241 @@ public sealed class NerdThemeTests
         Assert.Equal(1.5f, night.MinimumFastMultiplier);
         Assert.Equal(5f, night.MaximumFastMultiplier);
         Assert.Equal(ClockHandMotion.Sweep, night.SecondHandMotion);
+        Assert.True(night.CheatMode);
+    }
+
+    [Fact]
+    public void NerdTrackPlannerMovesTheFasterSledInwardUntilItClears()
+    {
+        NerdSlideTrackPlanner planner = new();
+        NerdSlideSnapshot[] approaching =
+        [
+            new(0, true, 0f, 2f),
+            new(1, true, 25f, 1f),
+            new(2, false, 0f, 0f),
+            new(3, false, 0f, 0f),
+        ];
+
+        int[] passingTracks = planner.Plan(approaching);
+
+        Assert.Equal(1, passingTracks[0]);
+        Assert.Equal(0, passingTracks[1]);
+        Assert.True(planner.IsPassing(0, 1));
+
+        NerdSlideSnapshot[] cleared =
+        [
+            new(0, true, 62f, 2f),
+            new(1, true, 25f, 1f),
+            new(2, false, 0f, 0f),
+            new(3, false, 0f, 0f),
+        ];
+
+        int[] clearedTracks = planner.Plan(cleared);
+
+        Assert.Equal(0, clearedTracks[0]);
+        Assert.False(planner.IsPassing(0, 1));
+    }
+
+    [Fact]
+    public void NerdTrackPlannerSupportsNestedOvertakes()
+    {
+        NerdSlideTrackPlanner planner = new();
+        NerdSlideSnapshot[] slides =
+        [
+            new(0, true, 0f, 3f),
+            new(1, true, 20f, 2f),
+            new(2, true, 40f, 1f),
+            new(3, false, 0f, 0f),
+        ];
+
+        int[] tracks = planner.Plan(slides);
+
+        Assert.Equal(2, tracks[0]);
+        Assert.Equal(1, tracks[1]);
+        Assert.Equal(0, tracks[2]);
+    }
+
+    [Fact]
+    public void NerdTrackPlannerDoesNotSwapTracksWhenSpeedsReverseMidPass()
+    {
+        NerdSlideTrackPlanner planner = new();
+        planner.Plan(
+        [
+            new(0, true, 0f, 2f),
+            new(1, true, 24f, 1f),
+            new(2, false, 0f, 0f),
+            new(3, false, 0f, 0f),
+        ]);
+
+        int[] reversedWhileClose = planner.Plan(
+        [
+            new(0, true, 8f, 1f),
+            new(1, true, 20f, 2f),
+            new(2, false, 0f, 0f),
+            new(3, false, 0f, 0f),
+        ]);
+
+        Assert.Equal(1, reversedWhileClose[0]);
+        Assert.Equal(0, reversedWhileClose[1]);
+        Assert.True(planner.IsPassing(0, 1));
+        Assert.False(planner.IsPassing(1, 0));
+
+        int[] separated = planner.Plan(
+        [
+            new(0, true, 0f, 1f),
+            new(1, true, 40f, 2f),
+            new(2, false, 0f, 0f),
+            new(3, false, 0f, 0f),
+        ]);
+
+        Assert.Equal(0, separated[0]);
+        Assert.Equal(0, separated[1]);
+    }
+
+    [Fact]
+    public void NerdTrackPlannerRejectsCyclicPassesAfterFourSledSpeedReversal()
+    {
+        NerdSlideTrackPlanner planner = new();
+        planner.Plan(
+        [
+            new(0, true, 0f, 4f),
+            new(1, true, 11f, 3f),
+            new(2, true, 22f, 2f),
+            new(3, true, 34f, 1f),
+        ]);
+        planner.Plan(
+        [
+            new(0, true, 34f, 4f),
+            new(1, true, 23f, 3f),
+            new(2, true, 12f, 2f),
+            new(3, true, 0f, 1f),
+        ]);
+
+        int[] reversed = planner.Plan(
+        [
+            new(0, true, 34f, 0.82f),
+            new(1, true, 23f, 0.90f),
+            new(2, true, 12f, 1.00f),
+            new(3, true, 0f, 1.24f),
+        ]);
+
+        Assert.Equal([3, 2, 1, 0], reversed);
+        Assert.False(planner.IsPassing(3, 0));
+        Assert.False(NerdSlideTrackPlanner.SledsOverlap(
+            34f,
+            NerdThemeGeometry.GetSledTrackRadius(reversed[0]),
+            23f,
+            NerdThemeGeometry.GetSledTrackRadius(reversed[1])));
+    }
+
+    [Fact]
+    public void NerdSpawnAngleUsesTheCenterOfTheLargestAvailableGap()
+    {
+        NerdSlideSnapshot[] slides =
+        [
+            new(0, true, 0f, 1f),
+            new(1, true, 90f, 1f),
+            new(2, true, 180f, 1f),
+            new(3, false, 0f, 0f),
+        ];
+
+        Assert.Equal(270f, NerdSlideTrackPlanner.FindSafeSpawnAngle(slides), 3);
+    }
+
+    [Fact]
+    public void NerdAnimatorKeepsVisibleSledGeometrySeparated()
+    {
+        NerdTheme theme = new()
+        {
+            AddSlideEveryMin = 1,
+            SpeedUpAfterMin = 1,
+            FastDurationMin = 1,
+            SoloRecoveryMin = 1,
+            MaximumSlides = 4,
+        };
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements());
+        animator.Initialize(context);
+
+        for (int frame = 0; frame < 144000; frame++)
+        {
+            Advance(animator, context, TimeSpan.FromSeconds(0.05), TimeSpan.FromSeconds(0.05));
+            NerdSlideRenderState[] active = Enumerable.Range(0, 4)
+                .Where(index => context.GetParameters(ClockElementId.CustomElement(index)).Visible)
+                .Select(index => SledState(context, index))
+                .ToArray();
+
+            for (int left = 0; left < active.Length; left++)
+            {
+                for (int right = left + 1; right < active.Length; right++)
+                {
+                    Assert.False(NerdSlideTrackPlanner.SledsOverlap(
+                        active[left].Angle,
+                        active[left].TrackRadius,
+                        active[right].Angle,
+                        active[right].TrackRadius));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void NerdCheatSequenceUsesWallClockHalfMinuteWindows()
+    {
+        DateTime start = new(2026, 8, 25, 12, 30, 0, DateTimeKind.Unspecified);
+
+        NerdCheatSample hour = NerdCheatSequence.Sample(start, enabled: true);
+        NerdCheatSample crossFade = NerdCheatSequence.Sample(
+            start.AddSeconds(2),
+            enabled: true);
+        NerdCheatSample minute = NerdCheatSequence.Sample(
+            start.AddSeconds(3),
+            enabled: true);
+        NerdCheatSample sled = NerdCheatSequence.Sample(
+            start.AddSeconds(5),
+            enabled: true);
+        NerdCheatSample off = NerdCheatSequence.Sample(
+            start.AddSeconds(6),
+            enabled: true);
+
+        Assert.Equal(1f, hour.HourOpacity);
+        Assert.True(crossFade.HourOpacity > 0f);
+        Assert.True(crossFade.MinuteOpacity > 0f);
+        Assert.Equal(1f, minute.MinuteOpacity);
+        Assert.Equal(1f, sled.SledOpacity);
+        Assert.Equal(default, off);
+        Assert.Equal(default, NerdCheatSequence.Sample(start, enabled: false));
+    }
+
+    [Fact]
+    public void NerdCheatStateUsesTwoDigitClockAndPerSledPositionValues()
+    {
+        NerdTheme theme = new() { CheatMode = true };
+        IThemeAnimator animator = theme.CreateAnimator();
+        TestTickContext context = new(theme.CreateElements())
+        {
+            Time = new ClockTimeSnapshot
+            {
+                Now = new DateTime(2026, 8, 25, 3, 7, 4, 500, DateTimeKind.Unspecified),
+                HourAngle = 93.5f,
+                MinuteAngle = 42.45f,
+                SecondAngle = 27f,
+                SubSecondAngle = 0f,
+            },
+        };
+
+        animator.Initialize(context);
+
+        NerdHandRenderState hand = Assert.IsType<NerdHandRenderState>(
+            context.GetParameters(ClockElementId.SecondHand).Tag);
+        NerdSlideRenderState sled = SledState(context, 0);
+
+        Assert.Equal(0f, hand.HourCheatOpacity);
+        Assert.Equal(0f, hand.MinuteCheatOpacity);
+        Assert.Equal(1f, sled.CheatOpacity);
+        Assert.Equal("03", context.Time.Now.Hour.ToString("00"));
+        Assert.Equal("07", context.Time.Now.Minute.ToString("00"));
+        Assert.Equal("04", sled.PositionSecond.ToString("00"));
     }
 
     [Theory]
@@ -218,6 +493,10 @@ public sealed class NerdThemeTests
             <= NerdThemeGeometry.BladeTopRadius);
         Assert.True(sledPitch >= NerdThemeGeometry.LedRadius * 2f);
         Assert.True(NerdThemeGeometry.SledHalfSpanDegrees * 2f < 30f);
+        Assert.True(
+            NerdThemeGeometry.SledTrackSpacing
+            >= NerdThemeGeometry.SledCollisionRadialSpan);
+        Assert.True(NerdThemeGeometry.GetSledTrackRadius(3f) > 0f);
     }
 
     private static bool[] Slots(int value, int bitCount, bool lsbFirst)
@@ -234,6 +513,10 @@ public sealed class NerdThemeTests
     private static int ActiveSlides(TestTickContext context)
         => Enumerable.Range(0, 4)
             .Count(index => context.GetParameters(ClockElementId.CustomElement(index)).Visible);
+
+    private static NerdSlideRenderState SledState(TestTickContext context, int index)
+        => Assert.IsType<NerdSlideRenderState>(
+            context.GetParameters(ClockElementId.CustomElement(index)).Tag);
 
     private static void Advance(
         IThemeAnimator animator,

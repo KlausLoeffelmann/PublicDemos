@@ -56,6 +56,9 @@ public sealed record StandardClockDesign
     /// <summary>Dial border width in design units.</summary>
     public float FaceBorderWidth { get; init; } = 18f;
 
+    /// <summary>Dial face radius in design units.</summary>
+    public float FaceRadius { get; init; } = 490f;
+
     /// <summary>Second-hand color.</summary>
     public Color SecondHandColor { get; init; } = Color.FromArgb(220, 40, 30);
 
@@ -89,8 +92,29 @@ public sealed record StandardClockDesign
     /// <summary>The numeral font family.</summary>
     public string FontFamily { get; init; } = "Segoe UI";
 
+    /// <summary>The numeral font style.</summary>
+    public FontStyle FontStyle { get; init; } = FontStyle.Bold;
+
+    /// <summary>Square content size allocated to each hour marker.</summary>
+    public float HourMarkerSize { get; init; } = 150f;
+
+    /// <summary>Maximum numeral font size as a fraction of marker height.</summary>
+    public float HourMarkerFontScale { get; init; } = 0.6f;
+
+    /// <summary>Hour-marker radius as a fraction of the logical clock radius.</summary>
+    public float HourMarkerRadiusRatio { get; init; } = 0.78f;
+
+    /// <summary>Minute-tick radius as a fraction of the logical clock radius.</summary>
+    public float MinuteTickRadiusRatio { get; init; } = 0.93f;
+
     /// <summary>Use layered period ornamentation for face, numerals, and hands.</summary>
     public bool Ornate { get; init; }
+
+    /// <summary>Add a separate ornamental case around the inset dial.</summary>
+    public bool OrnateCase { get; init; }
+
+    /// <summary>Outer radius of the separate case in design units.</summary>
+    public float CaseOuterRadius { get; init; } = 490f;
 
     /// <summary>Add deterministic patina and wear to the day face.</summary>
     public bool AgedSurface { get; init; }

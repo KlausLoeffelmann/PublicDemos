@@ -65,16 +65,27 @@ public sealed class StandardClockTheme : IClockTheme
     /// <inheritdoc/>
     public IReadOnlyList<ClockElementDescriptor> CreateElements()
     {
-        var elements = new List<ClockElementDescriptor>
+        var elements = new List<ClockElementDescriptor>();
+
+        if (_design.OrnateCase)
         {
+            elements.Add(new ClockElementDescriptor
+            {
+                Id = new ClockElementId(ClockElementKind.Case),
+                ContentSize = new SizeF(1000f, 1000f),
+                Pivot = new PointF(500f, 500f),
+                ZOrder = -10,
+            });
+        }
+
+        elements.Add(
             new()
             {
                 Id = ClockElementId.Face,
                 ContentSize = new SizeF(1000f, 1000f),
                 Pivot = new PointF(500f, 500f),
                 ZOrder = 0,
-            },
-        };
+            });
 
         if (_design.MinuteTickStyle != MinuteTickStyle.None)
         {
@@ -92,7 +103,7 @@ public sealed class StandardClockTheme : IClockTheme
 
         foreach (int hour in HourIndices())
         {
-            float markerSize = _design.Ornate ? 190f : 150f;
+            float markerSize = _design.HourMarkerSize;
             elements.Add(new ClockElementDescriptor
             {
                 Id = ClockElementId.HourMarker(hour),
@@ -118,7 +129,7 @@ public sealed class StandardClockTheme : IClockTheme
     }
 
     /// <inheritdoc/>
-    public IClockLayout CreateLayout() => new RadialLayout();
+    public IClockLayout CreateLayout() => new StandardClockLayout(_design);
 
     /// <inheritdoc/>
     public IClockElementRenderer CreateRenderer() => new StandardClockRenderer(_design);

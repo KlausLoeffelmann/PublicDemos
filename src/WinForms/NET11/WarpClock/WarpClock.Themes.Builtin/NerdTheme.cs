@@ -42,6 +42,23 @@ internal static class NerdThemeGeometry
     public const float SledHalfSpanDegrees = 12f;
     public const float SledHalfThickness = 18f;
     public const float SledLedHalfSpanDegrees = 10f;
+    public const int SledTrackCount = 4;
+    public const float SledTrackSpacing = 48f;
+    public const float SledTrackTransitionSeconds = 0.65f;
+    public const float SledMaximumTrackTransitionSeconds =
+        SledTrackTransitionSeconds * (SledTrackCount - 1);
+    public const float SledAngularSafetyGap = 4f;
+    public const float SledRadialSafetyGap = 6f;
+
+    public const float SledCollisionAngularSpan =
+        (SledHalfSpanDegrees * 2f) + SledAngularSafetyGap;
+
+    public const float SledCollisionRadialSpan =
+        (SledHalfThickness * 2f) + SledRadialSafetyGap;
+
+    public static float GetSledTrackRadius(float track)
+        => SledRadius
+            - (Math.Clamp(track, 0f, SledTrackCount - 1f) * SledTrackSpacing);
 }
 
 /// <summary>
@@ -99,6 +116,12 @@ public sealed class NerdTheme : IClockTheme
     [DisplayName("Second Hand Motion")]
     [Description("Movement of the binary hour/minute hand. Sleds always glide independently.")]
     public ClockHandMotion SecondHandMotion { get; set; } = ClockHandMotion.Tick;
+
+    [Browsable(true)]
+    [Category("Custom Properties")]
+    [DisplayName("Cheat Mode")]
+    [Description("Shows decimal hour, minute, and position-derived sled values every 30 seconds.")]
+    public bool CheatMode { get; set; }
 
     [Browsable(true)]
     [Category("Custom Properties")]
@@ -194,6 +217,7 @@ public sealed class NerdTheme : IClockTheme
         return new NerdTheme(variant)
         {
             SecondHandMotion = SecondHandMotion,
+            CheatMode = CheatMode,
             SpeedUpAfterMin = SpeedUpAfterMin,
             FastDurationMin = FastDurationMin,
             AddSlideEveryMin = AddSlideEveryMin,
@@ -260,7 +284,8 @@ public sealed class NerdTheme : IClockTheme
             SoloRecoveryMin,
             MaximumSlides,
             MinimumFastMultiplier,
-            MaximumFastMultiplier);
+            MaximumFastMultiplier,
+            CheatMode);
 
     internal static NerdThemePalette CreatePalette(ClockThemeVariantKind variant)
         => variant switch
@@ -295,6 +320,17 @@ public sealed class NerdTheme : IClockTheme
 
 internal static class NerdBinaryLayout
 {
+    public static int SecondAtAngle(float angleDegrees)
+    {
+        float normalized = angleDegrees % 360f;
+        if (normalized < 0f)
+        {
+            normalized += 360f;
+        }
+
+        return Math.Min(59, (int)MathF.Floor(normalized / 6f));
+    }
+
     public static bool SecondsUseLeastSignificantBitFirst(int second)
         => second < 15 || second >= 45;
 
