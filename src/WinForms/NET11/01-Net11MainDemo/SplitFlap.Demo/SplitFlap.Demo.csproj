@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <RootNamespace>SplitFlap.Demo</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="System.Drawing" />
+    <Using Include="System.Windows.Forms" />
+    <Using Include="SplitFlap.Visuals" />
+    <Using Include="SplitFlap.WinForms" />
+    <Using Include="SplitFlap.Audio.Core" />
+    <Using Include="SplitFlap.Audio.Synthesis" />
+    <Using Include="SplitFlap.Audio.Music" />
+    <Using Include="SplitFlap.Audio.Playback" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SplitFlap.Audio\SplitFlap.Audio.csproj" />
+    <ProjectReference Include="..\SplitFlap.Controls\SplitFlap.Controls.csproj" />
+  </ItemGroup>
+
+</Project>
