@@ -8,7 +8,9 @@ public static class MonospaceFonts
 {
     private static string[]? s_cache;
 
-    /// <summary>The family used when the requested one isn't installed.</summary>
+    /// <summary>
+    ///  The family used when the requested one isn't installed.
+    /// </summary>
     public const string FallbackFamilyName = "Consolas";
 
     /// <summary>

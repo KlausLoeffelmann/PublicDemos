@@ -19,7 +19,9 @@ public class SplitFlapCharacter : SplitFlapCharacterDisplay
         base.Columns = 1;
     }
 
-    /// <summary>The character to show. Characters not on the drum resolve to blank.</summary>
+    /// <summary>
+    ///  The character to show. Characters not on the drum resolve to blank.
+    /// </summary>
     [Category("Appearance")]
     [Description("The character to show.")]
     [DefaultValue(' ')]
@@ -29,13 +31,17 @@ public class SplitFlapCharacter : SplitFlapCharacterDisplay
         set => Text = value.ToString();
     }
 
-    /// <summary>The visual behind this control, for sound hookups.</summary>
+    /// <summary>
+    ///  The visual behind this control, for sound hookups.
+    /// </summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public SplitFlapCharacterVisual Visual
         => GetVisual(0, 0);
 
-    /// <summary>Always 1.</summary>
+    /// <summary>
+    ///  Always 1.
+    /// </summary>
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -45,7 +51,9 @@ public class SplitFlapCharacter : SplitFlapCharacterDisplay
         set { }
     }
 
-    /// <summary>Always 1.</summary>
+    /// <summary>
+    ///  Always 1.
+    /// </summary>
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -55,7 +63,9 @@ public class SplitFlapCharacter : SplitFlapCharacterDisplay
         set { }
     }
 
-    /// <summary>Use <see cref="Character"/> instead.</summary>
+    /// <summary>
+    ///  Use <see cref="Character"/> instead.
+    /// </summary>
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]

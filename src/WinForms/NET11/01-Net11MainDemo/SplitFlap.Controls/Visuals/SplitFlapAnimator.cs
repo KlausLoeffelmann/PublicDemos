@@ -32,30 +32,46 @@ public sealed class SplitFlapAnimator : IAsyncDisposable, IDisposable
     private SplitFlapAnimator(int framesPerSecond = 60)
         => FramesPerSecond = Math.Clamp(framesPerSecond, 10, 240);
 
-    /// <summary>The process-wide animator. Started lazily on first registration.</summary>
+    /// <summary>
+    ///  The process-wide animator. Started lazily on first registration.
+    /// </summary>
     public static SplitFlapAnimator Default
         => s_default.Value;
 
-    /// <summary>Raised on the animator thread after a frame in which at least one visual changed.</summary>
+    /// <summary>
+    ///  Raised on the animator thread after a frame in which at least one visual changed.
+    /// </summary>
     public event EventHandler? FrameRendered;
 
-    /// <summary>Forwarded from every registered visual. Animator thread.</summary>
+    /// <summary>
+    ///  Forwarded from every registered visual. Animator thread.
+    /// </summary>
     public event EventHandler<FlapEventArgs>? FlapFell;
 
-    /// <summary>Forwarded from every registered visual. Animator thread.</summary>
+    /// <summary>
+    ///  Forwarded from every registered visual. Animator thread.
+    /// </summary>
     public event EventHandler<FlapEventArgs>? Jammed;
 
-    /// <summary>Forwarded from every registered visual. Animator thread.</summary>
+    /// <summary>
+    ///  Forwarded from every registered visual. Animator thread.
+    /// </summary>
     public event EventHandler<FlapEventArgs>? Settled;
 
-    /// <summary>Target frame rate.</summary>
+    /// <summary>
+    ///  Target frame rate.
+    /// </summary>
     public int FramesPerSecond { get; }
 
-    /// <summary><see langword="true"/> while the animator thread runs.</summary>
+    /// <summary>
+    ///  <see langword="true"/> while the animator thread runs.
+    /// </summary>
     public bool IsRunning
         => _loop is { IsCompleted: false };
 
-    /// <summary>Number of visuals currently registered.</summary>
+    /// <summary>
+    ///  Number of visuals currently registered.
+    /// </summary>
     public int Count
     {
         get

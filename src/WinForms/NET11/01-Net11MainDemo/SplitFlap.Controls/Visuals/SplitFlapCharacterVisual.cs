@@ -18,13 +18,19 @@ namespace SplitFlap.Visuals;
 /// </remarks>
 public sealed class SplitFlapCharacterVisual : IDisposable
 {
-    /// <summary>The default drum: blank first (that's the reset position), then letters, digits, punctuation.</summary>
+    /// <summary>
+    ///  The default drum: blank first (that's the reset position), then letters, digits, punctuation.
+    /// </summary>
     public const string DefaultCharacterSet = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-./:+&";
 
-    /// <summary>White. Independent of dark mode, on purpose: the flap is a piece of plastic, not a theme.</summary>
+    /// <summary>
+    ///  White. Independent of dark mode, on purpose: the flap is a piece of plastic, not a theme.
+    /// </summary>
     public static readonly Color DefaultForeColor = Color.White;
 
-    /// <summary>Almost black (#333333). Also not a theme.</summary>
+    /// <summary>
+    ///  Almost black (#333333). Also not a theme.
+    /// </summary>
     public static readonly Color DefaultBackColor = Color.FromArgb(0x33, 0x33, 0x33);
 
     private const double JamHoldMilliseconds = 250;
@@ -54,13 +60,19 @@ public sealed class SplitFlapCharacterVisual : IDisposable
     private Bitmap? _back;
     private bool _disposed;
 
-    /// <summary>Raised on the animator thread each time a flap has fallen. Hook your clack sound here.</summary>
+    /// <summary>
+    ///  Raised on the animator thread each time a flap has fallen. Hook your clack sound here.
+    /// </summary>
     public event EventHandler<FlapEventArgs>? FlapFell;
 
-    /// <summary>Raised on the animator thread when the jam detection kicked in.</summary>
+    /// <summary>
+    ///  Raised on the animator thread when the jam detection kicked in.
+    /// </summary>
     public event EventHandler<FlapEventArgs>? Jammed;
 
-    /// <summary>Raised on the animator thread when the visual reached its target character.</summary>
+    /// <summary>
+    ///  Raised on the animator thread when the visual reached its target character.
+    /// </summary>
     public event EventHandler<FlapEventArgs>? Settled;
 
     /// <summary>
@@ -85,7 +97,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     }
 
-    /// <summary>The font used for the glyph. Not owned by the visual; <see langword="null"/> uses a generic monospace font.</summary>
+    /// <summary>
+    ///  The font used for the glyph. Not owned by the visual; <see langword="null"/> uses a generic monospace font.
+    /// </summary>
     public Font? Font
     {
         get => _font;
@@ -96,7 +110,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     }
 
-    /// <summary>Glyph color.</summary>
+    /// <summary>
+    ///  Glyph color.
+    /// </summary>
     public Color ForeColor
     {
         get;
@@ -107,7 +123,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     } = DefaultForeColor;
 
-    /// <summary>Flap color.</summary>
+    /// <summary>
+    ///  Flap color.
+    /// </summary>
     public Color BackColor
     {
         get;
@@ -118,7 +136,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     } = DefaultBackColor;
 
-    /// <summary>Space between the flap's edge and the glyph, in device pixels.</summary>
+    /// <summary>
+    ///  Space between the flap's edge and the glyph, in device pixels.
+    /// </summary>
     public Padding Padding
     {
         get;
@@ -129,7 +149,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     } = new(6, 2, 6, 2);
 
-    /// <summary>Size of the flap in device pixels. Set by the hosting control.</summary>
+    /// <summary>
+    ///  Size of the flap in device pixels. Set by the hosting control.
+    /// </summary>
     public Size Size
     {
         get;
@@ -140,7 +162,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     }
 
-    /// <summary>DPI the back buffer is rendered at, so point-sized fonts come out right.</summary>
+    /// <summary>
+    ///  DPI the back buffer is rendered at, so point-sized fonts come out right.
+    /// </summary>
     public int Dpi
     {
         get;
@@ -151,7 +175,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     } = 96;
 
-    /// <summary>Time per single flap fall.</summary>
+    /// <summary>
+    ///  Time per single flap fall.
+    /// </summary>
     public FlipAnimationSpeed FlipAnimationSpeed { get; set; } = FlipAnimationSpeed.Medium;
 
     /// <summary>
@@ -164,14 +190,18 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         set => field = Math.Clamp(value, 0, 10);
     } = 3;
 
-    /// <summary>How long the controller waits in the reset position (blank) before it re-seeks, in milliseconds.</summary>
+    /// <summary>
+    ///  How long the controller waits in the reset position (blank) before it re-seeks, in milliseconds.
+    /// </summary>
     public int JamRecoveryTime
     {
         get;
         set => field = Math.Max(0, value);
     } = 500;
 
-    /// <summary>The character currently on the front of the flap.</summary>
+    /// <summary>
+    ///  The character currently on the front of the flap.
+    /// </summary>
     public char CurrentCharacter
     {
         get
@@ -205,7 +235,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     }
 
-    /// <summary><see langword="true"/> while the drum shows its target and nothing is moving.</summary>
+    /// <summary>
+    ///  <see langword="true"/> while the drum shows its target and nothing is moving.
+    /// </summary>
     public bool IsSettled
     {
         get
@@ -217,7 +249,9 @@ public sealed class SplitFlapCharacterVisual : IDisposable
         }
     }
 
-    /// <summary><see langword="true"/> while the jam detection has the drum.</summary>
+    /// <summary>
+    ///  <see langword="true"/> while the jam detection has the drum.
+    /// </summary>
     public bool IsJammed
     {
         get

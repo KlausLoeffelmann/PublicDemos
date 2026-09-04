@@ -65,7 +65,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         RebuildVisuals();
     }
 
-    /// <summary>The animator driving this board. Defaults to <see cref="SplitFlapAnimator.Default"/>.</summary>
+    /// <summary>
+    ///  The animator driving this board. Defaults to <see cref="SplitFlapAnimator.Default"/>.
+    /// </summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public SplitFlapAnimator Animator
@@ -86,13 +88,17 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     }
 
-    /// <summary>The visuals, row-major. Exposed for sound hookups and for hosting them elsewhere.</summary>
+    /// <summary>
+    ///  The visuals, row-major. Exposed for sound hookups and for hosting them elsewhere.
+    /// </summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IReadOnlyList<SplitFlapCharacterVisual> Visuals
         => _visuals;
 
-    /// <summary>Factor applied to the glyph height to get the flap height. 1.0 is a tight fit.</summary>
+    /// <summary>
+    ///  Factor applied to the glyph height to get the flap height. 1.0 is a tight fit.
+    /// </summary>
     [Category("Appearance")]
     [Description("Factor applied to the glyph height to get the flap height. 1.0 is a tight fit.")]
     [DefaultValue(DefaultLineHeight)]
@@ -113,7 +119,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = DefaultLineHeight;
 
-    /// <summary>Name of a fixed-pitch font family. Falls back to Consolas if not installed.</summary>
+    /// <summary>
+    ///  Name of a fixed-pitch font family. Falls back to Consolas if not installed.
+    /// </summary>
     [Category("Appearance")]
     [Description("Name of a fixed-pitch font family.")]
     [DefaultValue(DefaultFontName)]
@@ -135,7 +143,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = DefaultFontName;
 
-    /// <summary>Font size in points. Scales with the monitor DPI like any point-sized font.</summary>
+    /// <summary>
+    ///  Font size in points. Scales with the monitor DPI like any point-sized font.
+    /// </summary>
     [Category("Appearance")]
     [Description("Font size in points.")]
     [DefaultValue(DefaultFontSize)]
@@ -156,7 +166,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = DefaultFontSize;
 
-    /// <summary>Space between a flap's edge and its glyph, in logical pixels.</summary>
+    /// <summary>
+    ///  Space between a flap's edge and its glyph, in logical pixels.
+    /// </summary>
     [Category("Layout")]
     [Description("Space between a flap's edge and its glyph, in logical pixels.")]
     public Padding CharacterPadding
@@ -174,7 +186,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = new(6, 2, 6, 2);
 
-    /// <summary>Space around each flap, in logical pixels.</summary>
+    /// <summary>
+    ///  Space around each flap, in logical pixels.
+    /// </summary>
     [Category("Layout")]
     [Description("Space around each flap, in logical pixels.")]
     public Padding CharacterMargin
@@ -192,7 +206,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = new(2);
 
-    /// <summary>Number of text rows.</summary>
+    /// <summary>
+    ///  Number of text rows.
+    /// </summary>
     [Category("Layout")]
     [Description("Number of text rows.")]
     [DefaultValue(1)]
@@ -213,7 +229,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = 1;
 
-    /// <summary>Number of characters per row.</summary>
+    /// <summary>
+    ///  Number of characters per row.
+    /// </summary>
     [Category("Layout")]
     [Description("Number of characters per row.")]
     [DefaultValue(20)]
@@ -234,7 +252,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = 20;
 
-    /// <summary>Smallest font zoom when <see cref="AutoSize"/> is off.</summary>
+    /// <summary>
+    ///  Smallest font zoom when <see cref="AutoSize"/> is off.
+    /// </summary>
     [Category("Layout")]
     [Description("Smallest font zoom factor when AutoSize is off.")]
     [DefaultValue(DefaultMinZoom)]
@@ -255,7 +275,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = DefaultMinZoom;
 
-    /// <summary>Largest font zoom when <see cref="AutoSize"/> is off.</summary>
+    /// <summary>
+    ///  Largest font zoom when <see cref="AutoSize"/> is off.
+    /// </summary>
     [Category("Layout")]
     [Description("Largest font zoom factor when AutoSize is off.")]
     [DefaultValue(DefaultMaxZoom)]
@@ -298,7 +320,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = true;
 
-    /// <summary>Time per single flap fall.</summary>
+    /// <summary>
+    ///  Time per single flap fall.
+    /// </summary>
     [Category("Behavior")]
     [Description("Time per single flap fall.")]
     [DefaultValue(FlipAnimationSpeed.Medium)]
@@ -312,7 +336,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = FlipAnimationSpeed.Medium;
 
-    /// <summary>Chance that a falling flap jams, in hundredths of a percent (0..10).</summary>
+    /// <summary>
+    ///  Chance that a falling flap jams, in hundredths of a percent (0..10).
+    /// </summary>
     [Category("Behavior")]
     [Description("Chance that a falling flap jams, in hundredths of a percent (0..10).")]
     [DefaultValue(3)]
@@ -327,7 +353,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = 3;
 
-    /// <summary>Time in milliseconds a jammed character rests in the blank position before re-seeking.</summary>
+    /// <summary>
+    ///  Time in milliseconds a jammed character rests in the blank position before re-seeking.
+    /// </summary>
     [Category("Behavior")]
     [Description("Time in milliseconds a jammed character rests in the blank position before re-seeking.")]
     [DefaultValue(500)]
@@ -342,7 +370,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = 500;
 
-    /// <summary>Ordered characters on the drum. Index 0 is the blank reset position.</summary>
+    /// <summary>
+    ///  Ordered characters on the drum. Index 0 is the blank reset position.
+    /// </summary>
     [Category("Behavior")]
     [Description("Ordered characters on the drum. Index 0 is the blank reset position.")]
     [DefaultValue(SplitFlapCharacterVisual.DefaultCharacterSet)]
@@ -364,7 +394,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = SplitFlapCharacterVisual.DefaultCharacterSet;
 
-    /// <summary>Glyph color. White by default, regardless of dark mode.</summary>
+    /// <summary>
+    ///  Glyph color. White by default, regardless of dark mode.
+    /// </summary>
     [Category("Appearance")]
     [Description("Glyph color. Deliberately independent of dark mode.")]
     public Color FlapForeColor
@@ -378,7 +410,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = SplitFlapCharacterVisual.DefaultForeColor;
 
-    /// <summary>Flap color. Almost black by default, regardless of dark mode.</summary>
+    /// <summary>
+    ///  Flap color. Almost black by default, regardless of dark mode.
+    /// </summary>
     [Category("Appearance")]
     [Description("Flap color. Deliberately independent of dark mode.")]
     public Color FlapBackColor
@@ -392,7 +426,9 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         }
     } = SplitFlapCharacterVisual.DefaultBackColor;
 
-    /// <summary>Board background: the housing around the flaps.</summary>
+    /// <summary>
+    ///  Board background: the housing around the flaps.
+    /// </summary>
     [DefaultValue(typeof(Color), "30, 30, 30")]
     public override Color BackColor
     {
@@ -409,13 +445,16 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
     [EditorBrowsable(EditorBrowsableState.Always)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     [Editor("System.ComponentModel.Design.MultilineStringEditor, System.Design", typeof(System.Drawing.Design.UITypeEditor))]
+    [System.Diagnostics.CodeAnalysis.AllowNull]
     public override string Text
     {
         get => base.Text;
         set => base.Text = value;
     }
 
-    /// <summary>Whether the board dictates its own size from font and metrics. On by default.</summary>
+    /// <summary>
+    ///  Whether the board dictates its own size from font and metrics. On by default.
+    /// </summary>
     [Category("Layout")]
     [Description("Whether the board dictates its own size from font and metrics.")]
     [Browsable(true)]
@@ -428,17 +467,22 @@ public class SplitFlapCharacterDisplay : Control, ISupportInitialize
         set => base.AutoSize = value;
     }
 
-    /// <summary>Not used; see <see cref="FontName"/> and <see cref="FontSize"/>.</summary>
+    /// <summary>
+    ///  Not used; see <see cref="FontName"/> and <see cref="FontSize"/>.
+    /// </summary>
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    [System.Diagnostics.CodeAnalysis.AllowNull]
     public override Font Font
     {
         get => base.Font;
         set => base.Font = value;
     }
 
-    /// <summary>Not used; see <see cref="FlapForeColor"/>.</summary>
+    /// <summary>
+    ///  Not used; see <see cref="FlapForeColor"/>.
+    /// </summary>
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]

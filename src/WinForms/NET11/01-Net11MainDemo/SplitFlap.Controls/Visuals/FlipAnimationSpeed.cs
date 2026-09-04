@@ -6,19 +6,29 @@ namespace SplitFlap.Visuals;
 /// </summary>
 public enum FlipAnimationSpeed
 {
-    /// <summary>~220 ms per flap. Good for very large characters or slow-motion demos.</summary>
+    /// <summary>
+    ///  ~220 ms per flap. Good for very large characters or slow-motion demos.
+    /// </summary>
     VerySlow,
 
-    /// <summary>~150 ms per flap.</summary>
+    /// <summary>
+    ///  ~150 ms per flap.
+    /// </summary>
     Slow,
 
-    /// <summary>~90 ms per flap. Roughly what a well-maintained 1980s board did.</summary>
+    /// <summary>
+    ///  ~90 ms per flap. Roughly what a well-maintained 1980s board did.
+    /// </summary>
     Medium,
 
-    /// <summary>~55 ms per flap.</summary>
+    /// <summary>
+    ///  ~55 ms per flap.
+    /// </summary>
     Fast,
 
-    /// <summary>~32 ms per flap. Nervous.</summary>
+    /// <summary>
+    ///  ~32 ms per flap. Nervous.
+    /// </summary>
     VeryFast
 }
 
@@ -48,9 +58,13 @@ public static class FlipAnimationSpeedExtensions
 /// <param name="character">The character now showing on the visual.</param>
 public sealed class FlapEventArgs(SplitFlapCharacterVisual visual, char character) : EventArgs
 {
-    /// <summary>The visual that raised the event.</summary>
+    /// <summary>
+    ///  The visual that raised the event.
+    /// </summary>
     public SplitFlapCharacterVisual Visual { get; } = visual;
 
-    /// <summary>The character now showing on the visual.</summary>
+    /// <summary>
+    ///  The character now showing on the visual.
+    /// </summary>
     public char Character { get; } = character;
 }
