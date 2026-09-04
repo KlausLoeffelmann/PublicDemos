@@ -7,11 +7,20 @@ namespace SplitFlap.Audio.Core;
 /// <param name="Channels">1 for mono, 2 for stereo. The engine is mono; the sink may duplicate.</param>
 public readonly record struct AudioFormat(int SampleRate = 48_000, int Channels = 1)
 {
-    /// <summary>Bytes per interleaved frame for 16-bit PCM.</summary>
+    /// <summary>
+    ///  Gets the standard mono, 48 kHz engine format.
+    /// </summary>
+    public static AudioFormat Default { get; } = new(48_000, 1);
+
+    /// <summary>
+    ///  Gets the bytes per interleaved frame for 16-bit PCM.
+    /// </summary>
     public int BlockAlign
         => Channels * 2;
 
-    /// <summary>Bytes per second for 16-bit PCM.</summary>
+    /// <summary>
+    ///  Gets the bytes per second for 16-bit PCM.
+    /// </summary>
     public int BytesPerSecond
         => SampleRate * BlockAlign;
 }
@@ -26,10 +35,14 @@ public readonly record struct AudioFormat(int SampleRate = 48_000, int Channels 
 /// </remarks>
 public interface IAudioSink : IDisposable
 {
-    /// <summary>The format this sink was opened with.</summary>
+    /// <summary>
+    ///  The format this sink was opened with.
+    /// </summary>
     AudioFormat Format { get; }
 
-    /// <summary>The block size the sink expects per <see cref="Write"/>, in frames.</summary>
+    /// <summary>
+    ///  The block size the sink expects per <see cref="Write"/>, in frames.
+    /// </summary>
     int FramesPerBuffer { get; }
 
     /// <summary>
@@ -45,12 +58,18 @@ public interface IAudioSink : IDisposable
 /// </summary>
 public interface IVoice
 {
-    /// <summary><see langword="true"/> once the voice has nothing more to say and can be dropped.</summary>
+    /// <summary>
+    ///  <see langword="true"/> once the voice has nothing more to say and can be dropped.
+    /// </summary>
     bool IsFinished { get; }
 
-    /// <summary>Produces the next sample in -1..1. Called on the engine thread only.</summary>
+    /// <summary>
+    ///  Produces the next sample in -1..1. Called on the engine thread only.
+    /// </summary>
     float Next();
 
-    /// <summary>Asks the voice to end gracefully (start its release). May be called from any thread.</summary>
+    /// <summary>
+    ///  Asks the voice to end gracefully (start its release). May be called from any thread.
+    /// </summary>
     void Release();
 }

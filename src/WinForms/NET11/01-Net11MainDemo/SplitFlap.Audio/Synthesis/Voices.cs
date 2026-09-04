@@ -33,7 +33,9 @@ public sealed class ToneVoice : IVoice
         _gateSamplesLeft = gate is { } g ? (long)(g.TotalSeconds * sampleRate) : long.MaxValue;
     }
 
-    /// <summary>The oscillator, for pitch changes (vibrato, trills) while sounding.</summary>
+    /// <summary>
+    ///  The oscillator, for pitch changes (vibrato, trills) while sounding.
+    /// </summary>
     public Oscillator Oscillator
         => _oscillator;
 

@@ -7,15 +7,21 @@ namespace SplitFlap.Audio.Synthesis;
 /// <param name="Decay">How long the tail rings, 0..1.</param>
 public readonly record struct ReverbSettings(float Mix = 0.25f, float Decay = 0.5f)
 {
-    /// <summary>No reverb at all.</summary>
+    /// <summary>
+    ///  No reverb at all.
+    /// </summary>
     public static ReverbSettings Off
         => new(0, 0);
 
-    /// <summary>A modest room.</summary>
+    /// <summary>
+    ///  A modest room.
+    /// </summary>
     public static ReverbSettings Room
         => new(0.2f, 0.45f);
 
-    /// <summary>A departure hall. Long, big, echoey.</summary>
+    /// <summary>
+    ///  A departure hall. Long, big, echoey.
+    /// </summary>
     public static ReverbSettings Hall
         => new(0.35f, 0.8f);
 }

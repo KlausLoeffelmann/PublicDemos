@@ -28,13 +28,19 @@ public sealed class VoiceChannel
         Patch = patch;
     }
 
-    /// <summary>The instrument.</summary>
+    /// <summary>
+    ///  The instrument.
+    /// </summary>
     public VoicePatch Patch { get; set; }
 
-    /// <summary>Channel gain, 0..1.</summary>
+    /// <summary>
+    ///  Channel gain, 0..1.
+    /// </summary>
     public float Volume { get; set; } = 1f;
 
-    /// <summary>How much of this channel goes to the reverb bus, 0..1.</summary>
+    /// <summary>
+    ///  How much of this channel goes to the reverb bus, 0..1.
+    /// </summary>
     public float ReverbSend { get; set; } = 0.2f;
 
     /// <summary>

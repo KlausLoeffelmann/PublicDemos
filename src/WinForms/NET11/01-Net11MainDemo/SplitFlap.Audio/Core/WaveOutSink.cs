@@ -15,6 +15,8 @@ public sealed unsafe partial class WaveOutSink : IAudioSink
     private const uint WhdrDone = 0x0000_0001;
 
     private readonly AutoResetEvent _bufferReturned = new(false);
+    private readonly ManualResetEvent _disposeRequested = new(false);
+    private readonly Lock _nativeSync = new();
     private readonly WaveHdr*[] _headers;
     private readonly bool[] _queued;
     private IntPtr _device;
@@ -28,10 +30,31 @@ public sealed unsafe partial class WaveOutSink : IAudioSink
     /// <param name="bufferCount">Blocks in flight; three is the minimum for glitch-free playback.</param>
     public WaveOutSink(AudioFormat format = default, int bufferMilliseconds = 20, int bufferCount = 4)
     {
-        Format = format == default ? new AudioFormat() : format;
+        Format = format == default ? AudioFormat.Default : format;
+
+        if (Format.SampleRate is < 8_000 or > 384_000)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(format),
+                Format.SampleRate,
+                "The sample rate must be between 8,000 and 384,000 Hz.");
+        }
+
+        if (Format.Channels is < 1 or > 2)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(format),
+                Format.Channels,
+                "The channel count must be one or two.");
+        }
+
         bufferCount = Math.Clamp(bufferCount, 3, 16);
         FramesPerBuffer = Math.Max(64, Format.SampleRate * Math.Clamp(bufferMilliseconds, 5, 200) / 1000);
+        _headers = new WaveHdr*[bufferCount];
+        _queued = new bool[bufferCount];
 
+        // WAVEFORMATEX describes the byte layout consumed by WinMM. In particular, its
+        // block/byte rates must agree with the PCM buffers or waveOutOpen rejects the format.
         WaveFormatEx wfx = new()
         {
             FormatTag = 1,
@@ -43,25 +66,37 @@ public sealed unsafe partial class WaveOutSink : IAudioSink
             ExtraSize = 0
         };
 
-        Check(WaveOutOpen(
-            out _device,
-            WaveMapper,
-            in wfx,
-            _bufferReturned.SafeWaitHandle.DangerousGetHandle(),
-            IntPtr.Zero,
-            CallbackEvent));
-
-        uint bytes = (uint)(FramesPerBuffer * Format.BlockAlign);
-        _headers = new WaveHdr*[bufferCount];
-        _queued = new bool[bufferCount];
-
-        for (int i = 0; i < bufferCount; i++)
+        try
         {
-            WaveHdr* header = (WaveHdr*)NativeMemory.AllocZeroed((nuint)sizeof(WaveHdr));
-            header->Data = (IntPtr)NativeMemory.AllocZeroed(bytes);
-            header->BufferLength = bytes;
-            Check(WaveOutPrepareHeader(_device, header, (uint)sizeof(WaveHdr)));
-            _headers[i] = header;
+            Check(
+                "waveOutOpen",
+                WaveOutOpen(
+                    out _device,
+                    WaveMapper,
+                    in wfx,
+                    _bufferReturned.SafeWaitHandle.DangerousGetHandle(),
+                    IntPtr.Zero,
+                    CallbackEvent));
+
+            uint bytes = (uint)(FramesPerBuffer * Format.BlockAlign);
+
+            for (int i = 0; i < bufferCount; i++)
+            {
+                WaveHdr* header = (WaveHdr*)NativeMemory.AllocZeroed((nuint)sizeof(WaveHdr));
+                _headers[i] = header;
+                header->Data = (IntPtr)NativeMemory.AllocZeroed(bytes);
+                header->BufferLength = bytes;
+                Check(
+                    "waveOutPrepareHeader",
+                    WaveOutPrepareHeader(_device, header, (uint)sizeof(WaveHdr)));
+            }
+        }
+        catch
+        {
+            ReleaseNativeResources();
+            _disposeRequested.Dispose();
+            _bufferReturned.Dispose();
+            throw;
         }
     }
 
@@ -84,13 +119,22 @@ public sealed unsafe partial class WaveOutSink : IAudioSink
         }
 
         int index = AcquireFreeBuffer();
-        WaveHdr* header = _headers[index];
 
-        pcm.CopyTo(new Span<short>((void*)header->Data, expected));
-        header->Flags &= ~WhdrDone;
-        _queued[index] = true;
+        lock (_nativeSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            WaveHdr* header = _headers[index];
 
-        Check(WaveOutWrite(_device, header, (uint)sizeof(WaveHdr)));
+            // Copy managed PCM into the unmanaged block that remains pinned by ownership rather
+            // than by a GC handle. WinMM owns this block until it sets WHDR_DONE.
+            pcm.CopyTo(new Span<short>((void*)header->Data, expected));
+            header->Flags &= ~WhdrDone;
+            _queued[index] = true;
+
+            Check(
+                "waveOutWrite",
+                WaveOutWrite(_device, header, (uint)sizeof(WaveHdr)));
+        }
     }
 
     /// <inheritdoc/>
@@ -102,28 +146,15 @@ public sealed unsafe partial class WaveOutSink : IAudioSink
         }
 
         _disposed = true;
+        _disposeRequested.Set();
 
-        if (_device != IntPtr.Zero)
+        lock (_nativeSync)
         {
-            WaveOutReset(_device);
-
-            foreach (WaveHdr* header in _headers)
-            {
-                if (header is null)
-                {
-                    continue;
-                }
-
-                WaveOutUnprepareHeader(_device, header, (uint)sizeof(WaveHdr));
-                NativeMemory.Free((void*)header->Data);
-                NativeMemory.Free(header);
-            }
-
-            WaveOutClose(_device);
-            _device = IntPtr.Zero;
+            ReleaseNativeResources();
         }
 
         _bufferReturned.Dispose();
+        _disposeRequested.Dispose();
     }
 
     private int AcquireFreeBuffer()
@@ -139,15 +170,62 @@ public sealed unsafe partial class WaveOutSink : IAudioSink
             }
 
             // Every buffer is with the device. Sleep until one comes back (or time out and re-check).
-            _bufferReturned.WaitOne(100);
+            int signaled = WaitHandle.WaitAny([_bufferReturned, _disposeRequested], 100);
+
+            if (signaled == 1)
+            {
+                throw new ObjectDisposedException(nameof(WaveOutSink));
+            }
         }
     }
 
-    private static void Check(uint result)
+    private void ReleaseNativeResources()
+    {
+        if (_device == IntPtr.Zero)
+        {
+            foreach (WaveHdr* header in _headers)
+            {
+                if (header is not null)
+                {
+                    NativeMemory.Free((void*)header->Data);
+                    NativeMemory.Free(header);
+                }
+            }
+
+            return;
+        }
+
+        WaveOutReset(_device);
+
+        foreach (WaveHdr* header in _headers)
+        {
+            if (header is null)
+            {
+                continue;
+            }
+
+            WaveOutUnprepareHeader(_device, header, (uint)sizeof(WaveHdr));
+            NativeMemory.Free((void*)header->Data);
+            NativeMemory.Free(header);
+        }
+
+        WaveOutClose(_device);
+        _device = IntPtr.Zero;
+    }
+
+    private static void Check(string operation, uint result)
     {
         if (result != 0)
         {
-            throw new InvalidOperationException($"waveOut call failed with MMRESULT {result}.");
+            Span<char> buffer = stackalloc char[256];
+            uint textResult = WaveOutGetErrorText(result, buffer, (uint)buffer.Length);
+            int terminator = buffer.IndexOf('\0');
+            string details = textResult == 0
+                ? new string(buffer[..(terminator >= 0 ? terminator : buffer.Length)])
+                : "Unknown WinMM error";
+
+            throw new InvalidOperationException(
+                $"{operation} failed with MMRESULT {result} ({details}).");
         }
     }
 
@@ -193,4 +271,7 @@ public sealed unsafe partial class WaveOutSink : IAudioSink
 
     [LibraryImport("winmm.dll", EntryPoint = "waveOutClose")]
     private static partial uint WaveOutClose(IntPtr device);
+
+    [LibraryImport("winmm.dll", EntryPoint = "waveOutGetErrorTextW", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial uint WaveOutGetErrorText(uint error, Span<char> text, uint textLength);
 }

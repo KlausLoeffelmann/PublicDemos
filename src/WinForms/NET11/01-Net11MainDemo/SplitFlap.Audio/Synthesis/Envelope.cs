@@ -10,19 +10,29 @@ namespace SplitFlap.Audio.Synthesis;
 /// <param name="ReleaseMs">Time from the current level to silence after note-off.</param>
 public readonly record struct EnvelopeSettings(float AttackMs = 5, float DecayMs = 40, float SustainLevel = 0.7f, float ReleaseMs = 120)
 {
-    /// <summary>Snappy, click-free. The fallback for everything.</summary>
+    /// <summary>
+    ///  Snappy, click-free. The fallback for everything.
+    /// </summary>
     public static EnvelopeSettings Default
-        => new();
+        // A record struct's parameterless construction is all-zero initialization; spell out
+        // these values so "Default" really means the documented musical envelope.
+        => new(5, 40, 0.7f, 120);
 
-    /// <summary>Slow swell, long tail. Strings and pads.</summary>
+    /// <summary>
+    ///  Slow swell, long tail. Strings and pads.
+    /// </summary>
     public static EnvelopeSettings Pad
         => new(400, 200, 0.8f, 900);
 
-    /// <summary>No sustain: the note dies on its own. Plucked and struck things.</summary>
+    /// <summary>
+    ///  No sustain: the note dies on its own. Plucked and struck things.
+    /// </summary>
     public static EnvelopeSettings Pluck
         => new(2, 250, 0f, 80);
 
-    /// <summary>Organ: instant on, instant off.</summary>
+    /// <summary>
+    ///  Organ: instant on, instant off.
+    /// </summary>
     public static EnvelopeSettings Organ
         => new(3, 0, 1f, 15);
 }
@@ -54,11 +64,15 @@ public sealed class Envelope
         _releaseSamples = Samples(settings.ReleaseMs, sampleRate);
     }
 
-    /// <summary><see langword="true"/> once the release has reached silence.</summary>
+    /// <summary>
+    ///  <see langword="true"/> once the release has reached silence.
+    /// </summary>
     public bool IsFinished
         => _stage is Stage.Done;
 
-    /// <summary>Current level, 0..1.</summary>
+    /// <summary>
+    ///  Current level, 0..1.
+    /// </summary>
     public float Level
         => _level;
 

@@ -6,19 +6,29 @@ namespace SplitFlap.Audio.Synthesis;
 /// </summary>
 public enum Waveform
 {
-    /// <summary>Pure tone. The one from the first slide.</summary>
+    /// <summary>
+    ///  Pure tone. The one from the first slide.
+    /// </summary>
     Sine,
 
-    /// <summary>Hollow, clarinet-ish. Only odd harmonics.</summary>
+    /// <summary>
+    ///  Hollow, clarinet-ish. Only odd harmonics.
+    /// </summary>
     Square,
 
-    /// <summary>Soft, flute-ish. Odd harmonics, falling off fast.</summary>
+    /// <summary>
+    ///  Soft, flute-ish. Odd harmonics, falling off fast.
+    /// </summary>
     Triangle,
 
-    /// <summary>Bright, brassy. All harmonics.</summary>
+    /// <summary>
+    ///  Bright, brassy. All harmonics.
+    /// </summary>
     Sawtooth,
 
-    /// <summary>A square with an adjustable duty cycle (<see cref="Oscillator.PulseWidth"/>). Thin and nasal at 10 %.</summary>
+    /// <summary>
+    ///  A square with an adjustable duty cycle (<see cref="Oscillator.PulseWidth"/>). Thin and nasal at 10 %.
+    /// </summary>
     Pulse
 }
 
@@ -29,13 +39,19 @@ public sealed class Oscillator(int sampleRate)
 {
     private double _phase;
 
-    /// <summary>Frequency in Hz. Can be changed while running (vibrato, pitch envelopes).</summary>
+    /// <summary>
+    ///  Frequency in Hz. Can be changed while running (vibrato, pitch envelopes).
+    /// </summary>
     public double Frequency { get; set; } = 440;
 
-    /// <summary>The wave shape.</summary>
+    /// <summary>
+    ///  The wave shape.
+    /// </summary>
     public Waveform Waveform { get; set; } = Waveform.Sine;
 
-    /// <summary>Duty cycle for <see cref="Waveform.Pulse"/>, 0..1. 0.5 is a square.</summary>
+    /// <summary>
+    ///  Duty cycle for <see cref="Waveform.Pulse"/>, 0..1. 0.5 is a square.
+    /// </summary>
     public float PulseWidth { get; set; } = 0.25f;
 
     /// <summary>
@@ -62,7 +78,9 @@ public sealed class Oscillator(int sampleRate)
         };
     }
 
-    /// <summary>Resets the phase to zero.</summary>
+    /// <summary>
+    ///  Resets the phase to zero.
+    /// </summary>
     public void Reset()
         => _phase = 0;
 }
@@ -96,10 +114,14 @@ public sealed class OnePoleFilter(int sampleRate)
     private float _high;
     private float _lastInput;
 
-    /// <summary>Low-pass cutoff in Hz.</summary>
+    /// <summary>
+    ///  Low-pass cutoff in Hz.
+    /// </summary>
     public float LowPassHz { get; set; } = 20_000;
 
-    /// <summary>High-pass cutoff in Hz.</summary>
+    /// <summary>
+    ///  High-pass cutoff in Hz.
+    /// </summary>
     public float HighPassHz { get; set; } = 0;
 
     /// <summary>

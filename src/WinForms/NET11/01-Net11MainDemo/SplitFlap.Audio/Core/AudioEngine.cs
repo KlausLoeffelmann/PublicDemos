@@ -22,6 +22,7 @@ public sealed class AudioEngine : IDisposable
     private readonly short[] _pcm;
     private readonly Reverb _reverb;
     private Thread? _pump;
+    private Exception? _pumpFailure;
     private volatile bool _stopping;
     private bool _disposed;
 
@@ -35,24 +36,36 @@ public sealed class AudioEngine : IDisposable
         _reverb = new Reverb(sink.Format.SampleRate);
     }
 
-    /// <summary>The output format. Voices are built for <see cref="AudioFormat.SampleRate"/>.</summary>
+    /// <summary>
+    ///  The output format. Voices are built for <see cref="AudioFormat.SampleRate"/>.
+    /// </summary>
     public AudioFormat Format
         => _sink.Format;
 
-    /// <summary>Sample rate shortcut for voice constructors.</summary>
+    /// <summary>
+    ///  Sample rate shortcut for voice constructors.
+    /// </summary>
     public int SampleRate
         => _sink.Format.SampleRate;
 
-    /// <summary>Upper bound on simultaneous voices. Beyond that, the oldest voice is stolen.</summary>
+    /// <summary>
+    ///  Upper bound on simultaneous voices. Beyond that, the oldest voice is stolen.
+    /// </summary>
     public int MaxPolyphony { get; set; } = 48;
 
-    /// <summary>Master gain before the 16-bit conversion. Leave headroom; 40 clacks add up.</summary>
+    /// <summary>
+    ///  Master gain before the 16-bit conversion. Leave headroom; 40 clacks add up.
+    /// </summary>
     public float MasterVolume { get; set; } = 0.8f;
 
-    /// <summary>Reverb bus settings. Voices contribute via their send level.</summary>
+    /// <summary>
+    ///  Reverb bus settings. Voices contribute via their send level.
+    /// </summary>
     public ReverbSettings Reverb { get; set; } = ReverbSettings.Room;
 
-    /// <summary>Number of voices currently sounding.</summary>
+    /// <summary>
+    ///  Number of voices currently sounding.
+    /// </summary>
     public int ActiveVoices
         => _active.Count;
 
@@ -86,7 +99,22 @@ public sealed class AudioEngine : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         ActiveVoice entry = new(voice, Math.Clamp(reverbSend, 0f, 1f));
+        Exception? failure = Volatile.Read(ref _pumpFailure);
+
+        if (failure is not null)
+        {
+            return Task.FromException(failure);
+        }
+
         _incoming.Enqueue(entry);
+
+        // Close the narrow race where the pump fails after the first check but before this
+        // voice reaches its incoming queue.
+        failure = Volatile.Read(ref _pumpFailure);
+        if (failure is not null)
+        {
+            entry.Completion.TrySetException(failure);
+        }
 
         return entry.Completion.Task;
     }
@@ -101,8 +129,11 @@ public sealed class AudioEngine : IDisposable
 
         _disposed = true;
         _stopping = true;
-        _pump?.Join(1000);
+
+        // A sink may be blocked waiting for a device buffer. Disposal is its wake-up signal,
+        // so release it before joining the pump rather than paying a guaranteed timeout.
         _sink.Dispose();
+        _pump?.Join(1000);
 
         foreach (ActiveVoice entry in _active)
         {
@@ -129,62 +160,82 @@ public sealed class AudioEngine : IDisposable
 
     private void Pump()
     {
-        int frames = _dry.Length;
-        int channels = Format.Channels;
-
-        while (!_stopping)
+        try
         {
-            AdmitIncoming();
+            int frames = _dry.Length;
+            int channels = Format.Channels;
 
-            Array.Clear(_dry);
-            Array.Clear(_wet);
-
-            for (int v = _active.Count - 1; v >= 0; v--)
+            while (!_stopping)
             {
-                ActiveVoice entry = _active[v];
-                IVoice voice = entry.Voice;
-                float send = entry.ReverbSend;
+                AdmitIncoming();
 
-                for (int i = 0; i < frames; i++)
+                // Mix in floating point so voices can add without integer overflow. Clamping is
+                // deliberately postponed until the one final conversion to signed 16-bit PCM.
+                Array.Clear(_dry);
+                Array.Clear(_wet);
+
+                for (int v = _active.Count - 1; v >= 0; v--)
                 {
-                    float sample = voice.Next();
-                    _dry[i] += sample;
-                    _wet[i] += sample * send;
+                    ActiveVoice entry = _active[v];
+                    IVoice voice = entry.Voice;
+                    float send = entry.ReverbSend;
+
+                    for (int i = 0; i < frames; i++)
+                    {
+                        float sample = voice.Next();
+                        _dry[i] += sample;
+                        _wet[i] += sample * send;
+
+                        if (voice.IsFinished)
+                        {
+                            break;
+                        }
+                    }
 
                     if (voice.IsFinished)
                     {
-                        break;
+                        _active.RemoveAt(v);
+                        entry.Completion.TrySetResult();
                     }
                 }
 
-                if (voice.IsFinished)
+                _reverb.Process(Reverb, _wet, _dry);
+
+                float gain = MasterVolume * short.MaxValue;
+
+                for (int i = 0; i < frames; i++)
                 {
-                    _active.RemoveAt(v);
-                    entry.Completion.TrySetResult();
+                    short value = (short)Math.Clamp(_dry[i] * gain, short.MinValue, short.MaxValue);
+
+                    for (int c = 0; c < channels; c++)
+                    {
+                        _pcm[i * channels + c] = value;
+                    }
                 }
-            }
 
-            _reverb.Process(Reverb, _wet, _dry);
-
-            float gain = MasterVolume * short.MaxValue;
-
-            for (int i = 0; i < frames; i++)
-            {
-                short value = (short)Math.Clamp(_dry[i] * gain, short.MinValue, short.MaxValue);
-
-                for (int c = 0; c < channels; c++)
-                {
-                    _pcm[i * channels + c] = value;
-                }
-            }
-
-            try
-            {
+                // The blocking sink write is the engine's clock: when the device consumes one
+                // block, room becomes available for exactly the next block.
                 _sink.Write(_pcm);
             }
-            catch (ObjectDisposedException)
+        }
+        catch (ObjectDisposedException) when (_stopping)
+        {
+            // Disposal wakes a sink that is waiting for a native buffer.
+        }
+        catch (Exception ex)
+        {
+            Volatile.Write(ref _pumpFailure, ex);
+
+            foreach (ActiveVoice entry in _active)
             {
-                return;
+                entry.Completion.TrySetException(ex);
+            }
+
+            _active.Clear();
+
+            while (_incoming.TryDequeue(out ActiveVoice? pending))
+            {
+                pending.Completion.TrySetException(ex);
             }
         }
     }

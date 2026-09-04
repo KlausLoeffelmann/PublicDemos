@@ -14,13 +14,19 @@ public sealed class Sample
         SampleRate = sampleRate;
     }
 
-    /// <summary>Mono samples in -1..1.</summary>
+    /// <summary>
+    ///  Mono samples in -1..1.
+    /// </summary>
     public float[] Data { get; }
 
-    /// <summary>The rate <see cref="Data"/> is at; must match the engine.</summary>
+    /// <summary>
+    ///  The rate <see cref="Data"/> is at; must match the engine.
+    /// </summary>
     public int SampleRate { get; }
 
-    /// <summary>Playback length.</summary>
+    /// <summary>
+    ///  Playback length.
+    /// </summary>
     public TimeSpan Duration
         => TimeSpan.FromSeconds(Data.Length / (double)SampleRate);
 
