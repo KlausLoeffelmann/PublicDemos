@@ -18,6 +18,9 @@ internal sealed class FlightBoard(int columns)
 
     private readonly List<Flight> _flights = [];
 
+    /// <summary>
+    ///  Gets the fixed-width heading fitted to the configured column count.
+    /// </summary>
     public string Header
         => Fit("FLIGHT  DESTINATION      TIME   GATE  REMARKS");
 
@@ -26,6 +29,14 @@ internal sealed class FlightBoard(int columns)
     /// </summary>
     public string Next(int rows)
     {
+        rows = Math.Max(1, rows);
+
+        if (rows == 1)
+        {
+            _flights.Clear();
+            return Header;
+        }
+
         if (_flights.Count == 0)
         {
             TimeOnly time = new(DateTime.Now.Hour, DateTime.Now.Minute / 5 * 5);

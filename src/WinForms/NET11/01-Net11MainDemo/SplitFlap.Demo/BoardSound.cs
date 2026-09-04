@@ -32,8 +32,16 @@ internal sealed class BoardSound : IDisposable
         _animator.Jammed += OnJammed;
     }
 
-    /// <summary>A melody channel for the "play a tune" button. Same engine, different instrument.</summary>
+    /// <summary>
+    ///  A melody channel for the "play a tune" button. Same engine, different instrument.
+    /// </summary>
     public VoiceChannel Melody { get; private set; } = null!;
+
+    /// <summary>
+    ///  Gets the output sample rate used to build voices.
+    /// </summary>
+    public int SampleRate
+        => _engine.SampleRate;
 
     public VoiceChannel CreateMelodyChannel(VoicePatch patch)
         => Melody = _engine.CreateChannel(patch);

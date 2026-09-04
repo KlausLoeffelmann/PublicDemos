@@ -1,32 +1,69 @@
 namespace SplitFlap.Demo;
 
+/// <summary>
+///  Presents the interactive split-flap departure-board demonstration.
+/// </summary>
 public partial class MainForm : Form
 {
-    private readonly FlightBoard _flights;
+    private readonly StartupOptions _startupOptions;
+    private readonly CancellationTokenSource _lifetimeCancellation = new();
+    private FlightBoard _flights;
     private BoardSound? _sound;
     private CancellationTokenSource? _tuneCancellation;
+    private bool _applyingSettings;
+    private bool _adjustingAspectRatio;
+    private Rectangle _lastWindowedBounds;
+    private FormWindowState _lastWindowedState = FormWindowState.Normal;
 
+    /// <summary>
+    ///  Initializes the form for an interactive launch.
+    /// </summary>
     public MainForm()
+        : this(StartupOptions.Interactive)
     {
+    }
+
+    /// <summary>
+    ///  Initializes the form with parsed startup behavior.
+    /// </summary>
+    internal MainForm(StartupOptions startupOptions)
+    {
+        ArgumentNullException.ThrowIfNull(startupOptions);
+        _startupOptions = startupOptions;
+
         InitializeComponent();
 
         _flights = new FlightBoard(_board.Columns);
 
         _speedComboBox.DataSource = Enum.GetValues<FlipAnimationSpeed>();
         _speedComboBox.SelectedItem = _board.FlipAnimationSpeed;
+        CaptureWindowedState();
     }
 
+    /// <inheritdoc/>
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
 
+        if (!_startupOptions.NoSettings)
+        {
+            ApplySettings(AppSettingsStore.Load());
+        }
+
         // Runs after the form is shown and the queue has drained, so the room sees the board
         // come up from blank instead of getting it pre-settled.
-        _ = InvokeAsync(StartAsync, CancellationToken.None);
+        _ = InvokeAsync(StartAsync, _lifetimeCancellation.Token);
     }
 
+    /// <inheritdoc/>
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        if (!_startupOptions.NoSettings && _autoSaveSettingsMenuItem.Checked)
+        {
+            TrySaveSettings(showFailure: false);
+        }
+
+        _lifetimeCancellation.Cancel();
         _boardTimer.Stop();
         _clockTimer.Stop();
         _tuneCancellation?.Cancel();
@@ -35,10 +72,45 @@ public partial class MainForm : Form
         base.OnFormClosing(e);
     }
 
+    /// <inheritdoc/>
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        _lifetimeCancellation.Dispose();
+        _tuneCancellation?.Dispose();
+        base.OnFormClosed(e);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnResizeEnd(EventArgs e)
+    {
+        base.OnResizeEnd(e);
+        CaptureWindowedState();
+        ApplyWindowAspectRatio();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnLocationChanged(EventArgs e)
+    {
+        base.OnLocationChanged(e);
+        CaptureWindowedState();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        base.OnSizeChanged(e);
+        CaptureWindowedState();
+    }
+
     private async ValueTask StartAsync(CancellationToken cancellationToken)
     {
         try
         {
+            if (_startupOptions.RunFor is { } runFor)
+            {
+                _ = CloseAfterAsync(runFor, cancellationToken);
+            }
+
             await Task.Delay(600, cancellationToken);
 
             UpdateClock();
@@ -46,10 +118,35 @@ public partial class MainForm : Form
 
             _clockTimer.Start();
             _boardTimer.Start();
+
+            if (_startupOptions.Scenario is not SmokeScenario.None)
+            {
+                await RunScenarioAsync(_startupOptions.Scenario, cancellationToken);
+            }
+
         }
         catch (OperationCanceledException)
         {
-            // Closing while starting. Fine.
+            // A timed or user-requested close cancels all pending startup/scenario work.
+        }
+        catch (Exception ex)
+        {
+            Environment.ExitCode = 1;
+            AppLogger.Error("Harness", "The automated scenario failed.", ex);
+            Close();
+        }
+    }
+
+    private async Task CloseAfterAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(delay, cancellationToken);
+            Close();
+        }
+        catch (OperationCanceledException)
+        {
+            // The form was closed before the harness timer elapsed.
         }
     }
 
@@ -75,7 +172,7 @@ public partial class MainForm : Form
         for (int i = 0; i < 4; i++)
         {
             _board.ForceJam(
-                Random.Shared.Next(1, _board.Rows),
+                _board.Rows == 1 ? 0 : Random.Shared.Next(1, _board.Rows),
                 Random.Shared.Next(_board.Columns));
         }
 
@@ -99,30 +196,64 @@ public partial class MainForm : Form
         {
             Size = new Size(Width, Height + 200);
         }
+
+        if (!_applyingSettings)
+        {
+            AppLogger.Information("Display", $"Board dictates size: {dictates}.");
+        }
     }
 
     private void SoundCheckBox_CheckedChanged(object? sender, EventArgs e)
     {
+        if (_applyingSettings)
+        {
+            return;
+        }
+
+        SetSoundEnabled(_soundCheckBox.Checked, showFailure: true);
+    }
+
+    private bool SetSoundEnabled(bool enabled, bool showFailure)
+    {
         try
         {
-            if (_soundCheckBox.Checked)
+            if (enabled && _sound is null)
             {
                 _sound = new BoardSound(_board.Animator);
                 _sound.CreateMelodyChannel(VoicePatch.Lead);
+                AppLogger.Information("Audio", $"Initialized {nameof(WaveOutSink)} at {_sound.SampleRate} Hz.");
             }
-            else
+            else if (!enabled)
             {
                 _tuneCancellation?.Cancel();
                 _sound?.Dispose();
                 _sound = null;
+                AppLogger.Information("Audio", "Sound disabled.");
             }
 
             _tuneButton.Enabled = _sound is not null;
+            _soundCheckBox.Checked = _sound is not null;
+            return _sound is not null;
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex)
         {
             _soundCheckBox.Checked = false;
-            MessageBox.Show(this, ex.Message, "No audio device", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _tuneButton.Enabled = false;
+            _sound?.Dispose();
+            _sound = null;
+            AppLogger.Error("Audio", "Could not initialize sound.", ex);
+
+            if (showFailure)
+            {
+                MessageBox.Show(
+                    this,
+                    $"{ex.Message}{Environment.NewLine}{Environment.NewLine}Details: {AppPaths.LogDirectory}",
+                    "Sound",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+
+            return false;
         }
     }
 
@@ -148,6 +279,7 @@ public partial class MainForm : Form
         }
         catch (Exception ex)
         {
+            AppLogger.Error("Audio", "Tune playback failed.", ex);
             MessageBox.Show(this, ex.Message, "Tune", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
@@ -164,4 +296,296 @@ public partial class MainForm : Form
             _clock.FlipAnimationSpeed = speed;
         }
     }
+
+    private async Task RunScenarioAsync(SmokeScenario scenario, CancellationToken cancellationToken)
+    {
+        AppLogger.Information("Harness", $"Running {scenario} scenario.");
+
+        if (scenario is SmokeScenario.Display or SmokeScenario.All)
+        {
+            _board.Text = _flights.Next(_board.Rows);
+            _board.ForceJam(Math.Min(1, _board.Rows - 1), 0);
+            await Task.Delay(750, cancellationToken);
+        }
+
+        if (scenario is SmokeScenario.Sound or SmokeScenario.All)
+        {
+            if (!SetSoundEnabled(enabled: true, showFailure: false))
+            {
+                throw new InvalidOperationException("The sound scenario could not initialize the audio device.");
+            }
+
+            using CancellationTokenSource soundTimeout =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            soundTimeout.CancelAfter(TimeSpan.FromSeconds(5));
+            await _sound!.Melody.PlayNotesAsync("C4-8 E4-8 G4-8 C5-4", Tempo.Allegro, soundTimeout.Token);
+        }
+
+        AppLogger.Information("Harness", $"{scenario} scenario completed.");
+    }
+
+    private void AutoSaveSettingsMenuItem_Click(object? sender, EventArgs e)
+        => _autoSaveSettingsMenuItem.Checked = !_autoSaveSettingsMenuItem.Checked;
+
+    private void SaveSettingsMenuItem_Click(object? sender, EventArgs e)
+        => TrySaveSettings(showFailure: true);
+
+    private void QuitMenuItem_Click(object? sender, EventArgs e)
+        => Close();
+
+    private void KioskMenuItem_Click(object? sender, EventArgs e)
+    {
+        _kioskModeManager.FullScreen = !_kioskModeManager.FullScreen;
+        AppLogger.Information("Presentation", $"Kiosk mode: {_kioskModeManager.FullScreen}.");
+    }
+
+    private void WindowFullScreenMenuItem_Click(object? sender, EventArgs e)
+    {
+        if (_kioskModeManager.FullScreen)
+        {
+            _kioskModeManager.FullScreen = false;
+        }
+
+        WindowState = WindowState == FormWindowState.Maximized
+            ? FormWindowState.Normal
+            : FormWindowState.Maximized;
+        RefreshMenuChecks();
+    }
+
+    private void KioskModeManager_FullScreenChanged(object? sender, EventArgs e)
+        => RefreshMenuChecks();
+
+    private void FontMenuItem_Click(object? sender, EventArgs e)
+    {
+        using Font initialFont = new(
+            MonospaceFonts.ResolveFamilyName(_board.FontName),
+            _board.FontSize,
+            FontStyle.Regular,
+            GraphicsUnit.Point);
+        using FontDialog dialog = new()
+        {
+            Font = initialFont,
+            FontMustExist = true,
+            ShowEffects = false,
+            MinSize = 4,
+            MaxSize = 400
+        };
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _board.FontName = dialog.Font.FontFamily.Name;
+            _board.FontSize = dialog.Font.SizeInPoints;
+            ApplyWindowAspectRatio();
+        }
+    }
+
+    private void KeepAspectRatioMenuItem_Click(object? sender, EventArgs e)
+    {
+        _keepAspectRatioMenuItem.Checked = !_keepAspectRatioMenuItem.Checked;
+        _board.KeepAspectRatio = _keepAspectRatioMenuItem.Checked;
+        ApplyWindowAspectRatio();
+    }
+
+    private void DefineGridMenuItem_Click(object? sender, EventArgs e)
+    {
+        using GridDimensionsDialog dialog = new(_board.Rows, _board.Columns);
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _board.Rows = dialog.Rows;
+            _board.Columns = dialog.Columns;
+            _flights = new FlightBoard(_board.Columns);
+            _board.Text = _flights.Next(_board.Rows);
+            ApplyWindowAspectRatio();
+        }
+    }
+
+    private void FitScreenMenuItem_Click(object? sender, EventArgs e)
+    {
+        if (_kioskModeManager.FullScreen)
+        {
+            _kioskModeManager.FullScreen = false;
+        }
+
+        WindowState = FormWindowState.Normal;
+        Screen screen = Screen.FromControl(this);
+        Size target = new(
+            (int)(screen.WorkingArea.Width * 0.9),
+            (int)((screen.WorkingArea.Height - _bottomBar.Height - _menuStrip.Height) * 0.9));
+
+        bool previousAutoSize = _board.AutoSize;
+        _board.AutoSize = true;
+        Size preferred = _board.GetPreferredSize(Size.Empty);
+        DisplayLayoutCalculator.DisplayFit fit = DisplayLayoutCalculator.CalculateGridFit(
+            _board.Rows,
+            _board.Columns,
+            _board.FontSize,
+            preferred,
+            target);
+        _board.Rows = fit.Rows;
+        _board.Columns = fit.Columns;
+        _board.FontSize = fit.FontSize;
+        _flights = new FlightBoard(_board.Columns);
+        _board.Text = _flights.Next(_board.Rows);
+        _board.AutoSize = previousAutoSize;
+
+        ClientSize = new Size(
+            Math.Min(screen.WorkingArea.Width, _board.GetPreferredSize(Size.Empty).Width),
+            Math.Min(
+                screen.WorkingArea.Height,
+                _board.GetPreferredSize(Size.Empty).Height + _bottomBar.Height + _menuStrip.Height));
+        CenterToScreen();
+    }
+
+    private void ApplyWindowAspectRatio()
+    {
+        if (_adjustingAspectRatio
+            || !_keepAspectRatioMenuItem.Checked
+            || WindowState != FormWindowState.Normal
+            || _kioskModeManager.FullScreen)
+        {
+            return;
+        }
+
+        Size preferred = _board.GetPreferredSize(Size.Empty);
+
+        if (preferred.Width <= 0 || preferred.Height <= 0)
+        {
+            return;
+        }
+
+        _adjustingAspectRatio = true;
+
+        try
+        {
+            int nonBoardHeight = _bottomBar.Height + _menuStrip.Height + Padding.Vertical;
+            int targetHeight = (int)Math.Round(ClientSize.Width * preferred.Height / (double)preferred.Width)
+                + nonBoardHeight;
+            ClientSize = new Size(ClientSize.Width, Math.Max(nonBoardHeight + 1, targetHeight));
+        }
+        finally
+        {
+            _adjustingAspectRatio = false;
+        }
+    }
+
+    private void ApplySettings(AppSettings settings)
+    {
+        _applyingSettings = true;
+
+        try
+        {
+            _autoSaveSettingsMenuItem.Checked = settings.AutoSave;
+            _board.FontName = settings.FontName;
+            _board.FontSize = settings.FontSize;
+            _board.Rows = settings.Rows;
+            _board.Columns = settings.Columns;
+            _board.KeepAspectRatio = settings.KeepAspectRatio;
+            _keepAspectRatioMenuItem.Checked = settings.KeepAspectRatio;
+            _autoSizeCheckBox.Checked = settings.BoardDictatesSize;
+            _speedComboBox.SelectedItem = settings.AnimationSpeed;
+            _flights = new FlightBoard(_board.Columns);
+
+            Rectangle savedBounds = new(
+                settings.WindowX,
+                settings.WindowY,
+                settings.WindowWidth,
+                settings.WindowHeight);
+
+            if (IsVisibleOnAnyScreen(savedBounds))
+            {
+                StartPosition = FormStartPosition.Manual;
+                Bounds = savedBounds;
+                WindowState = settings.WindowState == FormWindowState.Maximized
+                    ? FormWindowState.Maximized
+                    : FormWindowState.Normal;
+            }
+
+            CaptureWindowedState();
+        }
+        finally
+        {
+            _applyingSettings = false;
+        }
+
+        SetSoundEnabled(settings.SoundEnabled, showFailure: false);
+        RefreshMenuChecks();
+    }
+
+    private AppSettings CaptureSettings()
+    {
+        CaptureWindowedState();
+        Rectangle bounds = _lastWindowedBounds;
+
+        return new AppSettings
+        {
+            AutoSave = _autoSaveSettingsMenuItem.Checked,
+            WindowX = bounds.X,
+            WindowY = bounds.Y,
+            WindowWidth = bounds.Width,
+            WindowHeight = bounds.Height,
+            WindowState = _lastWindowedState,
+            FontName = _board.FontName,
+            FontSize = _board.FontSize,
+            Rows = _board.Rows,
+            Columns = _board.Columns,
+            KeepAspectRatio = _keepAspectRatioMenuItem.Checked,
+            BoardDictatesSize = _autoSizeCheckBox.Checked,
+            AnimationSpeed = _board.FlipAnimationSpeed,
+            SoundEnabled = _sound is not null
+        };
+    }
+
+    private void TrySaveSettings(bool showFailure)
+    {
+        try
+        {
+            AppSettingsStore.Save(CaptureSettings());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            if (showFailure)
+            {
+                MessageBox.Show(
+                    this,
+                    $"{ex.Message}{Environment.NewLine}{Environment.NewLine}Details: {AppPaths.LogDirectory}",
+                    "Save Settings",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+    }
+
+    private void RefreshMenuChecks()
+    {
+        _kioskMenuItem.Checked = _kioskModeManager.FullScreen;
+        _windowFullScreenMenuItem.Checked =
+            !_kioskModeManager.FullScreen && WindowState == FormWindowState.Maximized;
+    }
+
+    private void CaptureWindowedState()
+    {
+        if (_kioskModeManager is null
+            || _kioskModeManager.FullScreen
+            || WindowState == FormWindowState.Minimized)
+        {
+            return;
+        }
+
+        Rectangle bounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+
+        if (bounds.Width > 0 && bounds.Height > 0)
+        {
+            _lastWindowedBounds = bounds;
+        }
+
+        _lastWindowedState = WindowState == FormWindowState.Maximized
+            ? FormWindowState.Maximized
+            : FormWindowState.Normal;
+    }
+
+    private static bool IsVisibleOnAnyScreen(Rectangle bounds)
+        => bounds.Width >= 320
+            && bounds.Height >= 240
+            && Screen.AllScreens.Any(screen => screen.WorkingArea.IntersectsWith(bounds));
 }
