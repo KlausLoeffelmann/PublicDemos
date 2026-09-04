@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>SplitFlap.Audio</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="SplitFlap.Audio.Core" />
+    <Using Include="SplitFlap.Audio.Synthesis" />
+    <Using Include="SplitFlap.Audio.Music" />
+    <Using Include="SplitFlap.Audio.Playback" />
+  </ItemGroup>
+
+</Project>
