@@ -1,5 +1,6 @@
 using SplitFlap.Audio.Core;
 using SplitFlap.Audio.Playback;
+using SplitFlap.Audio.Synthesis;
 
 namespace SplitFlap.Tests;
 
@@ -51,6 +52,35 @@ public sealed class AudioFormatTests
                     TestContext.Current.CancellationToken));
 
         Assert.Contains("sink failure", exception.Message);
+    }
+
+    [Fact]
+    public void ClackVoice_DelaysAndSoftensItsAttack()
+    {
+        const int sampleRate = 48_000;
+        const int delaySamples = 240;
+        ClackVoice voice = new(
+            sampleRate,
+            volume: 0.3f,
+            startDelay: TimeSpan.FromMilliseconds(5),
+            attackMilliseconds: 1.5f);
+
+        for (int index = 0; index < delaySamples; index++)
+        {
+            Assert.Equal(0f, voice.Next());
+        }
+
+        // The first generated sample is heavily attenuated by the attack rather than beginning
+        // at the noise generator's full random amplitude.
+        Assert.InRange(Math.Abs(voice.Next()), 0f, 0.02f);
+
+        float peak = 0;
+        for (int index = 0; index < 200; index++)
+        {
+            peak = Math.Max(peak, Math.Abs(voice.Next()));
+        }
+
+        Assert.True(peak > 0.02f);
     }
 
     private sealed class MemorySink : IAudioSink

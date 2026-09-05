@@ -28,6 +28,14 @@ description: Develop, diagnose, document, and test the vanilla SplitFlap.Audio s
 - Reverb uses a per-voice send into a wet bus; the dry and processed wet signals meet before PCM conversion.
 - `MasterVolume` needs headroom because many flap clacks can overlap.
 - Cancellation requests a graceful voice release; sequence cancellation stops scheduling additional notes.
+- Flap events are raised on the dedicated animator worker, not the UI thread. `BoardSound`
+  only constructs and enqueues voices there; `AudioEngine` generates and mixes every sample
+  on its own high-priority pump thread.
+- Same-frame flap events need sub-buffer offsets. `ClackVoice.startDelay` emits exact silence
+  for the requested sample count, allowing `BoardSound` to stagger a group without timers,
+  sleeps, extra tasks, or UI-thread involvement.
+- Keep the clack attack short but nonzero. The half-sine attack preserves the mechanical
+  transient while avoiding a full-amplitude random noise sample at the first sample boundary.
 
 ## Struct defaults
 

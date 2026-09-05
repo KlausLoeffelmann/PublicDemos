@@ -48,8 +48,10 @@ internal sealed class BoardSound : IDisposable
 
     private void OnFlapFell(object? sender, FlapEventArgs e)
     {
-        // Forty flaps falling in the same 16 ms frame are perceived as one big clatter anyway.
-        // Beyond a dozen voices the mix only gets louder, not busier, so we cap per frame.
+        // The animator advances every visual in one frame, so without an offset all resulting
+        // clacks would enter the next audio block on exactly the same sample. Real flap shafts
+        // and solenoids have small mechanical tolerances. Spread this frame's strikes across
+        // roughly six milliseconds, with a little jitter, to reproduce that loose clatter.
         long now = Environment.TickCount64;
 
         if (now - _lastFrameTick > 8)
@@ -58,9 +60,22 @@ internal sealed class BoardSound : IDisposable
             _clacksThisFrame = 0;
         }
 
-        if (++_clacksThisFrame <= MaxClacksPerFrame)
+        int clackIndex = _clacksThisFrame++;
+
+        // Beyond a dozen voices the mix only gets louder, not busier, so retain the cap.
+        if (clackIndex < MaxClacksPerFrame)
         {
-            _clacks.Trigger(new ClackVoice(_engine.SampleRate, volume: 0.28f));
+            double delayMilliseconds =
+                clackIndex * 0.5
+                + 0.1
+                + Random.Shared.NextDouble() * 0.3;
+
+            _clacks.Trigger(
+                new ClackVoice(
+                    _engine.SampleRate,
+                    volume: 0.25f,
+                    startDelay: TimeSpan.FromMilliseconds(delayMilliseconds),
+                    attackMilliseconds: 1.5f));
         }
     }
 

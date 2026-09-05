@@ -115,6 +115,9 @@ public sealed class ClackVoice : IVoice
     private readonly float _noiseDecay;
     private readonly float _tickDecay;
     private readonly float _volume;
+    private readonly int _attackSamples;
+    private int _startDelaySamples;
+    private int _ageSamples;
     private float _noiseLevel = 1f;
     private float _tickLevel = 0.6f;
 
@@ -123,8 +126,22 @@ public sealed class ClackVoice : IVoice
     /// </summary>
     /// <param name="sampleRate">Engine sample rate.</param>
     /// <param name="volume">Loudness, 0..1. Forty of these at once add up; 0.3 is plenty.</param>
-    public ClackVoice(int sampleRate, float volume = 0.3f)
+    /// <param name="startDelay">
+    ///  Silence before the strike. This permits sample-accurate staggering even when several
+    ///  voices enter the same engine buffer.
+    /// </param>
+    /// <param name="attackMilliseconds">
+    ///  Time used to ramp into the strike. A very short attack keeps the mechanical transient
+    ///  while avoiding the unnatural full-scale first noise sample.
+    /// </param>
+    public ClackVoice(
+        int sampleRate,
+        float volume = 0.3f,
+        TimeSpan startDelay = default,
+        float attackMilliseconds = 1.5f)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sampleRate);
+
         float variance = 0.85f + (float)Random.Shared.NextDouble() * 0.3f;
 
         _filter = new OnePoleFilter(sampleRate)
@@ -142,22 +159,36 @@ public sealed class ClackVoice : IVoice
         _noiseDecay = DecayPerSample(6f * variance, sampleRate);
         _tickDecay = DecayPerSample(2.5f, sampleRate);
         _volume = volume * variance;
+        _startDelaySamples = Math.Max(0, (int)Math.Round(startDelay.TotalSeconds * sampleRate));
+        _attackSamples = Math.Max(
+            1,
+            (int)Math.Round(Math.Max(0, attackMilliseconds) * sampleRate / 1000f));
     }
 
     /// <inheritdoc/>
     public bool IsFinished
-        => _noiseLevel < 0.001f;
+        => _startDelaySamples <= 0 && _noiseLevel < 0.001f;
 
     /// <inheritdoc/>
     public float Next()
     {
+        if (_startDelaySamples > 0)
+        {
+            _startDelaySamples--;
+            return 0f;
+        }
+
+        // A half-sine eases in more naturally than a linear ramp. At 48 kHz, the default
+        // 1.5 ms attack spans 72 samples: fast enough to remain a clack, but not a hard edge.
+        float attackProgress = Math.Min(1f, ++_ageSamples / (float)_attackSamples);
+        float attack = MathF.Sin(attackProgress * MathF.PI / 2f);
         float noise = _filter.Next(_noise.Next()) * _noiseLevel;
         float tick = _tick.Next() * _tickLevel;
 
         _noiseLevel *= _noiseDecay;
         _tickLevel *= _tickDecay;
 
-        return (noise + tick) * _volume;
+        return (noise + tick) * _volume * attack;
     }
 
     /// <inheritdoc/>
