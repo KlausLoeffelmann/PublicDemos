@@ -24,6 +24,39 @@ The test project is an xUnit v3 executable integrated with Microsoft Testing Pla
 
 Use a fake `IAudioSink` for engine tests. A fake sink controls pacing, captures PCM, and can deliberately throw to verify pump error propagation.
 
+## Opt-in audio performance measurements
+
+The existing xUnit v3 runner includes an explicit, device-independent performance workload:
+
+```powershell
+dotnet run --project .\SplitFlap.Tests\SplitFlap.Tests.csproj -c Release --no-restore -- --filter-class SplitFlap.Tests.AudioPerformanceTests --explicit only --parallel none --show-live-output on --timeout 180s
+```
+
+It is excluded from ordinary runs. No benchmark package, audio endpoint, or unsafe code is
+needed. Run without a debugger and compare the same machine/configuration.
+If a running demo locks its output DLLs, build with an isolated
+`-p:OutDir=<directory>` and run `SplitFlap.Tests.exe` from that directory rather than
+closing the user's demo instance.
+
+- `MeasurePump` warms all paths and reports three rounds with fixed seeded input and block counts.
+- Workloads cover idle output, a sine, twelve-clack board bursts at nominal 60 Hz, a mixed board
+  and melody, 32/64-clack stress, 64 sines, and a hall tail.
+- `MeasureLongIdle` additionally measures room and hall output after 64 simulated seconds with
+  no new strikes. This catches subnormal feedback costs that fresh-silence measurements miss.
+- `PERF` lines contain JSON with mean/p95/p99/maximum block-render elapsed time, render time
+  per simulated audio second, bytes allocated per render block and per admitted voice,
+  process-wide Gen0 counts, and a PCM checksum.
+- The measuring sink neither copies PCM nor sleeps during rendering. It times the real pump
+  between writes, excluding its own synthetic scheduling. Producer allocations are measured
+  separately; this fixture schedules on the pump thread, not on a real concurrent animator.
+- The timings are elapsed render intervals, not isolated CPU counters or speaker latency.
+  They do not measure native WinMM copy/wait cost, producer contention, or driver buffering.
+  Other work in the test process can contribute to Gen0 counts and scheduling outliers.
+- There are no machine-dependent timing assertions. Keep ordinary regression tests deterministic.
+  Reference-equation tests cover DSP output; a checksum is only a useful coarse comparison.
+- `Span<T>` alone is not a performance result. Record repeatable before/after numbers and
+  retain more complex or sound-changing techniques only when their benefit is substantial.
+
 ## Command-line smoke runs
 
 The WinForms executable accepts:

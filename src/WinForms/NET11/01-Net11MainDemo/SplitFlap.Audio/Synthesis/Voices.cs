@@ -109,7 +109,7 @@ public sealed class SampleVoice(Sample sample, float volume = 1f) : IVoice
 /// </summary>
 public sealed class ClackVoice : IVoice
 {
-    private readonly NoiseSource _noise = new();
+    private readonly NoiseSource _noise;
     private readonly OnePoleFilter _filter;
     private readonly Oscillator _tick;
     private readonly float _noiseDecay;
@@ -139,11 +139,30 @@ public sealed class ClackVoice : IVoice
         float volume = 0.3f,
         TimeSpan startDelay = default,
         float attackMilliseconds = 1.5f)
+        : this(
+            sampleRate,
+            volume,
+            startDelay,
+            attackMilliseconds,
+            (uint)Random.Shared.Next(1, int.MaxValue),
+            0.85f + (float)Random.Shared.NextDouble() * 0.3f)
+    {
+    }
+
+    /// <summary>
+    ///  Creates a repeatable clack for reference comparisons and performance workloads.
+    /// </summary>
+    internal ClackVoice(
+        int sampleRate,
+        float volume,
+        TimeSpan startDelay,
+        float attackMilliseconds,
+        uint noiseSeed,
+        float variance)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sampleRate);
 
-        float variance = 0.85f + (float)Random.Shared.NextDouble() * 0.3f;
-
+        _noise = new NoiseSource(noiseSeed);
         _filter = new OnePoleFilter(sampleRate)
         {
             HighPassHz = 1_400f * variance,
@@ -180,8 +199,15 @@ public sealed class ClackVoice : IVoice
 
         // A half-sine eases in more naturally than a linear ramp. At 48 kHz, the default
         // 1.5 ms attack spans 72 samples: fast enough to remain a clack, but not a hard edge.
-        float attackProgress = Math.Min(1f, ++_ageSamples / (float)_attackSamples);
-        float attack = MathF.Sin(attackProgress * MathF.PI / 2f);
+        // After the ramp its multiplier is exactly one. The remaining decay needs no
+        // division or trigonometry for the attack envelope.
+        float attack = 1f;
+        if (_ageSamples < _attackSamples)
+        {
+            float attackProgress = ++_ageSamples / (float)_attackSamples;
+            attack = MathF.Sin(attackProgress * MathF.PI / 2f);
+        }
+
         float noise = _filter.Next(_noise.Next()) * _noiseLevel;
         float tick = _tick.Next() * _tickLevel;
 
@@ -194,7 +220,8 @@ public sealed class ClackVoice : IVoice
     /// <inheritdoc/>
     public void Release()
     {
-        // A clack can't be interrupted. It's 30 ms long; it will be gone before you notice.
+        // A clack is a short one-shot: its randomized decay reaches the cutoff in roughly
+        // 35-48 ms, plus any leading delay. Let the mechanical strike finish naturally.
     }
 
     private static float DecayPerSample(float tauMilliseconds, int sampleRate)

@@ -38,11 +38,18 @@ public enum Waveform
 public sealed class Oscillator(int sampleRate)
 {
     private double _phase;
+    private double _frequency = 440;
+    private double _renderedFrequency = double.NaN;
+    private double _phaseIncrement;
 
     /// <summary>
     ///  Frequency in Hz. Can be changed while running (vibrato, pitch envelopes).
     /// </summary>
-    public double Frequency { get; set; } = 440;
+    public double Frequency
+    {
+        get => Volatile.Read(ref _frequency);
+        set => Volatile.Write(ref _frequency, value);
+    }
 
     /// <summary>
     ///  The wave shape.
@@ -59,8 +66,17 @@ public sealed class Oscillator(int sampleRate)
     /// </summary>
     public float Next()
     {
+        // Pitch can change on a sequencing thread. Read it once, then update the cached
+        // increment on the rendering thread only; an unchanged pitch needs no division.
+        double frequency = Frequency;
+        if (frequency != _renderedFrequency)
+        {
+            _phaseIncrement = frequency / sampleRate;
+            _renderedFrequency = frequency;
+        }
+
         double phase = _phase;
-        _phase += Frequency / sampleRate;
+        _phase += _phaseIncrement;
 
         if (_phase >= 1)
         {
@@ -90,7 +106,24 @@ public sealed class Oscillator(int sampleRate)
 /// </summary>
 public sealed class NoiseSource
 {
-    private uint _state = (uint)Random.Shared.Next(1, int.MaxValue);
+    private uint _state;
+
+    /// <summary>
+    ///  Starts an independent noise stream with a random seed.
+    /// </summary>
+    public NoiseSource()
+        : this((uint)Random.Shared.Next(1, int.MaxValue))
+    {
+    }
+
+    /// <summary>
+    ///  Starts a repeatable noise stream for sample comparisons.
+    /// </summary>
+    internal NoiseSource(uint seed)
+    {
+        ArgumentOutOfRangeException.ThrowIfZero(seed);
+        _state = seed;
+    }
 
     /// <summary>
     ///  Produces the next sample in -1..1 (xorshift; good enough and allocation-free).
@@ -108,21 +141,56 @@ public sealed class NoiseSource
 /// <summary>
 ///  A one-pole filter. Not a real synth filter, but it tames noise into something drum-shaped.
 /// </summary>
-public sealed class OnePoleFilter(int sampleRate)
+/// <remarks>
+///  Configure cutoffs on the thread that owns the filter, before processing samples.
+/// </remarks>
+public sealed class OnePoleFilter
 {
+    private readonly int _sampleRate;
+    private readonly float _samplePeriod;
+    private float _lowPassHz;
+    private float _highPassHz;
+    private float _lowPassCoefficient;
+    private float _highPassCoefficient;
     private float _low;
     private float _high;
     private float _lastInput;
 
     /// <summary>
+    ///  Prepares the filter and its default cutoff coefficients for a sample rate.
+    /// </summary>
+    public OnePoleFilter(int sampleRate)
+    {
+        _sampleRate = sampleRate;
+        _samplePeriod = 1f / sampleRate;
+        LowPassHz = 20_000;
+    }
+
+    /// <summary>
     ///  Low-pass cutoff in Hz.
     /// </summary>
-    public float LowPassHz { get; set; } = 20_000;
+    public float LowPassHz
+    {
+        get => _lowPassHz;
+        set
+        {
+            _lowPassHz = value;
+            _lowPassCoefficient = 1f - Coefficient(value);
+        }
+    }
 
     /// <summary>
     ///  High-pass cutoff in Hz.
     /// </summary>
-    public float HighPassHz { get; set; } = 0;
+    public float HighPassHz
+    {
+        get => _highPassHz;
+        set
+        {
+            _highPassHz = value;
+            _highPassCoefficient = value > 0 ? Coefficient(value) : 0;
+        }
+    }
 
     /// <summary>
     ///  Runs one sample through high-pass, then low-pass.
@@ -133,16 +201,14 @@ public sealed class OnePoleFilter(int sampleRate)
 
         if (HighPassHz > 0)
         {
-            float a = Coefficient(HighPassHz);
-            _high = a * (_high + input - _lastInput);
+            _high = _highPassCoefficient * (_high + input - _lastInput);
             _lastInput = input;
             hp = _high;
         }
 
-        if (LowPassHz < sampleRate / 2f)
+        if (LowPassHz < _sampleRate / 2f)
         {
-            float a = 1 - Coefficient(LowPassHz);
-            _low += a * (hp - _low);
+            _low += _lowPassCoefficient * (hp - _low);
 
             return _low;
         }
@@ -153,8 +219,9 @@ public sealed class OnePoleFilter(int sampleRate)
     private float Coefficient(float hz)
     {
         float rc = 1f / (MathF.Tau * hz);
-        float dt = 1f / sampleRate;
 
-        return rc / (rc + dt);
+        // A cutoff describes the same filter for thousands of consecutive samples. Compute
+        // its RC coefficient when the parameter changes, not inside that sample loop.
+        return rc / (rc + _samplePeriod);
     }
 }

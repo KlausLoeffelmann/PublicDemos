@@ -2,19 +2,25 @@ namespace SplitFlap.Demo;
 
 /// <summary>
 ///  Glue between the animator and the audio engine: every fallen flap becomes a clack, every jam a
-///  short buzz. Lives entirely on the animator and engine threads; the UI never hears about it.
+///  short buzz. Voices are queued on the animator thread and rendered on the engine thread;
+///  the UI observes only the engine's lifetime task for terminal failures.
 /// </summary>
 internal sealed class BoardSound : IDisposable
 {
     private const int MaxClacksPerFrame = 12;
 
     private readonly SplitFlapAnimator _animator;
+    private readonly Lock _eventSync = new();
     private readonly AudioEngine _engine;
     private readonly VoiceChannel _clacks;
     private readonly VoiceChannel _buzz;
     private long _lastFrameTick;
     private int _clacksThisFrame;
+    private bool _disposed;
 
+    /// <summary>
+    ///  Connects board events to a shared synthesis engine.
+    /// </summary>
     public BoardSound(SplitFlapAnimator animator)
     {
         _animator = animator;
@@ -43,10 +49,32 @@ internal sealed class BoardSound : IDisposable
     public int SampleRate
         => _engine.SampleRate;
 
+    /// <summary>
+    ///  Completes on normal shutdown, or faults if audio rendering or device output fails.
+    /// </summary>
+    public Task Completion
+        => _engine.Completion;
+
+    /// <summary>
+    ///  Creates the instrument channel used by the tune button.
+    /// </summary>
     public VoiceChannel CreateMelodyChannel(VoicePatch patch)
         => Melody = _engine.CreateChannel(patch);
 
     private void OnFlapFell(object? sender, FlapEventArgs e)
+    {
+        // Unsubscribing does not cancel a handler already in progress on the animator.
+        // Finish that short admission before disposal closes the engine.
+        lock (_eventSync)
+        {
+            if (!_disposed)
+            {
+                TriggerClack();
+            }
+        }
+    }
+
+    private void TriggerClack()
     {
         // The animator advances every visual in one frame, so without an offset all resulting
         // clacks would enter the next audio block on exactly the same sample. Real flap shafts
@@ -80,12 +108,34 @@ internal sealed class BoardSound : IDisposable
     }
 
     private void OnJammed(object? sender, FlapEventArgs e)
-        => _ = _buzz.PlaySoundAsync(Sound.Of(55, 220));
+    {
+        lock (_eventSync)
+        {
+            if (!_disposed)
+            {
+                _buzz.Trigger(new ToneVoice(
+                    _engine.SampleRate,
+                    _buzz.Patch,
+                    55,
+                    TimeSpan.FromMilliseconds(220),
+                    _buzz.Volume));
+            }
+        }
+    }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
-        _animator.FlapFell -= OnFlapFell;
-        _animator.Jammed -= OnJammed;
+        lock (_eventSync)
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                _animator.FlapFell -= OnFlapFell;
+                _animator.Jammed -= OnJammed;
+            }
+        }
+
         _engine.Dispose();
     }
 }

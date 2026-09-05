@@ -32,6 +32,7 @@ public readonly record struct ReverbSettings(float Mix = 0.25f, float Decay = 0.
 /// </summary>
 public sealed class Reverb
 {
+    private const float SilenceThreshold = 1e-20f;
     private static readonly int[] s_combLengths = [1116, 1188, 1277, 1356];
     private static readonly int[] s_allPassLengths = [556, 441];
 
@@ -82,6 +83,12 @@ public sealed class Reverb
         }
     }
 
+    // Feedback can retain tiny "subnormal" floats long after the tail is inaudible; some
+    // processors handle those much more slowly. This floor is far below one 16-bit PCM step.
+    // Clear only that residue, never a live tail just because there are no active voices.
+    private static float FlushInaudible(float value)
+        => MathF.Abs(value) < SilenceThreshold ? 0f : value;
+
     private sealed class Comb(int length)
     {
         private readonly float[] _buffer = new float[Math.Max(1, length)];
@@ -91,8 +98,8 @@ public sealed class Reverb
         public float Next(float input, float feedback)
         {
             float output = _buffer[_index];
-            _filterStore = output * 0.8f + _filterStore * 0.2f;
-            _buffer[_index] = input + _filterStore * feedback;
+            _filterStore = FlushInaudible(output * 0.8f + _filterStore * 0.2f);
+            _buffer[_index] = FlushInaudible(input + _filterStore * feedback);
 
             if (++_index >= _buffer.Length)
             {
@@ -112,7 +119,7 @@ public sealed class Reverb
         {
             float buffered = _buffer[_index];
             float output = -input + buffered;
-            _buffer[_index] = input + buffered * 0.5f;
+            _buffer[_index] = FlushInaudible(input + buffered * 0.5f);
 
             if (++_index >= _buffer.Length)
             {

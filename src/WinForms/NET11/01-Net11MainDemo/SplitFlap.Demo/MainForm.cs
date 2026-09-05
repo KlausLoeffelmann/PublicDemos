@@ -10,6 +10,7 @@ public partial class MainForm : Form
     private FlightBoard _flights;
     private BoardSound? _sound;
     private CancellationTokenSource? _tuneCancellation;
+    private Exception? _reportedAudioFailure;
     private bool _applyingSettings;
     private bool _adjustingAspectRatio;
 
@@ -223,7 +224,9 @@ public partial class MainForm : Form
             {
                 _sound = new BoardSound(_board.Animator);
                 _sound.CreateMelodyChannel(VoicePatch.Lead);
+                _reportedAudioFailure = null;
                 AppLogger.Information("Audio", $"Initialized {nameof(WaveOutSink)} at {_sound.SampleRate} Hz.");
+                _ = ObserveSoundAsync(_sound);
             }
             else if (!enabled)
             {
@@ -239,17 +242,28 @@ public partial class MainForm : Form
         }
         catch (Exception ex)
         {
+            BoardSound? failedSound = _sound;
+            _sound = null;
             _soundCheckBox.Checked = false;
             _tuneButton.Enabled = false;
-            _sound?.Dispose();
-            _sound = null;
-            AppLogger.Error("Audio", "Could not initialize sound.", ex);
+            Exception failure = ex;
+            try
+            {
+                failedSound?.Dispose();
+            }
+            catch (Exception cleanupError)
+            {
+                failure = new AggregateException(
+                    "Changing the sound state and releasing the audio device failed.", ex, cleanupError);
+            }
+
+            AppLogger.Error("Audio", "Could not change the sound state.", failure);
 
             if (showFailure)
             {
                 MessageBox.Show(
                     this,
-                    $"{ex.Message}{Environment.NewLine}{Environment.NewLine}Details: {AppPaths.LogDirectory}",
+                    $"{failure.Message}{Environment.NewLine}{Environment.NewLine}Details: {AppPaths.LogDirectory}",
                     "Sound",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
@@ -259,17 +273,72 @@ public partial class MainForm : Form
         }
     }
 
-    private async void TuneButton_Click(object? sender, EventArgs e)
+    private async Task ObserveSoundAsync(BoardSound sound)
     {
-        if (_sound is null)
+        try
+        {
+            // Started from the UI thread: the continuation returns here, not to the audio pump.
+            // One observed lifetime task covers clacks and buzzes that have no per-voice task.
+            await sound.Completion;
+        }
+        catch (Exception ex)
+        {
+            ReportSoundFailure(sound, ex);
+        }
+    }
+
+    private void ReportSoundFailure(BoardSound sound, Exception exception)
+    {
+        if (ReferenceEquals(_reportedAudioFailure, exception))
         {
             return;
         }
 
+        _reportedAudioFailure = exception;
+        AppLogger.Error("Audio", "Playback failed.", exception);
+
+        // An old engine may report failure after the user has already disabled/replaced it.
+        // Keep its diagnostic, but do not turn off a newer, healthy engine.
+        if (!ReferenceEquals(_sound, sound))
+        {
+            return;
+        }
+
+        SetSoundEnabled(enabled: false, showFailure: false);
+        if (_lifetimeCancellation.IsCancellationRequested || IsDisposed || Disposing)
+        {
+            return;
+        }
+
+        if (_startupOptions.Scenario is not SmokeScenario.None)
+        {
+            Environment.ExitCode = 1;
+            Close();
+            return;
+        }
+
+        MessageBox.Show(
+            this,
+            $"{exception.Message}{Environment.NewLine}{Environment.NewLine}Details: {AppPaths.LogDirectory}",
+            "Sound",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Error);
+    }
+
+    private async void TuneButton_Click(object? sender, EventArgs e)
+    {
+        BoardSound? sound = _sound;
+        if (sound is null)
+        {
+            return;
+        }
+
+        using CancellationTokenSource cancellation = new();
+        _tuneCancellation?.Cancel();
+        _tuneCancellation = cancellation;
+
         try
         {
-            _tuneCancellation?.Cancel();
-            _tuneCancellation = new CancellationTokenSource();
             _tuneButton.Enabled = false;
 
             // Beethoven. Public domain, and every German in the room will hum along whether they want to or not.
@@ -277,16 +346,23 @@ public partial class MainForm : Form
                 "E4-4 E4-4 F4-4 G4-4 G4-4 F4-4 E4-4 D4-4 C4-4 C4-4 D4-4 E4-4 E4-4. D4-8 D4-2 " +
                 "E4-4 E4-4 F4-4 G4-4 G4-4 F4-4 E4-4 D4-4 C4-4 C4-4 D4-4 E4-4 D4-4. C4-8 C4-2";
 
-            await _sound.Melody.PlayNotesAsync(melody, Tempo.Allegro, _tuneCancellation.Token);
+            await sound.Melody.PlayNotesAsync(melody, Tempo.Allegro, cancellation.Token);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            // Disabling sound or closing the form intentionally interrupts this tune.
         }
         catch (Exception ex)
         {
-            AppLogger.Error("Audio", "Tune playback failed.", ex);
-            MessageBox.Show(this, ex.Message, "Tune", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ReportSoundFailure(sound, ex);
         }
         finally
         {
-            _tuneButton.Enabled = _sound is not null;
+            if (ReferenceEquals(_tuneCancellation, cancellation))
+            {
+                _tuneCancellation = null;
+                _tuneButton.Enabled = _sound is not null;
+            }
         }
     }
 
