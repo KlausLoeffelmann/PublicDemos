@@ -12,8 +12,6 @@ public partial class MainForm : Form
     private CancellationTokenSource? _tuneCancellation;
     private bool _applyingSettings;
     private bool _adjustingAspectRatio;
-    private Rectangle _lastWindowedBounds;
-    private FormWindowState _lastWindowedState = FormWindowState.Normal;
 
     /// <summary>
     ///  Initializes the form for an interactive launch.
@@ -37,7 +35,6 @@ public partial class MainForm : Form
 
         _speedComboBox.DataSource = Enum.GetValues<FlipAnimationSpeed>();
         _speedComboBox.SelectedItem = _board.FlipAnimationSpeed;
-        CaptureWindowedState();
     }
 
     /// <inheritdoc/>
@@ -58,6 +55,13 @@ public partial class MainForm : Form
     /// <inheritdoc/>
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        // KioskModeManager owns and restores all form presentation state. Leave kiosk through
+        // the component before capturing ordinary window settings.
+        if (_kioskModeManager.FullScreen)
+        {
+            _kioskModeManager.FullScreen = false;
+        }
+
         if (!_startupOptions.NoSettings && _autoSaveSettingsMenuItem.Checked)
         {
             TrySaveSettings(showFailure: false);
@@ -84,22 +88,23 @@ public partial class MainForm : Form
     protected override void OnResizeEnd(EventArgs e)
     {
         base.OnResizeEnd(e);
-        CaptureWindowedState();
         ApplyWindowAspectRatio();
     }
 
     /// <inheritdoc/>
-    protected override void OnLocationChanged(EventArgs e)
+    protected override void OnClientSizeChanged(EventArgs e)
     {
-        base.OnLocationChanged(e);
-        CaptureWindowedState();
-    }
+        base.OnClientSizeChanged(e);
 
-    /// <inheritdoc/>
-    protected override void OnSizeChanged(EventArgs e)
-    {
-        base.OnSizeChanged(e);
-        CaptureWindowedState();
+        if (_layout is not null
+            && _board is not null
+            && !_board.AutoSize
+            && _layout.ClientSize is { Width: > 0, Height: > 0 } hostSize)
+        {
+            _board.Size = DisplayLayoutCalculator.ScaleToFit(
+                _board.GetPreferredSize(Size.Empty),
+                hostSize);
+        }
     }
 
     private async ValueTask StartAsync(CancellationToken cancellationToken)
@@ -183,18 +188,15 @@ public partial class MainForm : Form
     {
         bool dictates = _autoSizeCheckBox.Checked;
 
-        // With AutoSize off the board fills whatever the layout gives it and zooms its font.
-        AutoSize = dictates;
-        _layout.AutoSize = dictates;
-        _layout.RowStyles[0] = dictates ? new RowStyle(SizeType.AutoSize) : new RowStyle(SizeType.Percent, 100F);
-        _board.Anchor = dictates
-            ? AnchorStyles.Top | AnchorStyles.Left
-            : AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        // The one-cell host centers an unanchored board. It never constrains the form, which lets
+        // KioskModeManager own fullscreen bounds without AutoSize fighting those bounds.
         _board.AutoSize = dictates;
 
-        if (!dictates)
+        if (!dictates && _layout.ClientSize is { Width: > 0, Height: > 0 } hostSize)
         {
-            Size = new Size(Width, Height + 200);
+            _board.Size = DisplayLayoutCalculator.ScaleToFit(
+                _board.GetPreferredSize(Size.Empty),
+                hostSize);
         }
 
         if (!_applyingSettings)
@@ -337,6 +339,16 @@ public partial class MainForm : Form
     {
         _kioskModeManager.FullScreen = !_kioskModeManager.FullScreen;
         AppLogger.Information("Presentation", $"Kiosk mode: {_kioskModeManager.FullScreen}.");
+    }
+
+    private void OptionsMenuItem_Click(object? sender, EventArgs e)
+    {
+        using OptionsDialog dialog = new(_boardTimer.Interval / 1000);
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            SetUpdateInterval(dialog.UpdateIntervalSeconds);
+        }
     }
 
     private void WindowFullScreenMenuItem_Click(object? sender, EventArgs e)
@@ -484,6 +496,7 @@ public partial class MainForm : Form
             _keepAspectRatioMenuItem.Checked = settings.KeepAspectRatio;
             _autoSizeCheckBox.Checked = settings.BoardDictatesSize;
             _speedComboBox.SelectedItem = settings.AnimationSpeed;
+            SetUpdateInterval(settings.UpdateIntervalSeconds);
             _flights = new FlightBoard(_board.Columns);
 
             Rectangle savedBounds = new(
@@ -501,7 +514,6 @@ public partial class MainForm : Form
                     : FormWindowState.Normal;
             }
 
-            CaptureWindowedState();
         }
         finally
         {
@@ -514,8 +526,7 @@ public partial class MainForm : Form
 
     private AppSettings CaptureSettings()
     {
-        CaptureWindowedState();
-        Rectangle bounds = _lastWindowedBounds;
+        Rectangle bounds = RestoreBounds;
 
         return new AppSettings
         {
@@ -524,7 +535,9 @@ public partial class MainForm : Form
             WindowY = bounds.Y,
             WindowWidth = bounds.Width,
             WindowHeight = bounds.Height,
-            WindowState = _lastWindowedState,
+            WindowState = WindowState == FormWindowState.Maximized
+                ? FormWindowState.Maximized
+                : FormWindowState.Normal,
             FontName = _board.FontName,
             FontSize = _board.FontSize,
             Rows = _board.Rows,
@@ -532,7 +545,8 @@ public partial class MainForm : Form
             KeepAspectRatio = _keepAspectRatioMenuItem.Checked,
             BoardDictatesSize = _autoSizeCheckBox.Checked,
             AnimationSpeed = _board.FlipAnimationSpeed,
-            SoundEnabled = _sound is not null
+            SoundEnabled = _sound is not null,
+            UpdateIntervalSeconds = _boardTimer.Interval / 1000
         };
     }
 
@@ -563,25 +577,11 @@ public partial class MainForm : Form
             !_kioskModeManager.FullScreen && WindowState == FormWindowState.Maximized;
     }
 
-    private void CaptureWindowedState()
+    private void SetUpdateInterval(int seconds)
     {
-        if (_kioskModeManager is null
-            || _kioskModeManager.FullScreen
-            || WindowState == FormWindowState.Minimized)
-        {
-            return;
-        }
-
-        Rectangle bounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
-
-        if (bounds.Width > 0 && bounds.Height > 0)
-        {
-            _lastWindowedBounds = bounds;
-        }
-
-        _lastWindowedState = WindowState == FormWindowState.Maximized
-            ? FormWindowState.Maximized
-            : FormWindowState.Normal;
+        int normalizedSeconds = UpdateInterval.Normalize(seconds);
+        _boardTimer.Interval = normalizedSeconds * 1000;
+        AppLogger.Information("Options", $"Timetable update interval: {normalizedSeconds} seconds.");
     }
 
     private static bool IsVisibleOnAnyScreen(Rectangle bounds)

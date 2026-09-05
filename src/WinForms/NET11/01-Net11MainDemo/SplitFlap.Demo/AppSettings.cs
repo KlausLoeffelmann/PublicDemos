@@ -79,6 +79,11 @@ internal sealed class AppSettings
     ///  Gets or sets whether sound is enabled.
     /// </summary>
     public bool SoundEnabled { get; set; }
+
+    /// <summary>
+    ///  Gets or sets the timetable update interval in seconds.
+    /// </summary>
+    public int UpdateIntervalSeconds { get; set; } = 30;
 }
 
 /// <summary>

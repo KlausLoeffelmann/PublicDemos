@@ -49,7 +49,8 @@ public sealed class ApplicationInfrastructureTests
                 Rows = 12,
                 Columns = 60,
                 KeepAspectRatio = false,
-                SoundEnabled = true
+                SoundEnabled = true,
+                UpdateIntervalSeconds = 120
             };
 
             AppSettingsStore.Save(expected, path);
@@ -61,6 +62,7 @@ public sealed class ApplicationInfrastructureTests
             Assert.Equal(expected.Columns, actual.Columns);
             Assert.False(actual.AutoSave);
             Assert.True(actual.SoundEnabled);
+            Assert.Equal(120, actual.UpdateIntervalSeconds);
 
             File.WriteAllText(path, "{ not-json");
             AppSettings fallback = AppSettingsStore.Load(path);
@@ -113,4 +115,14 @@ public sealed class ApplicationInfrastructureTests
         Assert.Equal(first, second);
         Assert.DoesNotContain(Environment.NewLine, first);
     }
+
+    [Theory]
+    [InlineData(-1, 10)]
+    [InlineData(10, 10)]
+    [InlineData(14, 10)]
+    [InlineData(15, 20)]
+    [InlineData(127, 130)]
+    [InlineData(999, 300)]
+    public void UpdateInterval_NormalizesToTenSecondSteps(int value, int expected)
+        => Assert.Equal(expected, UpdateInterval.Normalize(value));
 }

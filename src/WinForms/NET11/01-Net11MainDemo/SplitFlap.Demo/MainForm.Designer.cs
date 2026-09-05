@@ -43,6 +43,8 @@ partial class MainForm
         _keepAspectRatioMenuItem = new ToolStripMenuItem();
         _defineGridMenuItem = new ToolStripMenuItem();
         _fitScreenMenuItem = new ToolStripMenuItem();
+        _toolsMenuItem = new ToolStripMenuItem();
+        _optionsMenuItem = new ToolStripMenuItem();
         _kioskModeManager = new KioskModeManager(components);
         _boardTimer = new System.Windows.Forms.Timer(components);
         _clockTimer = new System.Windows.Forms.Timer(components);
@@ -56,24 +58,20 @@ partial class MainForm
         //
         // _layout
         //
-        _layout.AutoSize = true;
-        _layout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _layout.ColumnCount = 1;
         _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _layout.Controls.Add(_board, 0, 0);
-        _layout.Controls.Add(_bottomBar, 0, 1);
         _layout.Dock = DockStyle.Fill;
-        _layout.Location = new Point(0, 0);
+        _layout.Location = new Point(0, 28);
         _layout.Name = "_layout";
-        _layout.RowCount = 2;
-        _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _layout.Size = new Size(1100, 500);
+        _layout.RowCount = 1;
+        _layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        _layout.Size = new Size(1100, 412);
         _layout.TabIndex = 0;
         //
         // _board
         //
-        _board.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+        _board.Anchor = AnchorStyles.None;
         _board.Columns = 46;
         _board.FontSize = 18F;
         _board.Location = new Point(3, 3);
@@ -84,7 +82,6 @@ partial class MainForm
         //
         // _bottomBar
         //
-        _bottomBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         _bottomBar.AutoSize = true;
         _bottomBar.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _bottomBar.Controls.Add(_clock);
@@ -94,10 +91,11 @@ partial class MainForm
         _bottomBar.Controls.Add(_speedComboBox);
         _bottomBar.Controls.Add(_soundCheckBox);
         _bottomBar.Controls.Add(_tuneButton);
-        _bottomBar.Location = new Point(3, 400);
+        _bottomBar.Dock = DockStyle.Bottom;
+        _bottomBar.Location = new Point(0, 440);
         _bottomBar.Name = "_bottomBar";
         _bottomBar.Padding = new Padding(4);
-        _bottomBar.Size = new Size(1094, 60);
+        _bottomBar.Size = new Size(1100, 60);
         _bottomBar.TabIndex = 1;
         _bottomBar.WrapContents = false;
         //
@@ -194,7 +192,7 @@ partial class MainForm
         // _menuStrip
         //
         _menuStrip.ImageScalingSize = new Size(20, 20);
-        _menuStrip.Items.AddRange(new ToolStripItem[] { _fileMenuItem, _viewMenuItem });
+        _menuStrip.Items.AddRange(new ToolStripItem[] { _fileMenuItem, _viewMenuItem, _toolsMenuItem });
         _menuStrip.Location = new Point(0, 0);
         _menuStrip.Name = "_menuStrip";
         _menuStrip.Size = new Size(1100, 28);
@@ -294,8 +292,23 @@ partial class MainForm
         _fitScreenMenuItem.Text = "Fit &Screen Size";
         _fitScreenMenuItem.Click += FitScreenMenuItem_Click;
         //
+        // _toolsMenuItem
+        //
+        _toolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _optionsMenuItem });
+        _toolsMenuItem.Name = "_toolsMenuItem";
+        _toolsMenuItem.Size = new Size(58, 24);
+        _toolsMenuItem.Text = "&Tools";
+        //
+        // _optionsMenuItem
+        //
+        _optionsMenuItem.Name = "_optionsMenuItem";
+        _optionsMenuItem.Size = new Size(145, 26);
+        _optionsMenuItem.Text = "&Options...";
+        _optionsMenuItem.Click += OptionsMenuItem_Click;
+        //
         // _kioskModeManager
         //
+        // KioskModeManager owns all form fullscreen state and restores it when kiosk mode ends.
         _kioskModeManager.ContainerControl = this;
         _kioskModeManager.EscapeExitsFullScreen = true;
         _kioskModeManager.MousePointerAutoHideDelay = 5000;
@@ -305,7 +318,7 @@ partial class MainForm
         //
         // _boardTimer
         //
-        _boardTimer.Interval = 9000;
+        _boardTimer.Interval = 30000;
         _boardTimer.Tick += BoardTimer_Tick;
         //
         // _clockTimer
@@ -317,11 +330,10 @@ partial class MainForm
         //
         AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
-        AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = Color.FromArgb(0x14, 0x14, 0x14);
         ClientSize = new Size(1100, 500);
         Controls.Add(_layout);
+        Controls.Add(_bottomBar);
         Controls.Add(_menuStrip);
         MainMenuStrip = _menuStrip;
         Name = "MainForm";
@@ -366,6 +378,8 @@ partial class MainForm
     private ToolStripMenuItem _keepAspectRatioMenuItem;
     private ToolStripMenuItem _defineGridMenuItem;
     private ToolStripMenuItem _fitScreenMenuItem;
+    private ToolStripMenuItem _toolsMenuItem;
+    private ToolStripMenuItem _optionsMenuItem;
     private KioskModeManager _kioskModeManager;
     private System.Windows.Forms.Timer _boardTimer;
     private System.Windows.Forms.Timer _clockTimer;
