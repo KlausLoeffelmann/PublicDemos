@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using DrumMachine.Demo.Documents;
-using SplitFlap.Audio.Analysis;
-using SplitFlap.Audio.Core;
-using SplitFlap.Audio.Percussion;
-using SplitFlap.Audio.Playback;
-using SplitFlap.Audio.Sequencing;
+using WinForms.Audio.Analysis;
+using WinForms.Audio.Core;
+using WinForms.Audio.Percussion;
+using WinForms.Audio.Playback;
+using WinForms.Audio.Sequencing;
 
 namespace DrumMachine.Demo;
 

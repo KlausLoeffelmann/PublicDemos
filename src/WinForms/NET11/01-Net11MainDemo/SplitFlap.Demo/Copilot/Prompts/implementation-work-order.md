@@ -32,7 +32,7 @@ Turn the current split-flap departure-board prototype into a reliable, stage-rea
 When starting from an untracked copy of the prototype, preserve it in this order before later edits:
 
 1. Commit `SplitFlap.Controls`.
-2. Commit `SplitFlap.Audio`.
+2. Commit `WinForms.Audio`.
 3. Commit `SplitFlap.Demo` and `WinFormsNet11Demo.slnx`.
 
 Use descriptive subjects and bodies. Keep later documentation, diagnostics/tests, audio fixes, UI/settings, and Copilot guidance in focused commits.

@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SplitFlap.Audio\SplitFlap.Audio.csproj" />
+    <ProjectReference Include="..\WinForms.Audio\WinForms.Audio.csproj" />
     <ProjectReference Include="..\SplitFlap.Controls\SplitFlap.Controls.csproj" />
     <ProjectReference Include="..\SplitFlap.Demo\SplitFlap.Demo.csproj" />
     <ProjectReference Include="..\DrumMachine.Demo\DrumMachine.Demo.csproj" />

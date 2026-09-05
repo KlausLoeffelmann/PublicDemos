@@ -16,7 +16,7 @@
     <None Update="Examples\*.drumloop.json" CopyToOutputDirectory="PreserveNewest" />
     <InternalsVisibleTo Include="SplitFlap.Tests" />
     <Compile Include="..\DemoSupport\RollingFileLog.cs" Link="Infrastructure\RollingFileLog.cs" />
-    <ProjectReference Include="..\SplitFlap.Audio\SplitFlap.Audio.csproj" />
+    <ProjectReference Include="..\WinForms.Audio\WinForms.Audio.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,7 @@
 # Analog Rhythm Lab
 
 A vanilla .NET 11 WinForms demo of procedural CR-78-style percussion, an editable
-original score, and a reusable frequency-spectrum control from `SplitFlap.Audio`.
+original score, and a reusable frequency-spectrum control from `WinForms.Audio`.
 It contains no recorded drum samples, commercial song transcription, or WARP dependency.
 
 ## Run
@@ -42,9 +42,12 @@ not document edits. File -> Recent lists the last five successful opens/saves.
 ## Options and symbol icons
 
 Tools -> Options provides Classic/Dark mode/System, a default loop-file folder,
-and Small (32x32), Medium (48x48), or Large (64x64) toolbar icons. Sizes are at
-96 DPI and scale per monitor. Icon and folder changes apply immediately; theme
-changes require a restart. System reads the Windows color mode at launch.
+Small (32x32), Medium (48x48), or Large (64x64) toolbar icons, and four relative
+font sizes. Small keeps the current WinForms standard; Normal, Large, and XXL add
+2, 4, or 6 points without changing the selected font family or style. Icon and
+folder changes apply immediately; theme and font changes apply after restart.
+Icon sizes are at 96 DPI and scale per monitor. System reads the Windows color
+mode at launch.
 
 `SymbolIconFactory` renders installed Segoe Fluent Icons glyphs into transparent
 bitmaps at their target size, with an explicit Segoe MDL2 Assets fallback.
@@ -73,7 +76,7 @@ the device still add latency; this is not a sample-exact acoustic measurement.
 A custom sink without a playback clock is explicitly identified as submitted
 audio rather than played audio.
 
-The control is `SplitFlap.Audio.WinForms.AudioSpectrumControl`, in the existing
+The control is `WinForms.Audio.WinForms.AudioSpectrumControl`, in the existing
 audio assembly. That assembly now references the WinForms framework but adds
 no external DSP package. The runtime Source property is not Designer-serialized,
 and opening a form in the Designer does not open an audio device.
@@ -108,7 +111,7 @@ MSBuild `OutDir` rather than terminating that instance.
 
 The procedural models use original Roland specifications and service-note
 frequency/decay targets where available, with model-specific approximations
-documented alongside `SplitFlap.Audio\Percussion`. They are not a claim of
+documented alongside `WinForms.Audio\Percussion`. They are not a claim of
 transistor-level or bit-exact hardware emulation. The original adjustment table's
 decay definition matters; it is not automatically an exponential time constant.
 

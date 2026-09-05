@@ -31,6 +31,10 @@ internal static class Program
         Application.ThreadException += OnThreadException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         ApplicationConfiguration.Initialize();
+        if (settings.FontSize != AppFontSize.Small)
+        {
+            Application.SetDefaultFont(AppFontSizing.CreateFont(Control.DefaultFont, settings.FontSize));
+        }
         Application.SetColorMode(settings.Theme switch
         {
             AppTheme.Classic => SystemColorMode.Classic,

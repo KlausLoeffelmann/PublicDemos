@@ -1,5 +1,5 @@
 using Microsoft.Win32.SafeHandles;
-using SplitFlap.Audio.Core;
+using WinForms.Audio.Core;
 using System.Runtime.InteropServices;
 
 namespace SplitFlap.Tests;

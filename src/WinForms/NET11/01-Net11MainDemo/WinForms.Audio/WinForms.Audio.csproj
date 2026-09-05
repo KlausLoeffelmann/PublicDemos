@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <RootNamespace>WinForms.Audio</RootNamespace>
+    <AssemblyName>WinForms.Audio</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SplitFlap.Tests" />
+    <Using Include="WinForms.Audio.Core" />
+    <Using Include="WinForms.Audio.Synthesis" />
+    <Using Include="WinForms.Audio.Music" />
+    <Using Include="WinForms.Audio.Playback" />
+  </ItemGroup>
+
+</Project>

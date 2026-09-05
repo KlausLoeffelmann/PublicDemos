@@ -43,6 +43,32 @@ internal enum ToolbarIconSize
 }
 
 /// <summary>
+///  Selects a point-size increment relative to the current WinForms default font.
+/// </summary>
+internal enum AppFontSize
+{
+    /// <summary>
+    ///  Uses the current WinForms standard point size without modification.
+    /// </summary>
+    Small,
+
+    /// <summary>
+    ///  Adds two points to the current WinForms standard.
+    /// </summary>
+    Normal,
+
+    /// <summary>
+    ///  Adds four points to the current WinForms standard.
+    /// </summary>
+    Large,
+
+    /// <summary>
+    ///  Adds six points to the current WinForms standard.
+    /// </summary>
+    Xxl
+}
+
+/// <summary>
 ///  Keeps user-interface preferences and recent paths outside musical documents and their Undo history.
 /// </summary>
 internal sealed record AppSettings
@@ -64,6 +90,11 @@ internal sealed record AppSettings
     ///  Gets the immediately applicable toolbar icon size, independently of the menu glyph size.
     /// </summary>
     public ToolbarIconSize IconSize { get; init; } = ToolbarIconSize.Small;
+
+    /// <summary>
+    ///  Gets the point-size increment applied to the current WinForms default font at startup.
+    /// </summary>
+    public AppFontSize FontSize { get; init; } = AppFontSize.Small;
 
     /// <summary>
     ///  Gets the initial folder for Open and untitled Save As without changing a named document's path.
@@ -132,9 +163,9 @@ internal sealed record AppSettings
     /// </summary>
     internal AppSettings ValidateAndNormalize()
     {
-        if (!Enum.IsDefined(Theme) || !Enum.IsDefined(IconSize))
+        if (!Enum.IsDefined(Theme) || !Enum.IsDefined(IconSize) || !Enum.IsDefined(FontSize))
         {
-            throw new ArgumentException("The theme or toolbar icon size is unsupported.");
+            throw new ArgumentException("The theme, font size, or toolbar icon size is unsupported.");
         }
 
         if (BarsPerView is not (1 or 2))

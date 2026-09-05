@@ -7,7 +7,7 @@ description: Run and extend the SplitFlap.Demo xUnit v3 tests and timed command-
 
 ## Use this skill when
 
-- validating a change to `SplitFlap.Controls`, `SplitFlap.Audio`, or `SplitFlap.Demo`;
+- validating a change to `SplitFlap.Controls`, `WinForms.Audio`, or `SplitFlap.Demo`;
 - reproducing a failure that happens only after the WinForms message loop starts;
 - adding a repeatable smoke path for a new stage feature;
 - inspecting AppData logs from an automated run.

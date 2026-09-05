@@ -3,8 +3,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using DrumMachine.Demo;
 using DrumMachine.Demo.Documents;
-using SplitFlap.Audio.Percussion;
-using SplitFlap.Audio.Sequencing;
+using WinForms.Audio.Percussion;
+using WinForms.Audio.Sequencing;
 
 namespace SplitFlap.Tests;
 

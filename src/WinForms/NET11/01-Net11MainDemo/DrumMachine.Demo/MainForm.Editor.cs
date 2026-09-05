@@ -1,7 +1,7 @@
 using DrumMachine.Demo.Controls;
 using DrumMachine.Demo.Documents;
-using SplitFlap.Audio.Percussion;
-using SplitFlap.Audio.Sequencing;
+using WinForms.Audio.Percussion;
+using WinForms.Audio.Sequencing;
 
 namespace DrumMachine.Demo;
 

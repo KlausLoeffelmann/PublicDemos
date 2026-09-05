@@ -10,7 +10,7 @@ namespace SplitFlap.Tests;
 public sealed class DrumAppSettingsTests
 {
     /// <summary>
-    ///  Uses System, thirty-two-pixel icons, Documents, and a one-bar viewport as explicit startup defaults.
+    ///  Uses System, the WinForms standard font, thirty-two-pixel icons, Documents, and a one-bar viewport as defaults.
     /// </summary>
     [Fact]
     public void Defaults_AreIndependentOfMusicalDocuments()
@@ -19,6 +19,10 @@ public sealed class DrumAppSettingsTests
         Assert.Equal(32, (int)ToolbarIconSize.Small);
         Assert.Equal(48, (int)ToolbarIconSize.Medium);
         Assert.Equal(64, (int)ToolbarIconSize.Large);
+        Assert.Equal(0f, AppFontSizing.GetPointIncrement(AppFontSize.Small));
+        Assert.Equal(2f, AppFontSizing.GetPointIncrement(AppFontSize.Normal));
+        Assert.Equal(4f, AppFontSizing.GetPointIncrement(AppFontSize.Large));
+        Assert.Equal(6f, AppFontSizing.GetPointIncrement(AppFontSize.Xxl));
         string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         Assert.Equal(Path.Combine(localData, "DrumMachine.Demo", "settings.json"), AppPaths.SettingsFile);
         Assert.Equal(Path.Combine(localData, "DrumMachine.Demo", "Logs"), AppPaths.LogDirectory);
@@ -86,13 +90,13 @@ public sealed class DrumAppSettingsTests
     }
 
     /// <summary>
-    ///  Round-trips every supported theme and icon-size choice in an isolated preferences folder.
+    ///  Round-trips supported theme, icon-size, and relative font-size choices in an isolated preferences folder.
     /// </summary>
     [Theory]
-    [InlineData(0, 32)]
-    [InlineData(1, 48)]
-    [InlineData(2, 64)]
-    public async Task Settings_RoundTripAllPreferencesAndRecentPaths(int theme, int iconSize)
+    [InlineData(0, 32, 0)]
+    [InlineData(1, 48, 1)]
+    [InlineData(2, 64, 3)]
+    public async Task Settings_RoundTripAllPreferencesAndRecentPaths(int theme, int iconSize, int fontSize)
     {
         using LoopTestFiles files = new();
         string path = Path.Combine(files.DirectoryPath, "app-data", "settings.json");
@@ -100,6 +104,7 @@ public sealed class DrumAppSettingsTests
         {
             Theme = (AppTheme)theme,
             IconSize = (ToolbarIconSize)iconSize,
+            FontSize = (AppFontSize)fontSize,
             DefaultFolder = files.DirectoryPath,
             BarsPerView = 2,
             RecentFiles = Enumerable.Range(1, 5).Select(index => files.File($"{index}.drumloop.json")).ToArray()
@@ -110,12 +115,14 @@ public sealed class DrumAppSettingsTests
 
         Assert.Equal(expected.Theme, actual.Theme);
         Assert.Equal(expected.IconSize, actual.IconSize);
+        Assert.Equal(expected.FontSize, actual.FontSize);
         Assert.Equal(expected.DefaultFolder, actual.DefaultFolder);
         Assert.Equal(expected.RecentFiles, actual.RecentFiles);
         Assert.Equal(expected.BarsPerView, actual.BarsPerView);
         string json = await System.IO.File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         Assert.Contains($"\"{expected.Theme}\"", json, StringComparison.Ordinal);
         Assert.Contains($"\"{expected.IconSize}\"", json, StringComparison.Ordinal);
+        Assert.Contains($"\"{expected.FontSize}\"", json, StringComparison.Ordinal);
         Assert.Empty(Directory.EnumerateFiles(Path.GetDirectoryName(path)!, "*.tmp"));
     }
 
@@ -167,13 +174,15 @@ public sealed class DrumAppSettingsTests
     ///  Validates enum strings, view size, folder syntax, and bounded recent entries instead of keeping partial choices.
     /// </summary>
     [Theory]
-    [InlineData("version", "2")]
+    [InlineData("version", "3")]
     [InlineData("theme", "\"Unknown\"")]
     [InlineData("theme", "1")]
     [InlineData("theme", "\"1\"")]
     [InlineData("iconSize", "\"Huge\"")]
     [InlineData("iconSize", "32")]
     [InlineData("iconSize", "\"32\"")]
+    [InlineData("fontSize", "\"Huge\"")]
+    [InlineData("fontSize", "2")]
     [InlineData("defaultFolder", "\"\"")]
     [InlineData("defaultFolder", "\"relative-folder\"")]
     [InlineData("defaultFolder", "null")]
@@ -204,6 +213,7 @@ public sealed class DrumAppSettingsTests
     [InlineData("version")]
     [InlineData("theme")]
     [InlineData("iconSize")]
+    [InlineData("fontSize")]
     [InlineData("defaultFolder")]
     [InlineData("recentFiles")]
     [InlineData("barsPerView")]
@@ -218,11 +228,59 @@ public sealed class DrumAppSettingsTests
     }
 
     /// <summary>
+    ///  Migrates version-one preferences to the WinForms-standard font without discarding other choices.
+    /// </summary>
+    [Fact]
+    public void Settings_VersionOneUsesTheWinFormsStandardFont()
+    {
+        using LoopTestFiles files = new();
+        JsonObject json = CreateValidJson(files.DirectoryPath);
+        json["version"] = 1;
+        LoopTestFiles.RemoveJsonProperty(json, "fontSize");
+        string path = files.File("settings.json");
+        System.IO.File.WriteAllText(path, json.ToJsonString());
+
+        AppSettings actual = AppSettingsStore.Load(path);
+
+        Assert.Equal(AppTheme.Dark, actual.Theme);
+        Assert.Equal(ToolbarIconSize.Large, actual.IconSize);
+        Assert.Equal(AppFontSize.Small, actual.FontSize);
+        Assert.Equal(files.DirectoryPath, actual.DefaultFolder);
+        Assert.Equal(2, actual.BarsPerView);
+    }
+
+    /// <summary>
+    ///  Derives each selection from the supplied base font so repeated choices never accumulate point changes.
+    /// </summary>
+    [Fact]
+    public void FontSizing_PreservesFontIdentityAndUsesNonCumulativePointIncrements()
+    {
+        using Font baseline = new(
+            SystemFonts.DefaultFont.FontFamily,
+            11f,
+            FontStyle.Bold | FontStyle.Italic,
+            GraphicsUnit.Point,
+            SystemFonts.DefaultFont.GdiCharSet,
+            SystemFonts.DefaultFont.GdiVerticalFont);
+        using Font normal = AppFontSizing.CreateFont(baseline, AppFontSize.Normal);
+        using Font large = AppFontSizing.CreateFont(baseline, AppFontSize.Large);
+        using Font repeatedNormal = AppFontSizing.CreateFont(baseline, AppFontSize.Normal);
+
+        Assert.Equal(baseline.FontFamily.Name, normal.FontFamily.Name);
+        Assert.Equal(baseline.Style, normal.Style);
+        Assert.Equal(baseline.GdiCharSet, normal.GdiCharSet);
+        Assert.Equal(13f, normal.SizeInPoints, 3);
+        Assert.Equal(15f, large.SizeInPoints, 3);
+        Assert.Equal(normal.SizeInPoints, repeatedNormal.SizeInPoints, 3);
+    }
+
+    /// <summary>
     ///  Leaves the old preferences untouched when an in-memory Options result fails validation.
     /// </summary>
     [Theory]
     [InlineData("theme")]
     [InlineData("icon-size")]
+    [InlineData("font-size")]
     [InlineData("view")]
     [InlineData("folder")]
     [InlineData("relative-recent")]
@@ -239,6 +297,7 @@ public sealed class DrumAppSettingsTests
         {
             "theme" => valid with { Theme = (AppTheme)99 },
             "icon-size" => valid with { IconSize = (ToolbarIconSize)16 },
+            "font-size" => valid with { FontSize = (AppFontSize)99 },
             "view" => valid with { BarsPerView = 4 },
             "folder" => valid with { DefaultFolder = "" },
             "relative-recent" => valid with { RecentFiles = ["relative.json"] },
@@ -302,9 +361,10 @@ public sealed class DrumAppSettingsTests
     private static JsonObject CreateValidJson(string folder)
         => new()
         {
-            ["version"] = 1,
+            ["version"] = 2,
             ["theme"] = "Dark",
             ["iconSize"] = "Large",
+            ["fontSize"] = "Xxl",
             ["defaultFolder"] = folder,
             ["recentFiles"] = new JsonArray(),
             ["barsPerView"] = 2
@@ -314,6 +374,7 @@ public sealed class DrumAppSettingsTests
     {
         Assert.Equal(AppTheme.System, settings.Theme);
         Assert.Equal(ToolbarIconSize.Small, settings.IconSize);
+        Assert.Equal(AppFontSize.Small, settings.FontSize);
         Assert.Equal(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), settings.DefaultFolder);
         Assert.Empty(settings.RecentFiles);
         Assert.Equal(1, settings.BarsPerView);

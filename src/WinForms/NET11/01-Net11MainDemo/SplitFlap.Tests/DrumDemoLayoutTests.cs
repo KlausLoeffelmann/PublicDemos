@@ -2,8 +2,8 @@ using System.Runtime.ExceptionServices;
 using System.Reflection;
 using System.Windows.Forms;
 using DrumMachine.Demo;
-using SplitFlap.Audio.Percussion;
-using SplitFlap.Audio.WinForms;
+using WinForms.Audio.Percussion;
+using WinForms.Audio.WinForms;
 
 namespace SplitFlap.Tests;
 
@@ -132,16 +132,40 @@ public sealed class DrumDemoLayoutTests
     public void Options_CancelDoesNotApplyEdits()
         => OnStaThread(() =>
         {
-            AppSettings original = new();
+            AppSettings original = new() { FontSize = AppFontSize.Normal };
             using OptionsDialog dialog = new(original);
             Find<ComboBox>(dialog, "_theme").SelectedIndex = 1;
             Find<ComboBox>(dialog, "_icons").SelectedIndex = 2;
+            Find<ComboBox>(dialog, "_fontSize").SelectedIndex = 3;
             Find<TextBox>(dialog, "_folder").Text = "not a full folder path";
             dialog.DialogResult = DialogResult.Cancel;
 
             Assert.Equal(original.Theme, dialog.Result.Theme);
             Assert.Equal(original.IconSize, dialog.Result.IconSize);
+            Assert.Equal(original.FontSize, dialog.Result.FontSize);
             Assert.Equal(original.DefaultFolder, dialog.Result.DefaultFolder);
+        });
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    [InlineData(3, 3)]
+    public void Options_MapsAllRelativeFontSizesWithoutOpeningAudio(int selectedIndex, int expected)
+        => OnStaThread(() =>
+        {
+            using OptionsDialog dialog = new(new AppSettings { DefaultFolder = Path.GetTempPath() });
+            ComboBox choices = Find<ComboBox>(dialog, "_fontSize");
+            Assert.Equal(4, choices.Items.Count);
+            choices.SelectedIndex = selectedIndex;
+            MethodInfo? confirm = typeof(OptionsDialog).GetMethod(
+                "Ok_Click",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(confirm);
+            confirm.Invoke(dialog, [null, EventArgs.Empty]);
+
+            Assert.Equal(DialogResult.OK, dialog.DialogResult);
+            Assert.Equal((AppFontSize)expected, dialog.Result.FontSize);
         });
 
     [Fact]

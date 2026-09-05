@@ -1,4 +1,4 @@
-using SplitFlap.Audio.Sequencing;
+using WinForms.Audio.Sequencing;
 
 namespace DrumMachine.Demo;
 

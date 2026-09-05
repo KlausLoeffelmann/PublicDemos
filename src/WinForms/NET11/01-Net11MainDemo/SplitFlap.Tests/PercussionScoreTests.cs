@@ -1,9 +1,9 @@
 using System.Threading.Channels;
-using SplitFlap.Audio.Core;
-using SplitFlap.Audio.Music;
-using SplitFlap.Audio.Percussion;
-using SplitFlap.Audio.Sequencing;
-using SplitFlap.Audio.Synthesis;
+using WinForms.Audio.Core;
+using WinForms.Audio.Music;
+using WinForms.Audio.Percussion;
+using WinForms.Audio.Sequencing;
+using WinForms.Audio.Synthesis;
 
 namespace SplitFlap.Tests;
 

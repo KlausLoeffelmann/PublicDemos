@@ -1,5 +1,5 @@
 using System.Reflection;
-using SplitFlap.Audio.Core;
+using WinForms.Audio.Core;
 using SplitFlap.Demo;
 using SplitFlap.Visuals;
 

@@ -21,14 +21,14 @@
     <Using Include="System.Windows.Forms" />
     <Using Include="SplitFlap.Visuals" />
     <Using Include="SplitFlap.WinForms" />
-    <Using Include="SplitFlap.Audio.Core" />
-    <Using Include="SplitFlap.Audio.Synthesis" />
-    <Using Include="SplitFlap.Audio.Music" />
-    <Using Include="SplitFlap.Audio.Playback" />
+    <Using Include="WinForms.Audio.Core" />
+    <Using Include="WinForms.Audio.Synthesis" />
+    <Using Include="WinForms.Audio.Music" />
+    <Using Include="WinForms.Audio.Playback" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SplitFlap.Audio\SplitFlap.Audio.csproj" />
+    <ProjectReference Include="..\WinForms.Audio\WinForms.Audio.csproj" />
     <ProjectReference Include="..\SplitFlap.Controls\SplitFlap.Controls.csproj" />
   </ItemGroup>
 

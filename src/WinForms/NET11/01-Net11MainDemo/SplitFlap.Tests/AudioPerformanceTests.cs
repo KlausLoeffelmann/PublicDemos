@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using System.Text.Json;
 using DrumMachine.Demo;
-using SplitFlap.Audio.Analysis;
-using SplitFlap.Audio.Core;
-using SplitFlap.Audio.Music;
-using SplitFlap.Audio.Playback;
-using SplitFlap.Audio.Sequencing;
-using SplitFlap.Audio.Synthesis;
+using WinForms.Audio.Analysis;
+using WinForms.Audio.Core;
+using WinForms.Audio.Music;
+using WinForms.Audio.Playback;
+using WinForms.Audio.Sequencing;
+using WinForms.Audio.Synthesis;
 
 namespace SplitFlap.Tests;
 

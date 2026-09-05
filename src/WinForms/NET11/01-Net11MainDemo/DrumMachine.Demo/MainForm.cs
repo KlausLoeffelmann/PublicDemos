@@ -1,12 +1,12 @@
 using System.ComponentModel;
 using DrumMachine.Demo.Controls;
 using DrumMachine.Demo.Documents;
-using SplitFlap.Audio.Analysis;
-using SplitFlap.Audio.Core;
-using SplitFlap.Audio.Music;
-using SplitFlap.Audio.Percussion;
-using SplitFlap.Audio.Sequencing;
-using SplitFlap.Audio.Synthesis;
+using WinForms.Audio.Analysis;
+using WinForms.Audio.Core;
+using WinForms.Audio.Music;
+using WinForms.Audio.Percussion;
+using WinForms.Audio.Sequencing;
+using WinForms.Audio.Synthesis;
 
 namespace DrumMachine.Demo;
 
@@ -19,6 +19,7 @@ internal partial class MainForm : Form
     private readonly CancellationTokenSource _lifetime = new();
     private readonly LoopDocumentSession _session;
     private readonly AppTheme _appliedTheme;
+    private readonly AppFontSize _appliedFontSize;
     private AppSettings _settings;
     private AudioEngine? _engine;
     private DrumMachinePlayer? _player;
@@ -54,6 +55,7 @@ internal partial class MainForm : Form
         _options = options;
         _settings = settings ?? new AppSettings();
         _appliedTheme = _settings.Theme;
+        _appliedFontSize = _settings.FontSize;
         _session = new LoopDocumentSession(new LoopDocument(DemoScores.OriginalBallad));
         InitializeComponent();
         _volumeSelector.Items.Add("Master");

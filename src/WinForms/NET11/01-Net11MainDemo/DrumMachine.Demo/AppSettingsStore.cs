@@ -8,7 +8,7 @@ namespace DrumMachine.Demo;
 /// </summary>
 internal static class AppSettingsStore
 {
-    private const int CurrentVersion = 1;
+    private const int CurrentVersion = 2;
 
     /// <summary>
     ///  Bounds startup preference reads independently of larger musical documents.
@@ -63,9 +63,24 @@ internal static class AppSettingsStore
 
     private static AppSettings ReadSettings(JsonElement root)
     {
-        StrictJson.RequireProperties(root,
-            "version", "theme", "iconSize", "defaultFolder", "recentFiles", "barsPerView");
-        StrictJson.Integer(root.GetProperty("version"), "version", CurrentVersion, CurrentVersion);
+        if (root.ValueKind != JsonValueKind.Object ||
+            !root.TryGetProperty("version", out JsonElement versionElement))
+        {
+            throw new InvalidDataException("A versioned settings object was expected.");
+        }
+
+        int version = StrictJson.Integer(versionElement, "version", 1, CurrentVersion);
+        if (version == 1)
+        {
+            StrictJson.RequireProperties(root,
+                "version", "theme", "iconSize", "defaultFolder", "recentFiles", "barsPerView");
+        }
+        else
+        {
+            StrictJson.RequireProperties(root,
+                "version", "theme", "iconSize", "fontSize", "defaultFolder", "recentFiles", "barsPerView");
+        }
+
         AppTheme theme = StrictJson.String(root.GetProperty("theme"), "theme") switch
         {
             "Classic" => AppTheme.Classic,
@@ -80,6 +95,16 @@ internal static class AppSettingsStore
             "Large" => ToolbarIconSize.Large,
             _ => throw new InvalidDataException("The toolbar icon size is unsupported.")
         };
+        AppFontSize fontSize = version == 1
+            ? AppFontSize.Small
+            : StrictJson.String(root.GetProperty("fontSize"), "fontSize") switch
+            {
+                "Small" => AppFontSize.Small,
+                "Normal" => AppFontSize.Normal,
+                "Large" => AppFontSize.Large,
+                "Xxl" => AppFontSize.Xxl,
+                _ => throw new InvalidDataException("The application font size is unsupported.")
+            };
         string folder = StrictJson.String(root.GetProperty("defaultFolder"), "defaultFolder");
         int barsPerView = StrictJson.Integer(root.GetProperty("barsPerView"), "barsPerView", 1, 2);
         JsonElement entries = root.GetProperty("recentFiles");
@@ -99,6 +124,7 @@ internal static class AppSettingsStore
         {
             Theme = theme,
             IconSize = iconSize,
+            FontSize = fontSize,
             DefaultFolder = folder,
             RecentFiles = recent,
             BarsPerView = barsPerView
@@ -111,6 +137,7 @@ internal static class AppSettingsStore
         writer.WriteNumber("version", CurrentVersion);
         writer.WriteString("theme", settings.Theme.ToString());
         writer.WriteString("iconSize", settings.IconSize.ToString());
+        writer.WriteString("fontSize", settings.FontSize.ToString());
         writer.WriteString("defaultFolder", settings.DefaultFolder);
         writer.WriteStartArray("recentFiles");
         foreach (string path in settings.RecentFiles)

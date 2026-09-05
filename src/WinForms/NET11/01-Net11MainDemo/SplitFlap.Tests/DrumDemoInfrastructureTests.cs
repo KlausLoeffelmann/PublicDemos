@@ -53,10 +53,10 @@ public sealed class DrumDemoInfrastructureTests
     {
         var score = DemoScores.OriginalBallad;
         Assert.Equal(2, score.BarCount);
-        var changed = score.WithStep(0, SplitFlap.Audio.Percussion.Cr78Instrument.Cowbell, 1, true);
+        var changed = score.WithStep(0, global::WinForms.Audio.Percussion.Cr78Instrument.Cowbell, 1, true);
 
-        Assert.False(score.HasHit(0, SplitFlap.Audio.Percussion.Cr78Instrument.Cowbell, 1));
-        Assert.True(changed.HasHit(0, SplitFlap.Audio.Percussion.Cr78Instrument.Cowbell, 1));
+        Assert.False(score.HasHit(0, global::WinForms.Audio.Percussion.Cr78Instrument.Cowbell, 1));
+        Assert.True(changed.HasHit(0, global::WinForms.Audio.Percussion.Cr78Instrument.Cowbell, 1));
     }
 
     [Fact]

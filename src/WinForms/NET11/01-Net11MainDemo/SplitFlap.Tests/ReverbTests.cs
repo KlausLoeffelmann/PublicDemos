@@ -1,4 +1,4 @@
-using SplitFlap.Audio.Synthesis;
+using WinForms.Audio.Synthesis;
 
 namespace SplitFlap.Tests;
 

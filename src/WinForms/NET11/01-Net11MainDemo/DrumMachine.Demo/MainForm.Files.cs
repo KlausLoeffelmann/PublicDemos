@@ -263,8 +263,8 @@ partial class MainForm
             }
             _settings = chosen;
             RebuildIcons();
-            _statusLabel.Text = chosen.Theme != _appliedTheme
-                ? "Options saved. Restart required to apply the selected theme."
+            _statusLabel.Text = chosen.Theme != _appliedTheme || chosen.FontSize != _appliedFontSize
+                ? "Options saved. Restart required to apply the selected theme or font size."
                 : "Options saved. Folder and toolbar icon size applied.";
         });
 

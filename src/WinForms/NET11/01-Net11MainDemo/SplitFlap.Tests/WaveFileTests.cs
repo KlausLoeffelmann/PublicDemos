@@ -1,5 +1,5 @@
 using System.Buffers.Binary;
-using SplitFlap.Audio.Playback;
+using WinForms.Audio.Playback;
 
 namespace SplitFlap.Tests;
 

@@ -1,6 +1,6 @@
-using SplitFlap.Audio.Core;
-using SplitFlap.Audio.Playback;
-using SplitFlap.Audio.Synthesis;
+using WinForms.Audio.Core;
+using WinForms.Audio.Playback;
+using WinForms.Audio.Synthesis;
 
 namespace SplitFlap.Tests;
 

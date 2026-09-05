@@ -23,6 +23,13 @@ internal partial class OptionsDialog : Form
         InitializeComponent();
         _theme.SelectedIndex = settings.Theme switch { AppTheme.Classic => 0, AppTheme.Dark => 1, _ => 2 };
         _icons.SelectedIndex = settings.IconSize switch { ToolbarIconSize.Medium => 1, ToolbarIconSize.Large => 2, _ => 0 };
+        _fontSize.SelectedIndex = settings.FontSize switch
+        {
+            AppFontSize.Normal => 1,
+            AppFontSize.Large => 2,
+            AppFontSize.Xxl => 3,
+            _ => 0
+        };
         _folder.Text = settings.DefaultFolder;
         Result = settings;
     }
@@ -65,6 +72,13 @@ internal partial class OptionsDialog : Form
             {
                 Theme = _theme.SelectedIndex switch { 0 => AppTheme.Classic, 1 => AppTheme.Dark, _ => AppTheme.System },
                 IconSize = _icons.SelectedIndex switch { 1 => ToolbarIconSize.Medium, 2 => ToolbarIconSize.Large, _ => ToolbarIconSize.Small },
+                FontSize = _fontSize.SelectedIndex switch
+                {
+                    1 => AppFontSize.Normal,
+                    2 => AppFontSize.Large,
+                    3 => AppFontSize.Xxl,
+                    _ => AppFontSize.Small
+                },
                 DefaultFolder = path
             };
             DialogResult = DialogResult.OK;

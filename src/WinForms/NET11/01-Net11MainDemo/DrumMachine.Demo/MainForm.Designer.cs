@@ -63,7 +63,7 @@ partial class MainForm
         _statusLabel = new ToolStripStatusLabel();
         _positionLabel = new ToolStripStatusLabel();
         _layout = new TableLayoutPanel();
-        _spectrumControl = new SplitFlap.Audio.WinForms.AudioSpectrumControl();
+        _spectrumControl = new WinForms.Audio.WinForms.AudioSpectrumControl();
         _stepGrid = new DataGridView();
         _instrumentColumn = new DataGridViewTextBoxColumn();
         _auditionColumn = new DataGridViewButtonColumn();
@@ -584,7 +584,7 @@ partial class MainForm
     private ToolStripStatusLabel _statusLabel;
     private ToolStripStatusLabel _positionLabel;
     private TableLayoutPanel _layout;
-    private SplitFlap.Audio.WinForms.AudioSpectrumControl _spectrumControl;
+    private WinForms.Audio.WinForms.AudioSpectrumControl _spectrumControl;
     private DataGridView _stepGrid;
     private DataGridViewTextBoxColumn _instrumentColumn;
     private DataGridViewButtonColumn _auditionColumn;

@@ -1,4 +1,4 @@
-using SplitFlap.Audio.Music;
+using WinForms.Audio.Music;
 
 namespace SplitFlap.Tests;
 

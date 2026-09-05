@@ -1,7 +1,7 @@
-using SplitFlap.Audio.Analysis;
-using SplitFlap.Audio.Core;
-using SplitFlap.Audio.Synthesis;
-using SplitFlap.Audio.WinForms;
+using WinForms.Audio.Analysis;
+using WinForms.Audio.Core;
+using WinForms.Audio.Synthesis;
+using WinForms.Audio.WinForms;
 using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.ExceptionServices;
