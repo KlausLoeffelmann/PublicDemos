@@ -24,6 +24,10 @@ internal enum DemoScenario
     /// </summary>
     Spectrum,
     /// <summary>
+    ///  Exercises document storage, history, views, and pause/reset without user dialogs.
+    /// </summary>
+    Document,
+    /// <summary>
     ///  Runs all three scenarios.
     /// </summary>
     All
@@ -55,10 +59,15 @@ internal sealed record StartupOptions
     public bool ShowHelp { get; private init; }
 
     /// <summary>
+    ///  Gets whether the launch bypasses application preferences and recent-file persistence.
+    /// </summary>
+    public bool NoSettings { get; private init; }
+
+    /// <summary>
     ///  Gets the supported command-line syntax.
     /// </summary>
     public static string Usage =>
-        "Usage: DrumMachine.Demo [--scenario kit|score|spectrum|all] [--run-for <seconds>] [--help]";
+        "Usage: DrumMachine.Demo [--scenario kit|score|spectrum|document|all] [--run-for <seconds>] [--no-settings] [--help]";
 
     /// <summary>
     ///  Parses arguments strictly, reporting invalid input rather than silently choosing defaults.
@@ -68,6 +77,7 @@ internal sealed record StartupOptions
         DemoScenario scenario = DemoScenario.None;
         TimeSpan? runFor = null;
         bool help = false;
+        bool noSettings = false;
 
         for (int index = 0; index < args.Count; index++)
         {
@@ -76,11 +86,14 @@ internal sealed record StartupOptions
                 case "--help":
                     help = true;
                     break;
+                case "--no-settings":
+                    noSettings = true;
+                    break;
                 case "--scenario":
                     if (++index >= args.Count || !TryScenario(args[index], out scenario))
                     {
                         options = Interactive;
-                        error = "--scenario requires kit, score, spectrum, or all.";
+                        error = "--scenario requires kit, score, spectrum, document, or all.";
                         return false;
                     }
 
@@ -104,7 +117,7 @@ internal sealed record StartupOptions
             }
         }
 
-        options = new StartupOptions { Scenario = scenario, RunFor = runFor, ShowHelp = help };
+        options = new StartupOptions { Scenario = scenario, RunFor = runFor, ShowHelp = help, NoSettings = noSettings };
         error = null;
         return true;
     }
@@ -116,6 +129,7 @@ internal sealed record StartupOptions
             "kit" => DemoScenario.Kit,
             "score" => DemoScenario.Score,
             "spectrum" => DemoScenario.Spectrum,
+            "document" => DemoScenario.Document,
             "all" => DemoScenario.All,
             _ => DemoScenario.None
         };

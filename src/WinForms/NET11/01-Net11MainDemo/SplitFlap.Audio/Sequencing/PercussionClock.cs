@@ -39,6 +39,12 @@ internal sealed class PercussionClock
         => ExactFrame = frame;
 
     /// <summary>
+    ///  Rebases an unconsumed onset after a pause without rounding its fractional remainder.
+    /// </summary>
+    internal void Shift(long frames)
+        => ExactFrame += frames;
+
+    /// <summary>
     ///  Changes future step durations without rounding or discarding the current phase.
     /// </summary>
     internal void SetTempo(Tempo tempo)

@@ -9,10 +9,20 @@ public readonly record struct DrumPlaybackSnapshot
     ///  Creates one coherent reading; bar and step are always zero-based.
     /// </summary>
     public DrumPlaybackSnapshot(int bar, int step, bool isPlaying, bool hasPendingChanges, bool isPlaybackSynchronized)
+        : this(bar, step, isPlaying ? DrumTransportState.Playing : DrumTransportState.Stopped,
+            hasPendingChanges, isPlaybackSynchronized)
+    {
+    }
+
+    /// <summary>
+    ///  Creates a reading that can distinguish a held pause from a stopped/reset transport.
+    /// </summary>
+    public DrumPlaybackSnapshot(
+        int bar, int step, DrumTransportState state, bool hasPendingChanges, bool isPlaybackSynchronized)
     {
         Bar = bar;
         Step = step;
-        IsPlaying = isPlaying;
+        State = state;
         HasPendingChanges = hasPendingChanges;
         IsPlaybackSynchronized = isPlaybackSynchronized;
     }
@@ -30,7 +40,17 @@ public readonly record struct DrumPlaybackSnapshot
     /// <summary>
     ///  Gets whether the score was playing at this output position.
     /// </summary>
-    public bool IsPlaying { get; }
+    public bool IsPlaying => State == DrumTransportState.Playing;
+
+    /// <summary>
+    ///  Gets whether the musical position was held at this output position.
+    /// </summary>
+    public bool IsPaused => State == DrumTransportState.Paused;
+
+    /// <summary>
+    ///  Gets the rendered transport state at the played frame, not the latest requested command.
+    /// </summary>
+    public DrumTransportState State { get; }
 
     /// <summary>
     ///  Gets whether the latest requested score/tempo revision has not yet reached this output position.
@@ -53,11 +73,21 @@ internal readonly struct PercussionHistoryPoint
     /// </summary>
     internal PercussionHistoryPoint(
         long frame, int bar, int stoppedStep, bool playing, decimal barOrigin, decimal framesPerStep, long revision)
+        : this(frame, bar, stoppedStep, playing ? DrumTransportState.Playing : DrumTransportState.Stopped,
+            barOrigin, framesPerStep, revision)
+    {
+    }
+
+    /// <summary>
+    ///  Captures a running bar or a held pause/reset position at its effective output frame.
+    /// </summary>
+    internal PercussionHistoryPoint(
+        long frame, int bar, int stoppedStep, DrumTransportState state, decimal barOrigin, decimal framesPerStep, long revision)
     {
         Frame = frame;
         Bar = bar;
         StoppedStep = stoppedStep;
-        Playing = playing;
+        State = state;
         BarOrigin = barOrigin;
         FramesPerStep = framesPerStep;
         Revision = revision;
@@ -74,14 +104,19 @@ internal readonly struct PercussionHistoryPoint
     internal int Bar { get; }
 
     /// <summary>
-    ///  Gets the retained playhead when this point stops the transport.
+    ///  Gets the retained playhead when this point pauses or stops the transport.
     /// </summary>
     internal int StoppedStep { get; }
 
     /// <summary>
     ///  Gets whether subsequent frames belong to a running bar.
     /// </summary>
-    internal bool Playing { get; }
+    internal bool Playing => State == DrumTransportState.Playing;
+
+    /// <summary>
+    ///  Gets the transport state of these rendered frames.
+    /// </summary>
+    internal DrumTransportState State { get; }
 
     /// <summary>
     ///  Gets the fractional origin needed to reproduce the renderer's onset rounding.

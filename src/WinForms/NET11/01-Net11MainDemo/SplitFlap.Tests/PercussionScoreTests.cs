@@ -537,6 +537,11 @@ public sealed class PercussionScoreTests
         using DrumMachinePlayer player = new(engine, new PercussionScore(1,
             [new(0, 0, Cr78Instrument.BassDrum), new(0, 1, Cr78Instrument.HiHat)]), new Tempo(120));
         Assert.True(player.Loop);
+        Assert.Equal(DrumTransportState.Stopped, player.State);
+        Assert.False(player.IsPaused);
+        Assert.Equal(1f, player.MasterVolume);
+        Assert.True(player.MetallicEnabled);
+        Assert.All(Cr78Kit.Instruments, instrument => Assert.Equal(1f, player.GetInstrumentVolume(instrument)));
         Assert.Equal(0, player.MetallicLevel);
         player.Start();
         sink.Advance();
@@ -580,6 +585,78 @@ public sealed class PercussionScoreTests
         sink.Advance();
         Assert.Contains(await sink.ReadAsync(), sample => sample != 0);
         Assert.True(otherVoice.IsCompletedSuccessfully);
+        Assert.False(engine.Completion.IsCompleted);
+    }
+
+    /// <summary>
+    ///  Public Pause leaves fake-device progress and auditions alive; player master cannot mute another voice.
+    /// </summary>
+    [Fact]
+    public async Task PublicPlayer_PauseAndLocalMasterDoNotPauseOrMuteTheEngine()
+    {
+        using ClockedSink sink = new(4_800);
+        using AudioEngine engine = AudioEngine.Create(sink);
+        engine.MasterVolume = 1;
+        engine.Reverb = ReverbSettings.Off;
+        await sink.ReadAsync();
+        using DrumMachinePlayer player = new(engine, new PercussionScore(1,
+            [new(0, 0, Cr78Instrument.Claves), new(0, 1, Cr78Instrument.Claves), new(0, 2, Cr78Instrument.Claves)]),
+            new Tempo(120));
+        player.Start();
+        sink.Advance();
+        await sink.ReadAsync();
+        sink.Advance();
+        await sink.ReadAsync();
+        sink.SetCompletedFrames(9_600);
+        player.Pause();
+        Assert.True(player.IsPaused);
+        Assert.False(player.IsPlaying);
+        Assert.True(player.GetPlaybackSnapshot().IsPlaying);
+        sink.Advance();
+        await sink.ReadAsync();
+        sink.SetCompletedFrames(14_400);
+        Assert.True(player.GetPlaybackSnapshot().IsPlaying);
+        sink.Advance();
+        Assert.All(await sink.ReadAsync(), sample => Assert.Equal(0, sample));
+        Assert.Equal(24_000, engine.RenderedFrames);
+        sink.SetCompletedFrames(19_200);
+        Assert.True(player.GetPlaybackSnapshot().IsPaused);
+        Assert.Equal(1, player.GetPlaybackSnapshot().Step);
+        player.Audition(Cr78Instrument.Cowbell);
+        sink.Advance();
+        Assert.Contains(await sink.ReadAsync(), sample => sample != 0);
+        Assert.True(player.IsPaused);
+        player.Start();
+        Assert.True(player.IsPlaying);
+        Assert.True(player.GetPlaybackSnapshot().IsPaused);
+        sink.Advance();
+        Assert.Contains(await sink.ReadAsync(), sample => sample != 0);
+        // ReadAsync exposes a rendered block while Write is still blocked. Submit that
+        // resumed block before asking the fake device to report it as played.
+        sink.Advance();
+        await sink.ReadAsync();
+        sink.SetCompletedFrames(33_600);
+        Assert.True(player.GetPlaybackSnapshot().IsPlaying);
+        Assert.Equal(2, player.GetPlaybackSnapshot().Step);
+
+        player.Stop();
+        player.MasterVolume = 0;
+        player.MetallicEnabled = false;
+        player.MetallicLevel = 0.5f;
+        player.SetInstrumentVolume(Cr78Instrument.Cowbell, 0.25f);
+        Assert.Equal(0.25f, player.GetInstrumentVolume(Cr78Instrument.Cowbell));
+        Assert.Equal(0.5f, player.MetallicLevel);
+        sink.Advance();
+        await sink.ReadAsync();
+        player.Audition(Cr78Instrument.MetallicBeat);
+        Task other = engine.Play(new ProbeVoice());
+        sink.Advance();
+        Assert.Contains(await sink.ReadAsync(), sample => sample != 0);
+        Assert.True(other.IsCompletedSuccessfully);
+        Assert.Equal(1f, engine.MasterVolume);
+        sink.Advance();
+        Assert.All(await sink.ReadAsync(), sample => Assert.Equal(0, sample));
+        Assert.Equal(DrumTransportState.Stopped, player.State);
         Assert.False(engine.Completion.IsCompleted);
     }
 

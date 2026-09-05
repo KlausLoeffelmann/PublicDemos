@@ -7,14 +7,26 @@ namespace SplitFlap.Audio.Sequencing;
 /// </summary>
 internal sealed class PercussionSettings
 {
+    private readonly float[] _instrumentVolumes;
+
     /// <summary>
-    ///  Captures the latest requested score, tempo, immediate controls, and score/tempo revision.
+    ///  Starts with unity percussion/master gains, looping, and a zero-level enabled metallic layer.
     /// </summary>
-    internal PercussionSettings(PercussionScore score, Tempo tempo, bool loop, float metallicLevel, long revision)
+    internal PercussionSettings(PercussionScore score, Tempo tempo)
+        : this(score, tempo, true, 1f, CreateDefaultVolumes(), true, 0f, 1)
+    {
+    }
+
+    private PercussionSettings(
+        PercussionScore score, Tempo tempo, bool loop, float masterVolume, float[] instrumentVolumes,
+        bool metallicEnabled, float metallicLevel, long revision)
     {
         Score = score;
         Tempo = tempo;
         Loop = loop;
+        MasterVolume = masterVolume;
+        _instrumentVolumes = instrumentVolumes;
+        MetallicEnabled = metallicEnabled;
         MetallicLevel = metallicLevel;
         Revision = revision;
     }
@@ -35,6 +47,21 @@ internal sealed class PercussionSettings
     internal bool Loop { get; }
 
     /// <summary>
+    ///  Gets the final player-local gain, independent of the engine's master.
+    /// </summary>
+    internal float MasterVolume { get; }
+
+    /// <summary>
+    ///  Gets the thirteen immutable gains in Cr78Kit.Instruments order.
+    /// </summary>
+    internal ReadOnlySpan<float> InstrumentVolumes => _instrumentVolumes;
+
+    /// <summary>
+    ///  Gets whether automatic hi-hat/cymbal metallic layering is enabled.
+    /// </summary>
+    internal bool MetallicEnabled { get; }
+
+    /// <summary>
     ///  Gets the hi-hat/cymbal metallic-layer level.
     /// </summary>
     internal float MetallicLevel { get; }
@@ -43,6 +70,44 @@ internal sealed class PercussionSettings
     ///  Gets the score/tempo revision used to report pending audible edits.
     /// </summary>
     internal long Revision { get; }
+
+    /// <summary>
+    ///  Copies the private gains for a caller-side single-fader edit.
+    /// </summary>
+    internal float[] CopyInstrumentVolumes() => (float[])_instrumentVolumes.Clone();
+
+    /// <summary>
+    ///  Creates a caller-side snapshot, sharing only immutable owned arrays and compiled scores.
+    /// </summary>
+    internal PercussionSettings With(
+        PercussionScore? score = null, Tempo? tempo = null, bool? loop = null, float? masterVolume = null,
+        float[]? instrumentVolumes = null, bool? metallicEnabled = null, float? metallicLevel = null)
+    {
+        score ??= Score;
+        bool scoreChanged = !Score.ContentEquals(score);
+        Tempo nextTempo = tempo ?? Tempo;
+        bool nextLoop = loop ?? Loop;
+        float nextMaster = masterVolume ?? MasterVolume;
+        bool nextMetallicEnabled = metallicEnabled ?? MetallicEnabled;
+        float nextMetallicLevel = metallicLevel ?? MetallicLevel;
+        bool gainsChanged = instrumentVolumes is not null && !_instrumentVolumes.AsSpan().SequenceEqual(instrumentVolumes);
+        if (!scoreChanged && nextTempo == Tempo && nextLoop == Loop && nextMaster == MasterVolume &&
+            !gainsChanged && nextMetallicEnabled == MetallicEnabled && nextMetallicLevel == MetallicLevel)
+        {
+            return this;
+        }
+
+        return new PercussionSettings(scoreChanged ? score : Score, nextTempo, nextLoop, nextMaster,
+            gainsChanged ? instrumentVolumes! : _instrumentVolumes, nextMetallicEnabled, nextMetallicLevel,
+            Revision + (scoreChanged || nextTempo != Tempo ? 1 : 0));
+    }
+
+    private static float[] CreateDefaultVolumes()
+    {
+        float[] volumes = new float[Cr78Kit.Instruments.Count];
+        Array.Fill(volumes, 1f);
+        return volumes;
+    }
 }
 
 /// <summary>
@@ -51,14 +116,24 @@ internal sealed class PercussionSettings
 internal enum PercussionCommandKind
 {
     /// <summary>
-    ///  Starts or restarts the score from its first bar.
+    ///  Starts a stopped score or resumes a paused score.
     /// </summary>
     Start,
+
+    /// <summary>
+    ///  Holds the musical position and releases active sounds.
+    /// </summary>
+    Pause,
 
     /// <summary>
     ///  Stops future events and releases current sounds.
     /// </summary>
     Stop,
+
+    /// <summary>
+    ///  Applies the captured configuration and stops/resets as one ordered transaction.
+    /// </summary>
+    ApplyConfiguration,
 
     /// <summary>
     ///  Auditions an instrument independently of the score transport.
@@ -67,17 +142,20 @@ internal enum PercussionCommandKind
 }
 
 /// <summary>
-///  A value-only command copied into prepared audio-thread storage.
+///  A command copied into prepared audio-thread storage with its immutable caller-side settings.
 /// </summary>
 internal readonly struct PercussionCommand
 {
     /// <summary>
     ///  Captures one ordered transport or audition request.
     /// </summary>
-    internal PercussionCommand(long sequence, PercussionCommandKind kind, Cr78Instrument instrument = default, float velocity = 1)
+    internal PercussionCommand(
+        long sequence, PercussionCommandKind kind, PercussionSettings settings,
+        Cr78Instrument instrument = default, float velocity = 1)
     {
         Sequence = sequence;
         Kind = kind;
+        Settings = settings;
         Instrument = instrument;
         Velocity = velocity;
     }
@@ -93,6 +171,11 @@ internal readonly struct PercussionCommand
     internal PercussionCommandKind Kind { get; }
 
     /// <summary>
+    ///  Gets the settings at this command's admission, not later coalesced edits.
+    /// </summary>
+    internal PercussionSettings Settings { get; }
+
+    /// <summary>
     ///  Gets the audition instrument when this is an audition request.
     /// </summary>
     internal Cr78Instrument Instrument { get; }
@@ -104,7 +187,7 @@ internal readonly struct PercussionCommand
 }
 
 /// <summary>
-///  Coalesces edits and auditions while preserving ordered Start/Stop requests in bounded storage.
+///  Coalesces edits and auditions while preserving ordered transport/configuration requests.
 /// </summary>
 internal sealed class PercussionMailbox
 {
@@ -127,7 +210,7 @@ internal sealed class PercussionMailbox
     {
         ArgumentNullException.ThrowIfNull(score);
         PercussionClock.ValidateTempo(tempo);
-        _settings = new PercussionSettings(score, tempo, loop: true, metallicLevel: 0, revision: 1);
+        _settings = new PercussionSettings(score, tempo);
     }
 
     /// <summary>
@@ -140,7 +223,13 @@ internal sealed class PercussionMailbox
     ///  Gets the latest accepted transport request, also cleared on natural score completion.
     /// </summary>
     internal bool IsPlaying
-        => (Volatile.Read(ref _transportRequest) & 1) != 0;
+        => State == DrumTransportState.Playing;
+
+    /// <summary>
+    ///  Gets the latest accepted state, separately from delayed rendered/played history.
+    /// </summary>
+    internal DrumTransportState State
+        => (DrumTransportState)(Volatile.Read(ref _transportRequest) & 3);
 
     /// <summary>
     ///  Gets whether disposal has closed command admission and requested the voice's release.
@@ -157,11 +246,7 @@ internal sealed class PercussionMailbox
         lock (_sync)
         {
             ThrowIfReleased();
-            PercussionSettings old = _settings;
-            if (!ReferenceEquals(old.Score, score))
-            {
-                Volatile.Write(ref _settings, new PercussionSettings(score, old.Tempo, old.Loop, old.MetallicLevel, old.Revision + 1));
-            }
+            Volatile.Write(ref _settings, _settings.With(score: score));
         }
     }
 
@@ -174,11 +259,7 @@ internal sealed class PercussionMailbox
         lock (_sync)
         {
             ThrowIfReleased();
-            PercussionSettings old = _settings;
-            if (old.Tempo != tempo)
-            {
-                Volatile.Write(ref _settings, new PercussionSettings(old.Score, tempo, old.Loop, old.MetallicLevel, old.Revision + 1));
-            }
+            Volatile.Write(ref _settings, _settings.With(tempo: tempo));
         }
     }
 
@@ -190,13 +271,12 @@ internal sealed class PercussionMailbox
         lock (_sync)
         {
             ThrowIfReleased();
-            PercussionSettings old = _settings;
-            Volatile.Write(ref _settings, new PercussionSettings(old.Score, old.Tempo, loop, old.MetallicLevel, old.Revision));
+            Volatile.Write(ref _settings, _settings.With(loop: loop));
         }
     }
 
     /// <summary>
-    ///  Publishes the next-block metallic-layer level while leaving current tails intact.
+    ///  Publishes a remembered metallic amount; existing layer tails follow the next-block gain ramp.
     /// </summary>
     internal void SetMetallicLevel(float level)
     {
@@ -204,8 +284,107 @@ internal sealed class PercussionMailbox
         lock (_sync)
         {
             ThrowIfReleased();
-            PercussionSettings old = _settings;
-            Volatile.Write(ref _settings, new PercussionSettings(old.Score, old.Tempo, old.Loop, level, old.Revision));
+            Volatile.Write(ref _settings, _settings.With(metallicLevel: level));
+        }
+    }
+
+    /// <summary>
+    ///  Toggles automatic metallic layering without changing its remembered amount.
+    /// </summary>
+    internal void SetMetallicEnabled(bool enabled)
+    {
+        lock (_sync)
+        {
+            ThrowIfReleased();
+            Volatile.Write(ref _settings, _settings.With(metallicEnabled: enabled));
+        }
+    }
+
+    /// <summary>
+    ///  Publishes a finite player-local master target for the next audio block.
+    /// </summary>
+    internal void SetMasterVolume(float volume)
+    {
+        Cr78Kit.ValidateLevel(volume, nameof(volume));
+        lock (_sync)
+        {
+            ThrowIfReleased();
+            Volatile.Write(ref _settings, _settings.With(masterVolume: volume));
+        }
+    }
+
+    /// <summary>
+    ///  Reads a primary percussion fader; the metallic layer has separate controls.
+    /// </summary>
+    internal float GetInstrumentVolume(Cr78Instrument instrument)
+    {
+        Cr78Kit.ValidateInstrument(instrument, allowMetallic: false);
+        return Settings.InstrumentVolumes[(int)instrument];
+    }
+
+    /// <summary>
+    ///  Publishes an independently copied percussion fader without creating a musical revision.
+    /// </summary>
+    internal void SetInstrumentVolume(Cr78Instrument instrument, float volume)
+    {
+        Cr78Kit.ValidateInstrument(instrument, allowMetallic: false);
+        Cr78Kit.ValidateLevel(volume, nameof(volume));
+        lock (_sync)
+        {
+            ThrowIfReleased();
+            if (_settings.InstrumentVolumes[(int)instrument] == volume)
+            {
+                return;
+            }
+
+            float[] volumes = _settings.CopyInstrumentVolumes();
+            volumes[(int)instrument] = volume;
+            Volatile.Write(ref _settings, _settings.With(instrumentVolumes: volumes));
+        }
+    }
+
+    /// <summary>
+    ///  Validates/copies a whole document on the caller, optionally reserving an ordered reset.
+    /// </summary>
+    internal void ApplyConfiguration(
+        PercussionScore score, Tempo tempo, float masterVolume, IReadOnlyList<float> instrumentVolumes,
+        bool loop, bool metallicEnabled, float metallicLevel, bool resetTransport = false)
+    {
+        ArgumentNullException.ThrowIfNull(score);
+        ArgumentNullException.ThrowIfNull(instrumentVolumes);
+        PercussionClock.ValidateTempo(tempo);
+        Cr78Kit.ValidateLevel(masterVolume, nameof(masterVolume));
+        Cr78Kit.ValidateLevel(metallicLevel, nameof(metallicLevel));
+        if (instrumentVolumes.Count != Cr78Kit.Instruments.Count)
+        {
+            throw new ArgumentException("Supply one gain for each of the thirteen percussion instruments.", nameof(instrumentVolumes));
+        }
+
+        float[] volumes = new float[Cr78Kit.Instruments.Count];
+        for (int i = 0; i < volumes.Length; i++)
+        {
+            float volume = instrumentVolumes[i];
+            Cr78Kit.ValidateLevel(volume, nameof(instrumentVolumes));
+            volumes[i] = volume;
+        }
+
+        lock (_sync)
+        {
+            ThrowIfReleased();
+            if (resetTransport)
+            {
+                EnsureRoom();
+            }
+
+            PercussionSettings settings = _settings.With(score, tempo, loop, masterVolume, volumes, metallicEnabled, metallicLevel);
+            if (resetTransport)
+            {
+                long sequence = ++_sequence;
+                _commands.Add(new PercussionCommand(sequence, PercussionCommandKind.ApplyConfiguration, settings));
+                Volatile.Write(ref _transportRequest, TransportRequest(sequence, DrumTransportState.Stopped));
+            }
+
+            Volatile.Write(ref _settings, settings);
         }
     }
 
@@ -224,8 +403,28 @@ internal sealed class PercussionMailbox
 
             EnsureRoom();
             long sequence = ++_sequence;
-            _commands.Add(new PercussionCommand(sequence, PercussionCommandKind.Start));
-            Volatile.Write(ref _transportRequest, sequence * 2 + 1);
+            _commands.Add(new PercussionCommand(sequence, PercussionCommandKind.Start, _settings));
+            Volatile.Write(ref _transportRequest, TransportRequest(sequence, DrumTransportState.Playing));
+        }
+    }
+
+    /// <summary>
+    ///  Queues an idempotent pause only for a requested running transport.
+    /// </summary>
+    internal void Pause()
+    {
+        lock (_sync)
+        {
+            ThrowIfReleased();
+            if (!IsPlaying)
+            {
+                return;
+            }
+
+            EnsureRoom();
+            long sequence = ++_sequence;
+            _commands.Add(new PercussionCommand(sequence, PercussionCommandKind.Pause, _settings));
+            Volatile.Write(ref _transportRequest, TransportRequest(sequence, DrumTransportState.Paused));
         }
     }
 
@@ -244,8 +443,8 @@ internal sealed class PercussionMailbox
 
             EnsureRoom();
             long sequence = ++_sequence;
-            _commands.Add(new PercussionCommand(sequence, PercussionCommandKind.Stop));
-            Volatile.Write(ref _transportRequest, sequence * 2);
+            _commands.Add(new PercussionCommand(sequence, PercussionCommandKind.Stop, _settings));
+            Volatile.Write(ref _transportRequest, TransportRequest(sequence, DrumTransportState.Stopped));
         }
     }
 
@@ -269,7 +468,7 @@ internal sealed class PercussionMailbox
             }
 
             EnsureRoom();
-            _commands.Add(new PercussionCommand(++_sequence, PercussionCommandKind.Audition, instrument, velocity));
+            _commands.Add(new PercussionCommand(++_sequence, PercussionCommandKind.Audition, _settings, instrument, velocity));
         }
     }
 
@@ -302,7 +501,13 @@ internal sealed class PercussionMailbox
     ///  Clears a naturally completed start only if no newer Stop/Start request has superseded it.
     /// </summary>
     internal void CompleteStart(long sequence)
-        => Interlocked.CompareExchange(ref _transportRequest, sequence * 2, sequence * 2 + 1);
+        => CompleteTransport(sequence, DrumTransportState.Playing);
+
+    /// <summary>
+    ///  Reconciles a pause that arrived after natural completion without overwriting a newer command.
+    /// </summary>
+    internal void CompletePause(long sequence)
+        => CompleteTransport(sequence, DrumTransportState.Paused);
 
     /// <summary>
     ///  Closes admission and requests a graceful terminal release; the supplied engine remains owned by its host.
@@ -312,7 +517,7 @@ internal sealed class PercussionMailbox
         lock (_sync)
         {
             Volatile.Write(ref _releaseRequested, 1);
-            Volatile.Write(ref _transportRequest, _transportRequest & ~1L);
+            Volatile.Write(ref _transportRequest, Volatile.Read(ref _transportRequest) & ~3L);
             _commands.Clear();
         }
     }
@@ -327,4 +532,11 @@ internal sealed class PercussionMailbox
 
     private void ThrowIfReleased()
         => ObjectDisposedException.ThrowIf(ReleaseRequested, this);
+
+    private void CompleteTransport(long sequence, DrumTransportState expectedState)
+        => Interlocked.CompareExchange(ref _transportRequest,
+            TransportRequest(sequence, DrumTransportState.Stopped), TransportRequest(sequence, expectedState));
+
+    private static long TransportRequest(long sequence, DrumTransportState state)
+        => (sequence << 2) | (long)state;
 }

@@ -21,6 +21,12 @@ internal static class AppLogger
         => s_log.Write("INFO", category, message);
 
     /// <summary>
+    ///  Writes a recoverable preferences or file-cleanup problem with its diagnostic details.
+    /// </summary>
+    public static void Warning(string category, string message, Exception? exception = null)
+        => s_log.Write("WARN", category, message, exception);
+
+    /// <summary>
     ///  Writes a failure and its full exception details.
     /// </summary>
     public static void Error(string category, string message, Exception? exception = null)

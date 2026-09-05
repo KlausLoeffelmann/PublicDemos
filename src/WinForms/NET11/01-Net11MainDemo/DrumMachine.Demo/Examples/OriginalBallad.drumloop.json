@@ -1,0 +1,107 @@
+{
+  "format": "drumloop",
+  "version": 1,
+  "kit": "cr78-procedural-v1",
+  "tempoBpm": 92,
+  "loop": true,
+  "score": {
+    "bars": 2,
+    "stepsPerBar": 16,
+    "tracks": [
+      {
+        "instrument": "bassDrum",
+        "hits": [
+          { "bar": 0, "step": 0, "velocity": 0.8, "gateSteps": 1 },
+          { "bar": 0, "step": 6, "velocity": 0.48, "gateSteps": 1 },
+          { "bar": 0, "step": 10, "velocity": 0.65, "gateSteps": 1 },
+          { "bar": 1, "step": 0, "velocity": 0.8, "gateSteps": 1 },
+          { "bar": 1, "step": 7, "velocity": 0.45, "gateSteps": 1 },
+          { "bar": 1, "step": 10, "velocity": 0.6, "gateSteps": 1 },
+          { "bar": 1, "step": 15, "velocity": 0.35, "gateSteps": 1 }
+        ]
+      },
+      {
+        "instrument": "snareDrum",
+        "hits": [
+          { "bar": 0, "step": 4, "velocity": 0.55, "gateSteps": 1 },
+          { "bar": 0, "step": 12, "velocity": 0.65, "gateSteps": 1 },
+          { "bar": 1, "step": 4, "velocity": 0.55, "gateSteps": 1 },
+          { "bar": 1, "step": 12, "velocity": 0.7, "gateSteps": 1 }
+        ]
+      },
+      { "instrument": "rimShot", "hits": [] },
+      {
+        "instrument": "hiHat",
+        "hits": [
+          { "bar": 0, "step": 0, "velocity": 0.32, "gateSteps": 1 },
+          { "bar": 0, "step": 2, "velocity": 0.44, "gateSteps": 1 },
+          { "bar": 0, "step": 4, "velocity": 0.28, "gateSteps": 1 },
+          { "bar": 0, "step": 6, "velocity": 0.4, "gateSteps": 1 },
+          { "bar": 0, "step": 8, "velocity": 0.34, "gateSteps": 1 },
+          { "bar": 0, "step": 10, "velocity": 0.5, "gateSteps": 1 },
+          { "bar": 0, "step": 12, "velocity": 0.3, "gateSteps": 1 },
+          { "bar": 0, "step": 14, "velocity": 0.43, "gateSteps": 1 },
+          { "bar": 1, "step": 0, "velocity": 0.32, "gateSteps": 1 },
+          { "bar": 1, "step": 2, "velocity": 0.4, "gateSteps": 1 },
+          { "bar": 1, "step": 4, "velocity": 0.3, "gateSteps": 1 },
+          { "bar": 1, "step": 6, "velocity": 0.46, "gateSteps": 1 },
+          { "bar": 1, "step": 8, "velocity": 0.34, "gateSteps": 1 },
+          { "bar": 1, "step": 10, "velocity": 0.42, "gateSteps": 1 },
+          { "bar": 1, "step": 12, "velocity": 0.3, "gateSteps": 1 },
+          { "bar": 1, "step": 14, "velocity": 0.5, "gateSteps": 1 }
+        ]
+      },
+      { "instrument": "cymbal", "hits": [] },
+      {
+        "instrument": "maracas",
+        "hits": [
+          { "bar": 0, "step": 3, "velocity": 0.32, "gateSteps": 1 },
+          { "bar": 0, "step": 7, "velocity": 0.34, "gateSteps": 1 },
+          { "bar": 0, "step": 11, "velocity": 0.3, "gateSteps": 1 },
+          { "bar": 0, "step": 15, "velocity": 0.38, "gateSteps": 1 },
+          { "bar": 1, "step": 3, "velocity": 0.3, "gateSteps": 1 },
+          { "bar": 1, "step": 7, "velocity": 0.36, "gateSteps": 1 },
+          { "bar": 1, "step": 11, "velocity": 0.3, "gateSteps": 1 },
+          { "bar": 1, "step": 15, "velocity": 0.4, "gateSteps": 1 }
+        ]
+      },
+      {
+        "instrument": "claves",
+        "hits": [
+          { "bar": 0, "step": 9, "velocity": 0.25, "gateSteps": 1 }
+        ]
+      },
+      { "instrument": "cowbell", "hits": [] },
+      {
+        "instrument": "highBongo",
+        "hits": [
+          { "bar": 1, "step": 13, "velocity": 0.22, "gateSteps": 1 }
+        ]
+      },
+      { "instrument": "lowBongo", "hits": [] },
+      { "instrument": "lowConga", "hits": [] },
+      { "instrument": "tambourine", "hits": [] },
+      { "instrument": "guiro", "hits": [] }
+    ]
+  },
+  "mixer": {
+    "masterVolumePercent": 65,
+    "percussionVolumes": [
+      { "instrument": "bassDrum", "volumePercent": 100 },
+      { "instrument": "snareDrum", "volumePercent": 100 },
+      { "instrument": "rimShot", "volumePercent": 100 },
+      { "instrument": "hiHat", "volumePercent": 100 },
+      { "instrument": "cymbal", "volumePercent": 100 },
+      { "instrument": "maracas", "volumePercent": 100 },
+      { "instrument": "claves", "volumePercent": 100 },
+      { "instrument": "cowbell", "volumePercent": 100 },
+      { "instrument": "highBongo", "volumePercent": 100 },
+      { "instrument": "lowBongo", "volumePercent": 100 },
+      { "instrument": "lowConga", "volumePercent": 100 },
+      { "instrument": "tambourine", "volumePercent": 100 },
+      { "instrument": "guiro", "volumePercent": 100 }
+    ],
+    "metallicEnabled": false,
+    "metallicVolumePercent": 0
+  }
+}

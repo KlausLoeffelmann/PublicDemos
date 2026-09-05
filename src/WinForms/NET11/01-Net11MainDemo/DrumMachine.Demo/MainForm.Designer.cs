@@ -10,7 +10,6 @@ partial class MainForm
         {
             components.Dispose();
         }
-
         base.Dispose(disposing);
     }
 
@@ -18,24 +17,53 @@ partial class MainForm
 
     private void InitializeComponent()
     {
+        _menuStrip = new MenuStrip();
+        _fileMenu = new ToolStripMenuItem();
+        _openMenuItem = new ToolStripMenuItem();
+        _recentMenu = new ToolStripMenuItem();
+        _recentEmpty = new ToolStripMenuItem();
+        _saveMenuItem = new ToolStripMenuItem();
+        _saveAsMenuItem = new ToolStripMenuItem();
+        _fileSeparator = new ToolStripSeparator();
+        _quitMenuItem = new ToolStripMenuItem();
+        _editMenu = new ToolStripMenuItem();
+        _newMenuItem = new ToolStripMenuItem();
+        _editSeparator = new ToolStripSeparator();
+        _undoMenuItem = new ToolStripMenuItem();
+        _redoMenuItem = new ToolStripMenuItem();
+        _viewMenu = new ToolStripMenuItem();
+        _oneBarMenuItem = new ToolStripMenuItem();
+        _twoBarsMenuItem = new ToolStripMenuItem();
+        _toolsMenu = new ToolStripMenuItem();
+        _optionsMenuItem = new ToolStripMenuItem();
+        _toolStrip = new ToolStrip();
+        _newButton = new ToolStripButton();
+        _openButton = new ToolStripButton();
+        _saveButton = new ToolStripButton();
+        _documentSeparator = new ToolStripSeparator();
+        _playButton = new ToolStripButton();
+        _pauseButton = new ToolStripButton();
+        _stopButton = new ToolStripButton();
+        _loopButton = new ToolStripButton();
+        _transportSeparator = new ToolStripSeparator();
+        _tempoLabel = new ToolStripLabel();
+        _tempo = new Controls.ToolStripTrackBar();
+        _tempoSeparator = new ToolStripSeparator();
+        _volumeLabel = new ToolStripLabel();
+        _volumeSelector = new ToolStripComboBox();
+        _volume = new Controls.ToolStripTrackBar();
+        _volumeSeparator = new ToolStripSeparator();
+        _metallicButton = new ToolStripButton();
+        _metallic = new Controls.ToolStripTrackBar();
+        _metallicSeparator = new ToolStripSeparator();
+        _barLabel = new ToolStripLabel();
+        _barSelector = new ToolStripComboBox();
+        _auditionMetallicButton = new ToolStripButton();
+        _statusStrip = new StatusStrip();
+        _statusLabel = new ToolStripStatusLabel();
+        _positionLabel = new ToolStripStatusLabel();
         _layout = new TableLayoutPanel();
-        _transport = new FlowLayoutPanel();
-        _playButton = new Button();
-        _stopButton = new Button();
-        _loopCheckBox = new CheckBox();
-        _tempoLabel = new Label();
-        _tempo = new NumericUpDown();
-        _volumeLabel = new Label();
-        _volume = new TrackBar();
-        _metallicLabel = new Label();
-        _metallic = new TrackBar();
-        _metallicButton = new Button();
         _spectrumControl = new SplitFlap.Audio.WinForms.AudioSpectrumControl();
-        _scoreToolbar = new FlowLayoutPanel();
-        _barLabel = new Label();
-        _barSelector = new ComboBox();
-        _resetButton = new Button();
-        _positionLabel = new Label();
         _stepGrid = new DataGridView();
         _instrumentColumn = new DataGridViewTextBoxColumn();
         _auditionColumn = new DataGridViewButtonColumn();
@@ -55,257 +83,232 @@ partial class MainForm
         _step14 = new DataGridViewCheckBoxColumn();
         _step15 = new DataGridViewCheckBoxColumn();
         _step16 = new DataGridViewCheckBoxColumn();
-        _statusLabel = new Label();
+        _step17 = new DataGridViewCheckBoxColumn();
+        _step18 = new DataGridViewCheckBoxColumn();
+        _step19 = new DataGridViewCheckBoxColumn();
+        _step20 = new DataGridViewCheckBoxColumn();
+        _step21 = new DataGridViewCheckBoxColumn();
+        _step22 = new DataGridViewCheckBoxColumn();
+        _step23 = new DataGridViewCheckBoxColumn();
+        _step24 = new DataGridViewCheckBoxColumn();
+        _step25 = new DataGridViewCheckBoxColumn();
+        _step26 = new DataGridViewCheckBoxColumn();
+        _step27 = new DataGridViewCheckBoxColumn();
+        _step28 = new DataGridViewCheckBoxColumn();
+        _step29 = new DataGridViewCheckBoxColumn();
+        _step30 = new DataGridViewCheckBoxColumn();
+        _step31 = new DataGridViewCheckBoxColumn();
+        _step32 = new DataGridViewCheckBoxColumn();
+        _openDialog = new OpenFileDialog();
+        _saveDialog = new SaveFileDialog();
         components = new System.ComponentModel.Container();
         _uiTimer = new System.Windows.Forms.Timer(components);
         _exitTimer = new System.Windows.Forms.Timer(components);
         SuspendLayout();
+        _menuStrip.SuspendLayout();
+        _toolStrip.SuspendLayout();
+        _statusStrip.SuspendLayout();
         _layout.SuspendLayout();
-        _transport.SuspendLayout();
-        _scoreToolbar.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)_tempo).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)_volume).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)_metallic).BeginInit();
         ((System.ComponentModel.ISupportInitialize)_stepGrid).BeginInit();
         //
-        // _layout
+        // MenuStrip
         //
-        _layout.ColumnCount = 1;
-        _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _layout.Controls.Add(_transport, 0, 0);
-        _layout.Controls.Add(_spectrumControl, 0, 1);
-        _layout.Controls.Add(_scoreToolbar, 0, 2);
-        _layout.Controls.Add(_stepGrid, 0, 3);
-        _layout.Controls.Add(_statusLabel, 0, 4);
-        _layout.Dock = DockStyle.Fill;
-        _layout.Location = new Point(0, 0);
-        _layout.Name = "_layout";
-        _layout.Padding = new Padding(12);
-        _layout.RowCount = 5;
-        _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _layout.RowStyles.Add(new RowStyle(SizeType.Percent, 42F));
-        _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _layout.RowStyles.Add(new RowStyle(SizeType.Percent, 58F));
-        _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _layout.Size = new Size(1100, 820);
-        _layout.TabIndex = 0;
+        _menuStrip.Items.AddRange(new ToolStripItem[] { _fileMenu, _editMenu, _viewMenu, _toolsMenu });
+        _menuStrip.Name = "_menuStrip";
+        _menuStrip.TabIndex = 0;
+        _fileMenu.DropDownItems.AddRange(new ToolStripItem[] { _openMenuItem, _recentMenu, _saveMenuItem, _saveAsMenuItem, _fileSeparator, _quitMenuItem });
+        _fileMenu.Name = "_fileMenu";
+        _fileMenu.Text = "&File";
+        _openMenuItem.Name = "_openMenuItem";
+        _openMenuItem.ShortcutKeys = Keys.Control | Keys.O;
+        _openMenuItem.Text = "&Open...";
+        _openMenuItem.Click += Open_Click;
+        _recentMenu.DropDownItems.AddRange(new ToolStripItem[] { _recentEmpty });
+        _recentMenu.Name = "_recentMenu";
+        _recentMenu.Text = "&Recent";
+        _recentEmpty.Enabled = false;
+        _recentEmpty.Name = "_recentEmpty";
+        _recentEmpty.Text = "(No recent files)";
+        _saveMenuItem.Name = "_saveMenuItem";
+        _saveMenuItem.ShortcutKeys = Keys.Control | Keys.S;
+        _saveMenuItem.Text = "&Save";
+        _saveMenuItem.Click += Save_Click;
+        _saveAsMenuItem.Name = "_saveAsMenuItem";
+        _saveAsMenuItem.ShortcutKeys = Keys.Control | Keys.Shift | Keys.S;
+        _saveAsMenuItem.Text = "Save &As...";
+        _saveAsMenuItem.Click += SaveAs_Click;
+        _fileSeparator.Name = "_fileSeparator";
+        _quitMenuItem.Name = "_quitMenuItem";
+        _quitMenuItem.Text = "&Quit";
+        _quitMenuItem.Click += Quit_Click;
+        _editMenu.DropDownItems.AddRange(new ToolStripItem[] { _newMenuItem, _editSeparator, _undoMenuItem, _redoMenuItem });
+        _editMenu.Name = "_editMenu";
+        _editMenu.Text = "&Edit";
+        _newMenuItem.Name = "_newMenuItem";
+        _newMenuItem.ShortcutKeys = Keys.Control | Keys.N;
+        _newMenuItem.Text = "&New...";
+        _newMenuItem.Click += New_Click;
+        _editSeparator.Name = "_editSeparator";
+        _undoMenuItem.Name = "_undoMenuItem";
+        _undoMenuItem.ShortcutKeys = Keys.Control | Keys.Z;
+        _undoMenuItem.Text = "&Undo";
+        _undoMenuItem.Click += Undo_Click;
+        _redoMenuItem.Name = "_redoMenuItem";
+        _redoMenuItem.ShortcutKeys = Keys.Control | Keys.Y;
+        _redoMenuItem.Text = "&Redo";
+        _redoMenuItem.Click += Redo_Click;
+        _viewMenu.DropDownItems.AddRange(new ToolStripItem[] { _oneBarMenuItem, _twoBarsMenuItem });
+        _viewMenu.Name = "_viewMenu";
+        _viewMenu.Text = "&View";
+        _oneBarMenuItem.Checked = true;
+        _oneBarMenuItem.Name = "_oneBarMenuItem";
+        _oneBarMenuItem.Text = "&1 Bar";
+        _oneBarMenuItem.Click += OneBar_Click;
+        _twoBarsMenuItem.Name = "_twoBarsMenuItem";
+        _twoBarsMenuItem.Text = "&2 Bars";
+        _twoBarsMenuItem.Click += TwoBars_Click;
+        _toolsMenu.DropDownItems.AddRange(new ToolStripItem[] { _optionsMenuItem });
+        _toolsMenu.Name = "_toolsMenu";
+        _toolsMenu.Text = "&Tools";
+        _optionsMenuItem.Name = "_optionsMenuItem";
+        _optionsMenuItem.Text = "&Options...";
+        _optionsMenuItem.Click += Options_Click;
         //
-        // _transport
+        // ToolStrip
         //
-        _transport.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-        _transport.AutoSize = true;
-        _transport.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _transport.Controls.Add(_playButton);
-        _transport.Controls.Add(_stopButton);
-        _transport.Controls.Add(_loopCheckBox);
-        _transport.Controls.Add(_tempoLabel);
-        _transport.Controls.Add(_tempo);
-        _transport.Controls.Add(_volumeLabel);
-        _transport.Controls.Add(_volume);
-        _transport.Controls.Add(_metallicLabel);
-        _transport.Controls.Add(_metallic);
-        _transport.Controls.Add(_metallicButton);
-        _transport.Location = new Point(15, 15);
-        _transport.Name = "_transport";
-        _transport.Size = new Size(1070, 51);
-        _transport.TabIndex = 0;
-        //
-        // _playButton
-        //
-        _playButton.AutoSize = true;
+        _toolStrip.AutoSize = true;
+        _toolStrip.GripStyle = ToolStripGripStyle.Hidden;
+        _toolStrip.ImageScalingSize = new Size(32, 32);
+        _toolStrip.Items.AddRange(new ToolStripItem[] { _newButton, _openButton, _saveButton, _documentSeparator, _playButton, _pauseButton, _stopButton, _loopButton, _transportSeparator, _tempoLabel, _tempo, _tempoSeparator, _volumeLabel, _volumeSelector, _volume, _volumeSeparator, _metallicButton, _metallic, _metallicSeparator, _barLabel, _barSelector, _auditionMetallicButton });
+        _toolStrip.LayoutStyle = ToolStripLayoutStyle.Flow;
+        _toolStrip.Name = "_toolStrip";
+        _toolStrip.TabIndex = 1;
+        _newButton.Name = "_newButton";
+        _newButton.Text = "New";
+        _newButton.ToolTipText = "New loop (Ctrl+N)";
+        _newButton.Click += New_Click;
+        _openButton.Name = "_openButton";
+        _openButton.Text = "Open";
+        _openButton.ToolTipText = "Open loop (Ctrl+O)";
+        _openButton.Click += Open_Click;
+        _saveButton.Name = "_saveButton";
+        _saveButton.Text = "Save";
+        _saveButton.ToolTipText = "Save loop (Ctrl+S)";
+        _saveButton.Click += Save_Click;
+        _documentSeparator.Name = "_documentSeparator";
         _playButton.Enabled = false;
-        _playButton.Location = new Point(3, 3);
-        _playButton.MinimumSize = new Size(75, 28);
         _playButton.Name = "_playButton";
-        _playButton.Size = new Size(75, 28);
-        _playButton.TabIndex = 0;
-        _playButton.Text = "&Play";
-        _playButton.UseVisualStyleBackColor = true;
-        _playButton.Click += PlayButton_Click;
-        //
-        // _stopButton
-        //
-        _stopButton.AutoSize = true;
+        _playButton.Text = "Play";
+        _playButton.ToolTipText = "Play or resume";
+        _playButton.Click += Play_Click;
+        _pauseButton.Enabled = false;
+        _pauseButton.Name = "_pauseButton";
+        _pauseButton.Text = "Pause";
+        _pauseButton.Click += Pause_Click;
         _stopButton.Enabled = false;
-        _stopButton.Location = new Point(84, 3);
-        _stopButton.MinimumSize = new Size(75, 28);
         _stopButton.Name = "_stopButton";
-        _stopButton.Size = new Size(75, 28);
-        _stopButton.TabIndex = 1;
-        _stopButton.Text = "&Stop";
-        _stopButton.UseVisualStyleBackColor = true;
-        _stopButton.Click += StopButton_Click;
-        //
-        // _loopCheckBox
-        //
-        _loopCheckBox.AutoSize = true;
-        _loopCheckBox.Checked = true;
-        _loopCheckBox.CheckState = CheckState.Checked;
-        _loopCheckBox.Location = new Point(165, 8);
-        _loopCheckBox.Margin = new Padding(3, 8, 12, 3);
-        _loopCheckBox.Name = "_loopCheckBox";
-        _loopCheckBox.Size = new Size(55, 19);
-        _loopCheckBox.TabIndex = 2;
-        _loopCheckBox.Text = "&Loop";
-        _loopCheckBox.UseVisualStyleBackColor = true;
-        _loopCheckBox.CheckedChanged += LoopCheckBox_CheckedChanged;
-        //
-        // _tempoLabel
-        //
-        _tempoLabel.AutoSize = true;
-        _tempoLabel.Location = new Point(235, 8);
-        _tempoLabel.Margin = new Padding(3, 8, 3, 3);
+        _stopButton.Text = "Stop";
+        _stopButton.ToolTipText = "Stop and reset to the beginning";
+        _stopButton.Click += Stop_Click;
+        _loopButton.CheckOnClick = true;
+        _loopButton.Checked = true;
+        _loopButton.Name = "_loopButton";
+        _loopButton.Text = "Loop";
+        _loopButton.CheckedChanged += Loop_CheckedChanged;
+        _transportSeparator.Name = "_transportSeparator";
         _tempoLabel.Name = "_tempoLabel";
-        _tempoLabel.Size = new Size(75, 15);
-        _tempoLabel.TabIndex = 3;
-        _tempoLabel.Text = "&Tempo (BPM)";
-        //
-        // _tempo
-        //
+        _tempoLabel.Text = "Tempo: 92 BPM";
         _tempo.AccessibleName = "Tempo in beats per minute";
-        _tempo.Location = new Point(316, 6);
-        _tempo.Margin = new Padding(3, 6, 12, 3);
-        _tempo.Maximum = new decimal(new int[] { 240, 0, 0, 0 });
-        _tempo.Minimum = new decimal(new int[] { 40, 0, 0, 0 });
+        _tempo.AutoSize = false;
+        _tempo.Minimum = 40;
+        _tempo.Maximum = 240;
         _tempo.Name = "_tempo";
-        _tempo.Size = new Size(64, 23);
-        _tempo.TabIndex = 4;
-        _tempo.Value = new decimal(new int[] { 92, 0, 0, 0 });
+        _tempo.Size = new Size(100, 32);
+        _tempo.SmallChange = 1;
+        _tempo.LargeChange = 5;
+        _tempo.Value = 92;
         _tempo.ValueChanged += Tempo_ValueChanged;
-        //
-        // _volumeLabel
-        //
-        _volumeLabel.AutoSize = true;
-        _volumeLabel.Location = new Point(395, 8);
-        _volumeLabel.Margin = new Padding(3, 8, 3, 3);
+        _tempo.GestureStarted += Slider_GestureStarted;
+        _tempo.GestureCompleted += Slider_GestureCompleted;
+        _tempoSeparator.Name = "_tempoSeparator";
         _volumeLabel.Name = "_volumeLabel";
-        _volumeLabel.Size = new Size(69, 15);
-        _volumeLabel.TabIndex = 5;
-        _volumeLabel.Text = "&Master 65%";
-        //
-        // _volume
-        //
-        _volume.AccessibleName = "Master volume";
-        _volume.LargeChange = 10;
-        _volume.Location = new Point(470, 3);
+        _volumeLabel.Text = "Volume: 65%";
+        _volumeSelector.AccessibleName = "Volume target";
+        _volumeSelector.AutoSize = false;
+        _volumeSelector.DropDownStyle = ComboBoxStyle.DropDownList;
+        _volumeSelector.Name = "_volumeSelector";
+        _volumeSelector.Size = new Size(120, 32);
+        _volumeSelector.SelectedIndexChanged += VolumeSelector_SelectedIndexChanged;
+        _volume.AccessibleName = "Selected channel volume percent";
+        _volume.AutoSize = false;
         _volume.Maximum = 100;
         _volume.Name = "_volume";
-        _volume.Size = new Size(125, 45);
-        _volume.SmallChange = 5;
-        _volume.TabIndex = 6;
-        _volume.TickFrequency = 10;
+        _volume.Size = new Size(100, 32);
         _volume.Value = 65;
         _volume.ValueChanged += Volume_ValueChanged;
-        //
-        // _metallicLabel
-        //
-        _metallicLabel.AutoSize = true;
-        _metallicLabel.Location = new Point(601, 8);
-        _metallicLabel.Margin = new Padding(3, 8, 3, 3);
-        _metallicLabel.Name = "_metallicLabel";
-        _metallicLabel.Size = new Size(93, 15);
-        _metallicLabel.TabIndex = 7;
-        _metallicLabel.Text = "Metallic la&yer 0%";
-        //
-        // _metallic
-        //
-        _metallic.AccessibleName = "Hi-hat and cymbal metallic layer level";
-        _metallic.LargeChange = 10;
-        _metallic.Location = new Point(700, 3);
+        _volume.GestureStarted += Slider_GestureStarted;
+        _volume.GestureCompleted += Slider_GestureCompleted;
+        _volumeSeparator.Name = "_volumeSeparator";
+        _metallicButton.CheckOnClick = true;
+        _metallicButton.Name = "_metallicButton";
+        _metallicButton.Text = "Metallic layer: 0%";
+        _metallicButton.ToolTipText = "Enable the shared cymbal/hi-hat metallic layer";
+        _metallicButton.CheckedChanged += Metallic_CheckedChanged;
+        _metallic.AccessibleName = "Remembered metallic layer percent";
+        _metallic.AutoSize = false;
         _metallic.Maximum = 100;
         _metallic.Name = "_metallic";
-        _metallic.Size = new Size(125, 45);
-        _metallic.SmallChange = 5;
-        _metallic.TabIndex = 8;
-        _metallic.TickFrequency = 10;
+        _metallic.Size = new Size(100, 32);
         _metallic.ValueChanged += Metallic_ValueChanged;
+        _metallic.GestureStarted += Slider_GestureStarted;
+        _metallic.GestureCompleted += Slider_GestureCompleted;
+        _metallicSeparator.Name = "_metallicSeparator";
+        _barLabel.Name = "_barLabel";
+        _barLabel.Text = "View:";
+        _barSelector.AccessibleName = "Score bar range to edit";
+        _barSelector.AutoSize = false;
+        _barSelector.DropDownStyle = ComboBoxStyle.DropDownList;
+        _barSelector.Name = "_barSelector";
+        _barSelector.Size = new Size(95, 32);
+        _barSelector.SelectedIndexChanged += BarSelector_SelectedIndexChanged;
+        _auditionMetallicButton.Enabled = false;
+        _auditionMetallicButton.Name = "_auditionMetallicButton";
+        _auditionMetallicButton.Text = "Audition";
+        _auditionMetallicButton.ToolTipText = "Audition metallic sound";
+        _auditionMetallicButton.Click += AuditionMetallic_Click;
         //
-        // _metallicButton
+        // StatusStrip and content
         //
-        _metallicButton.AutoSize = true;
-        _metallicButton.Enabled = false;
-        _metallicButton.Location = new Point(831, 3);
-        _metallicButton.MinimumSize = new Size(100, 28);
-        _metallicButton.Name = "_metallicButton";
-        _metallicButton.Size = new Size(100, 28);
-        _metallicButton.TabIndex = 9;
-        _metallicButton.Text = "Audition metallic";
-        _metallicButton.UseVisualStyleBackColor = true;
-        _metallicButton.Click += MetallicButton_Click;
-        //
-        // _spectrumControl
-        //
+        _statusStrip.Items.AddRange(new ToolStripItem[] { _statusLabel, _positionLabel });
+        _statusStrip.Name = "_statusStrip";
+        _statusStrip.TabIndex = 3;
+        _statusLabel.Name = "_statusLabel";
+        _statusLabel.Spring = true;
+        _statusLabel.Text = "Opening audio...";
+        _statusLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _positionLabel.Name = "_positionLabel";
+        _positionLabel.Text = "Stopped";
+        _layout.ColumnCount = 1;
+        _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _layout.Controls.Add(_spectrumControl, 0, 0);
+        _layout.Controls.Add(_stepGrid, 0, 1);
+        _layout.Dock = DockStyle.Fill;
+        _layout.Name = "_layout";
+        _layout.Padding = new Padding(12);
+        _layout.RowCount = 2;
+        _layout.RowStyles.Add(new RowStyle(SizeType.Percent, 42F));
+        _layout.RowStyles.Add(new RowStyle(SizeType.Percent, 58F));
+        _layout.Size = new Size(1180, 740);
+        _layout.TabIndex = 2;
         _spectrumControl.AccessibleName = "Frequency spectrum of the played audio";
         _spectrumControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        _spectrumControl.Location = new Point(15, 81);
-        _spectrumControl.Margin = new Padding(3, 12, 3, 12);
+        _spectrumControl.Margin = new Padding(3, 3, 3, 12);
         _spectrumControl.MinimumSize = new Size(300, 150);
         _spectrumControl.Name = "_spectrumControl";
-        _spectrumControl.Size = new Size(1070, 270);
-        _spectrumControl.TabIndex = 1;
+        _spectrumControl.TabIndex = 0;
         _spectrumControl.TabStop = false;
-        //
-        // _scoreToolbar
-        //
-        _scoreToolbar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-        _scoreToolbar.AutoSize = true;
-        _scoreToolbar.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _scoreToolbar.Controls.Add(_barLabel);
-        _scoreToolbar.Controls.Add(_barSelector);
-        _scoreToolbar.Controls.Add(_resetButton);
-        _scoreToolbar.Controls.Add(_positionLabel);
-        _scoreToolbar.Location = new Point(15, 366);
-        _scoreToolbar.Name = "_scoreToolbar";
-        _scoreToolbar.Size = new Size(1070, 35);
-        _scoreToolbar.TabIndex = 2;
-        //
-        // _barLabel
-        //
-        _barLabel.AutoSize = true;
-        _barLabel.Location = new Point(3, 8);
-        _barLabel.Margin = new Padding(3, 8, 3, 3);
-        _barLabel.Name = "_barLabel";
-        _barLabel.Size = new Size(57, 15);
-        _barLabel.TabIndex = 0;
-        _barLabel.Text = "View &bar";
-        //
-        // _barSelector
-        //
-        _barSelector.AccessibleName = "Score bar to edit";
-        _barSelector.DropDownStyle = ComboBoxStyle.DropDownList;
-        _barSelector.Location = new Point(66, 5);
-        _barSelector.Margin = new Padding(3, 5, 12, 3);
-        _barSelector.Name = "_barSelector";
-        _barSelector.Size = new Size(60, 23);
-        _barSelector.TabIndex = 1;
-        _barSelector.SelectedIndexChanged += BarSelector_SelectedIndexChanged;
-        //
-        // _resetButton
-        //
-        _resetButton.AutoSize = true;
-        _resetButton.Location = new Point(141, 3);
-        _resetButton.MinimumSize = new Size(95, 28);
-        _resetButton.Name = "_resetButton";
-        _resetButton.Size = new Size(95, 28);
-        _resetButton.TabIndex = 2;
-        _resetButton.Text = "&Reset pattern";
-        _resetButton.UseVisualStyleBackColor = true;
-        _resetButton.Click += ResetButton_Click;
-        //
-        // _positionLabel
-        //
-        _positionLabel.AutoSize = true;
-        _positionLabel.Location = new Point(248, 8);
-        _positionLabel.Margin = new Padding(12, 8, 3, 3);
-        _positionLabel.Name = "_positionLabel";
-        _positionLabel.Size = new Size(50, 15);
-        _positionLabel.TabIndex = 3;
-        _positionLabel.Text = "Stopped";
-        //
-        // _stepGrid
-        //
         _stepGrid.AccessibleName = "Percussion score steps";
-        _stepGrid.AccessibleDescription = "Select a bar, toggle steps with Space, or use a row's Play button to audition its instrument.";
+        _stepGrid.AccessibleDescription = "Use Space to toggle a step, or the row's Play button to audition.";
         _stepGrid.AllowUserToAddRows = false;
         _stepGrid.AllowUserToDeleteRows = false;
         _stepGrid.AllowUserToOrderColumns = false;
@@ -314,15 +317,12 @@ partial class MainForm
         _stepGrid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
         _stepGrid.BackgroundColor = SystemColors.Window;
         _stepGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-        _stepGrid.Columns.AddRange(new DataGridViewColumn[] { _instrumentColumn, _auditionColumn, _step01, _step02, _step03, _step04, _step05, _step06, _step07, _step08, _step09, _step10, _step11, _step12, _step13, _step14, _step15, _step16 });
-        _stepGrid.Enabled = false;
-        _stepGrid.Location = new Point(15, 407);
+        _stepGrid.Columns.AddRange(new DataGridViewColumn[] { _instrumentColumn, _auditionColumn, _step01, _step02, _step03, _step04, _step05, _step06, _step07, _step08, _step09, _step10, _step11, _step12, _step13, _step14, _step15, _step16, _step17, _step18, _step19, _step20, _step21, _step22, _step23, _step24, _step25, _step26, _step27, _step28, _step29, _step30, _step31, _step32 });
         _stepGrid.MultiSelect = false;
         _stepGrid.Name = "_stepGrid";
         _stepGrid.RowHeadersVisible = false;
         _stepGrid.SelectionMode = DataGridViewSelectionMode.CellSelect;
-        _stepGrid.Size = new Size(1070, 360);
-        _stepGrid.TabIndex = 3;
+        _stepGrid.TabIndex = 1;
         _stepGrid.CellContentClick += StepGrid_CellContentClick;
         _stepGrid.CellValueChanged += StepGrid_CellValueChanged;
         _stepGrid.CurrentCellDirtyStateChanged += StepGrid_CurrentCellDirtyStateChanged;
@@ -408,23 +408,102 @@ partial class MainForm
         _step15.MinimumWidth = 32;
         _step15.Name = "_step15";
         _step16.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step16.DividerWidth = 6;
         _step16.HeaderText = "16";
         _step16.MinimumWidth = 32;
         _step16.Name = "_step16";
+        _step17.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step17.HeaderText = "1";
+        _step17.MinimumWidth = 32;
+        _step17.Name = "_step17";
+        _step17.Visible = false;
+        _step18.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step18.HeaderText = "2";
+        _step18.MinimumWidth = 32;
+        _step18.Name = "_step18";
+        _step18.Visible = false;
+        _step19.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step19.HeaderText = "3";
+        _step19.MinimumWidth = 32;
+        _step19.Name = "_step19";
+        _step19.Visible = false;
+        _step20.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step20.DividerWidth = 3;
+        _step20.HeaderText = "4";
+        _step20.MinimumWidth = 32;
+        _step20.Name = "_step20";
+        _step20.Visible = false;
+        _step21.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step21.HeaderText = "5";
+        _step21.MinimumWidth = 32;
+        _step21.Name = "_step21";
+        _step21.Visible = false;
+        _step22.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step22.HeaderText = "6";
+        _step22.MinimumWidth = 32;
+        _step22.Name = "_step22";
+        _step22.Visible = false;
+        _step23.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step23.HeaderText = "7";
+        _step23.MinimumWidth = 32;
+        _step23.Name = "_step23";
+        _step23.Visible = false;
+        _step24.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step24.DividerWidth = 3;
+        _step24.HeaderText = "8";
+        _step24.MinimumWidth = 32;
+        _step24.Name = "_step24";
+        _step24.Visible = false;
+        _step25.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step25.HeaderText = "9";
+        _step25.MinimumWidth = 32;
+        _step25.Name = "_step25";
+        _step25.Visible = false;
+        _step26.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step26.HeaderText = "10";
+        _step26.MinimumWidth = 32;
+        _step26.Name = "_step26";
+        _step26.Visible = false;
+        _step27.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step27.HeaderText = "11";
+        _step27.MinimumWidth = 32;
+        _step27.Name = "_step27";
+        _step27.Visible = false;
+        _step28.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step28.DividerWidth = 3;
+        _step28.HeaderText = "12";
+        _step28.MinimumWidth = 32;
+        _step28.Name = "_step28";
+        _step28.Visible = false;
+        _step29.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step29.HeaderText = "13";
+        _step29.MinimumWidth = 32;
+        _step29.Name = "_step29";
+        _step29.Visible = false;
+        _step30.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step30.HeaderText = "14";
+        _step30.MinimumWidth = 32;
+        _step30.Name = "_step30";
+        _step30.Visible = false;
+        _step31.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step31.HeaderText = "15";
+        _step31.MinimumWidth = 32;
+        _step31.Name = "_step31";
+        _step31.Visible = false;
+        _step32.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        _step32.HeaderText = "16";
+        _step32.MinimumWidth = 32;
+        _step32.Name = "_step32";
+        _step32.Visible = false;
         //
-        // _statusLabel
+        // File dialogs and timers
         //
-        _statusLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-        _statusLabel.AutoSize = true;
-        _statusLabel.Location = new Point(15, 773);
-        _statusLabel.Margin = new Padding(3, 6, 3, 3);
-        _statusLabel.Name = "_statusLabel";
-        _statusLabel.Size = new Size(1070, 30);
-        _statusLabel.TabIndex = 4;
-        _statusLabel.Text = "Opening audio. Original two-bar groove; step edits take effect at the next bar.";
-        //
-        // Timers
-        //
+        _openDialog.DefaultExt = "drumloop.json";
+        _openDialog.Filter = "Drum loops (*.drumloop.json)|*.drumloop.json|JSON files (*.json)|*.json";
+        _openDialog.Title = "Open percussion loop";
+        _saveDialog.DefaultExt = "drumloop.json";
+        _saveDialog.Filter = "Drum loops (*.drumloop.json)|*.drumloop.json";
+        _saveDialog.Title = "Save percussion loop";
         _uiTimer.Interval = 33;
         _uiTimer.Tick += UiTimer_Tick;
         _exitTimer.Interval = 1000;
@@ -434,46 +513,78 @@ partial class MainForm
         //
         AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(1100, 820);
+        ClientSize = new Size(1180, 820);
         Controls.Add(_layout);
+        Controls.Add(_statusStrip);
+        Controls.Add(_toolStrip);
+        Controls.Add(_menuStrip);
+        MainMenuStrip = _menuStrip;
         MinimumSize = new Size(800, 620);
         Name = "MainForm";
         StartPosition = FormStartPosition.CenterScreen;
-        Text = "Analog Rhythm Lab - CR-78-style synthesis and spectrum - .NET 11";
+        Text = "Analog Rhythm Lab";
         Disposed += MainForm_Disposed;
-        ((System.ComponentModel.ISupportInitialize)_tempo).EndInit();
-        ((System.ComponentModel.ISupportInitialize)_volume).EndInit();
-        ((System.ComponentModel.ISupportInitialize)_metallic).EndInit();
         ((System.ComponentModel.ISupportInitialize)_stepGrid).EndInit();
-        _transport.ResumeLayout(false);
-        _transport.PerformLayout();
-        _scoreToolbar.ResumeLayout(false);
-        _scoreToolbar.PerformLayout();
+        _menuStrip.ResumeLayout(false);
+        _menuStrip.PerformLayout();
+        _toolStrip.ResumeLayout(false);
+        _toolStrip.PerformLayout();
+        _statusStrip.ResumeLayout(false);
+        _statusStrip.PerformLayout();
         _layout.ResumeLayout(false);
-        _layout.PerformLayout();
         ResumeLayout(false);
+        PerformLayout();
     }
 
     #endregion
 
+    private MenuStrip _menuStrip;
+    private ToolStripMenuItem _fileMenu;
+    private ToolStripMenuItem _openMenuItem;
+    private ToolStripMenuItem _recentMenu;
+    private ToolStripMenuItem _recentEmpty;
+    private ToolStripMenuItem _saveMenuItem;
+    private ToolStripMenuItem _saveAsMenuItem;
+    private ToolStripSeparator _fileSeparator;
+    private ToolStripMenuItem _quitMenuItem;
+    private ToolStripMenuItem _editMenu;
+    private ToolStripMenuItem _newMenuItem;
+    private ToolStripSeparator _editSeparator;
+    private ToolStripMenuItem _undoMenuItem;
+    private ToolStripMenuItem _redoMenuItem;
+    private ToolStripMenuItem _viewMenu;
+    private ToolStripMenuItem _oneBarMenuItem;
+    private ToolStripMenuItem _twoBarsMenuItem;
+    private ToolStripMenuItem _toolsMenu;
+    private ToolStripMenuItem _optionsMenuItem;
+    private ToolStrip _toolStrip;
+    private ToolStripButton _newButton;
+    private ToolStripButton _openButton;
+    private ToolStripButton _saveButton;
+    private ToolStripButton _playButton;
+    private ToolStripButton _pauseButton;
+    private ToolStripButton _stopButton;
+    private ToolStripButton _loopButton;
+    private ToolStripLabel _tempoLabel;
+    private Controls.ToolStripTrackBar _tempo;
+    private ToolStripLabel _volumeLabel;
+    private ToolStripComboBox _volumeSelector;
+    private Controls.ToolStripTrackBar _volume;
+    private ToolStripButton _metallicButton;
+    private Controls.ToolStripTrackBar _metallic;
+    private ToolStripLabel _barLabel;
+    private ToolStripComboBox _barSelector;
+    private ToolStripButton _auditionMetallicButton;
+    private ToolStripSeparator _documentSeparator;
+    private ToolStripSeparator _transportSeparator;
+    private ToolStripSeparator _tempoSeparator;
+    private ToolStripSeparator _volumeSeparator;
+    private ToolStripSeparator _metallicSeparator;
+    private StatusStrip _statusStrip;
+    private ToolStripStatusLabel _statusLabel;
+    private ToolStripStatusLabel _positionLabel;
     private TableLayoutPanel _layout;
-    private FlowLayoutPanel _transport;
-    private Button _playButton;
-    private Button _stopButton;
-    private CheckBox _loopCheckBox;
-    private Label _tempoLabel;
-    private NumericUpDown _tempo;
-    private Label _volumeLabel;
-    private TrackBar _volume;
-    private Label _metallicLabel;
-    private TrackBar _metallic;
-    private Button _metallicButton;
     private SplitFlap.Audio.WinForms.AudioSpectrumControl _spectrumControl;
-    private FlowLayoutPanel _scoreToolbar;
-    private Label _barLabel;
-    private ComboBox _barSelector;
-    private Button _resetButton;
-    private Label _positionLabel;
     private DataGridView _stepGrid;
     private DataGridViewTextBoxColumn _instrumentColumn;
     private DataGridViewButtonColumn _auditionColumn;
@@ -493,7 +604,24 @@ partial class MainForm
     private DataGridViewCheckBoxColumn _step14;
     private DataGridViewCheckBoxColumn _step15;
     private DataGridViewCheckBoxColumn _step16;
-    private Label _statusLabel;
+    private DataGridViewCheckBoxColumn _step17;
+    private DataGridViewCheckBoxColumn _step18;
+    private DataGridViewCheckBoxColumn _step19;
+    private DataGridViewCheckBoxColumn _step20;
+    private DataGridViewCheckBoxColumn _step21;
+    private DataGridViewCheckBoxColumn _step22;
+    private DataGridViewCheckBoxColumn _step23;
+    private DataGridViewCheckBoxColumn _step24;
+    private DataGridViewCheckBoxColumn _step25;
+    private DataGridViewCheckBoxColumn _step26;
+    private DataGridViewCheckBoxColumn _step27;
+    private DataGridViewCheckBoxColumn _step28;
+    private DataGridViewCheckBoxColumn _step29;
+    private DataGridViewCheckBoxColumn _step30;
+    private DataGridViewCheckBoxColumn _step31;
+    private DataGridViewCheckBoxColumn _step32;
+    private OpenFileDialog _openDialog;
+    private SaveFileDialog _saveDialog;
     private System.Windows.Forms.Timer _uiTimer;
     private System.Windows.Forms.Timer _exitTimer;
 }

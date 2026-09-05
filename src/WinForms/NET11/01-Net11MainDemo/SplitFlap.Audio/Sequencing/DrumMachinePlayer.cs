@@ -7,7 +7,7 @@ namespace SplitFlap.Audio.Sequencing;
 /// </summary>
 /// <remarks>
 ///  The caller owns the engine and observes its Completion task. Score/tempo changes are
-///  coalesced at bar boundaries while running, or accepted at the next block while stopped.
+///  coalesced at bar boundaries while playing/paused, or accepted at the next block while stopped.
 ///  Commands are bounded; flooding more than 128 unconsumed transport requests throws instead
 ///  of silently losing their order. No wall-clock timer determines musical onsets.
 /// </remarks>
@@ -60,7 +60,7 @@ public sealed class DrumMachinePlayer : IDisposable
     }
 
     /// <summary>
-    ///  Gets or sets the zero-to-one CY/HH metallic level for future hits. Initially zero.
+    ///  Gets or sets the remembered zero-to-one CY/HH layer amount, ramping existing tails. Initially zero.
     /// </summary>
     public float MetallicLevel
     {
@@ -69,14 +69,51 @@ public sealed class DrumMachinePlayer : IDisposable
     }
 
     /// <summary>
-    ///  Gets the latest accepted Play/Stop state, cleared on natural completion or engine shutdown.
+    ///  Gets or sets automatic CY/HH layering without changing its remembered amount. Initially true.
+    /// </summary>
+    public bool MetallicEnabled
+    {
+        get => _mailbox.Settings.MetallicEnabled;
+        set => _mailbox.SetMetallicEnabled(value);
+    }
+
+    /// <summary>
+    ///  Gets or sets the zero-to-one final player-local mix gain, initially one.
+    /// </summary>
+    /// <remarks>
+    ///  Five-millisecond ramps affect all percussion, tails, and auditions, but not other engine voices.
+    /// </remarks>
+    public float MasterVolume
+    {
+        get => _mailbox.Settings.MasterVolume;
+        set => _mailbox.SetMasterVolume(value);
+    }
+
+    /// <summary>
+    ///  Gets whether the latest accepted transport request is Playing.
     /// </summary>
     /// <remarks>
     ///  This controls transport buttons. GetPlaybackSnapshot reports the separately delayed,
     ///  played position, which may still be sounding previously queued output after Stop.
     /// </remarks>
     public bool IsPlaying
-        => Volatile.Read(ref _disposed) == 0 && !_engine.Completion.IsCompleted && _mailbox.IsPlaying;
+        => State == DrumTransportState.Playing;
+
+    /// <summary>
+    ///  Gets whether the latest accepted transport request is Paused.
+    /// </summary>
+    public bool IsPaused => State == DrumTransportState.Paused;
+
+    /// <summary>
+    ///  Gets the latest accepted state, cleared on natural completion, disposal, or engine shutdown.
+    /// </summary>
+    /// <remarks>
+    ///  GetPlaybackSnapshot separately describes completed output, which can lag this requested state.
+    /// </remarks>
+    public DrumTransportState State
+        => Volatile.Read(ref _disposed) == 0 && !_engine.Completion.IsCompleted
+            ? _mailbox.State
+            : DrumTransportState.Stopped;
 
     /// <summary>
     ///  Requests an already validated/indexed score without modifying the bar currently rendering.
@@ -85,20 +122,62 @@ public sealed class DrumMachinePlayer : IDisposable
         => _mailbox.SetScore(score);
 
     /// <summary>
-    ///  Starts at the first bar on the next audio block; repeated Start while playing is harmless.
+    ///  Gets a primary percussion fader; MetallicBeat uses the separate layer controls instead.
+    /// </summary>
+    public float GetInstrumentVolume(Cr78Instrument instrument)
+        => _mailbox.GetInstrumentVolume(instrument);
+
+    /// <summary>
+    ///  Sets a finite zero-to-one fader, ramping sequenced and auditioned sound including existing tails.
+    /// </summary>
+    public void SetInstrumentVolume(Cr78Instrument instrument, float volume)
+        => _mailbox.SetInstrumentVolume(instrument, volume);
+
+    /// <summary>
+    ///  Validates and copies a complete score/mix request without retaining a mutable caller gain list.
+    /// </summary>
+    /// <remarks>
+    ///  Gains follow Cr78Kit.Instruments order. Mixer/loop controls take effect at the next block;
+    ///  score/tempo wait for the next bar while playing or paused. With resetTransport, the captured
+    ///  configuration and Stop/Reset are one bounded, ordered next-block transaction for New/Open.
+    ///  An unchanged score/tempo does not create a pending musical revision.
+    /// </remarks>
+    public void ApplyConfiguration(
+        PercussionScore score, Tempo tempo, float masterVolume, IReadOnlyList<float> instrumentVolumes,
+        bool loop, bool metallicEnabled, float metallicLevel, bool resetTransport = false)
+        => _mailbox.ApplyConfiguration(score, tempo, masterVolume, instrumentVolumes,
+            loop, metallicEnabled, metallicLevel, resetTransport);
+
+    /// <summary>
+    ///  Starts a stopped score at the first bar, or resumes a paused score; repeated Play is harmless.
     /// </summary>
     public void Start()
         => _mailbox.Start();
 
     /// <summary>
-    ///  Stops future score hits on the next block and releases current sounds over five milliseconds.
+    ///  Holds the exact fractional musical position at the next block and releases active sounds.
+    /// </summary>
+    /// <remarks>
+    ///  The engine clock, analysis, and auditions continue. Resume never re-creates released tails.
+    /// </remarks>
+    public void Pause()
+        => _mailbox.Pause();
+
+    /// <summary>
+    ///  Stops, resets to bar zero/step zero, and releases current sounds over five milliseconds.
     /// </summary>
     public void Stop()
         => _mailbox.Stop();
 
     /// <summary>
-    ///  Auditions a prepared sound while running or stopped, coalescing repeated pending clicks.
+    ///  Auditions a prepared sound in any transport state, coalescing repeated pending clicks.
     /// </summary>
+    /// <remarks>
+    ///  MetallicBeat explicitly auditions at unity layer gain even when automatic layering is off
+    ///  or its remembered amount is zero. Master still applies. It shares the HH/CY metallic channel:
+    ///  the next enabled, nonzero HH/CY layer hit replaces that audition using the remembered amount.
+    ///  Changing layer controls does not mute an explicit audition already in progress.
+    /// </remarks>
     public void Audition(Cr78Instrument instrument, float velocity = 1f)
         => _mailbox.Audition(instrument, velocity);
 

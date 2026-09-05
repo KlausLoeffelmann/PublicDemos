@@ -12,12 +12,47 @@ From the solution directory:
 dotnet run --project .\DrumMachine.Demo\DrumMachine.Demo.csproj -c Release
 ```
 
-Use **Play/Stop**, **Loop**, tempo, and master volume for transport. Select a bar
-and toggle its 16 steps with the mouse or Space. Each instrument row has a Play
-button for audition; the metallic layer also has a separate audition button.
-Changing the visible bar does not seek the audio. Score and tempo edits are
-applied at a bar boundary; Reset pattern restores the original two-bar score.
-Edits are in-memory and intentionally do not overwrite a settings file.
+The MenuStrip and ToolStrip share New/Open/Save commands. **New** asks for a blank
+1-, 2-, or 4-bar loop. **View -> 1 Bar / 2 Bars** only changes the visible range;
+the range selector navigates longer scores without changing their length or
+seeking playback. Toggle steps with the mouse or Space. Each row retains its
+instrument audition button.
+
+**Play** starts or resumes, **Pause** holds the musical position, and **Stop**
+releases sounds and resets to the beginning. The audio device and spectrum stay
+running while paused, so audition still works. Score/tempo edits take effect at a
+bar boundary. Volume controls target Master or an individual percussion channel
+and also affect decaying tails. The shared metallic layer has its own enable
+button and remembered amount.
+
+## Loop documents and editor history
+
+Open and save versioned `.drumloop.json` files containing track definitions,
+hit velocities/gates, tempo, master and percussion levels, Loop, and metallic
+enable/amount. Save As changes the document path only after success. File writes
+use a temporary file and atomic replacement; invalid files do not replace the
+current loop. New/Open/Quit protect unsaved changes.
+
+Undo/Redo covers musical document changes, including mixer settings, with one
+history entry per slider gesture. Saving keeps history; undoing back to the saved
+state clears the title's unsaved marker. Transport, viewport, and app options are
+not document edits. File -> Recent lists the last five successful opens/saves.
+`Examples\OriginalBallad.drumloop.json` contains the original demonstration groove.
+
+## Options and symbol icons
+
+Tools -> Options provides Classic/Dark mode/System, a default loop-file folder,
+and Small (32x32), Medium (48x48), or Large (64x64) toolbar icons. Sizes are at
+96 DPI and scale per monitor. Icon and folder changes apply immediately; theme
+changes require a restart. System reads the Windows color mode at launch.
+
+`SymbolIconFactory` renders installed Segoe Fluent Icons glyphs into transparent
+bitmaps at their target size, with an explicit Segoe MDL2 Assets fallback.
+No WARP symbol library, downloaded font, or enlarged raster icon is involved.
+The toolbar owns/replaces its images; normal menu icon sizes remain independent.
+
+Preferences and recent files live in
+`%LocalAppData%\DrumMachine.Demo\settings.json`, not inside loop documents.
 
 The stock palette comprises 11 primary voices, tambourine and guiro, and a
 metallic layer associated with cymbal/hi-hat. This models the sound character,
@@ -55,12 +90,15 @@ dotnet run --project .\DrumMachine.Demo\DrumMachine.Demo.csproj -c Release -- --
 | `kit` | Audition all instruments and the metallic sound. |
 | `score` | Play the original two-bar score once. |
 | `spectrum` | Confirm that a known output tone reaches the playback-aligned analyzer. |
-| `all` | Run all three scenarios. |
+| `document` | Exercise file round-trip, Undo/Redo, bar views, Pause/Resume, and Stop/Reset without dialogs. |
+| `all` | Run all scenarios. |
 
 Exit codes are 0 for success, 1 for failure or an interrupted requested scenario,
 and 2 for invalid arguments. A short timer is not a successful scenario merely
 because it closed the window. No scenario failure opens a blocking error dialog.
 `--run-for` without a scenario simply closes an interactive session normally.
+`--no-settings` bypasses preference and recent-file I/O. Automated scenarios also
+isolate user preferences automatically and use temporary files, never the user's loops.
 
 Logs are in `%LocalAppData%\DrumMachine.Demo\Logs`, separate from the split-flap
 demo's logs. If another demo instance locks the usual build output, use a separate

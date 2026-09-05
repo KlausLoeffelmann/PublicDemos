@@ -1,7 +1,11 @@
 using System.Diagnostics;
 using System.Text.Json;
+using DrumMachine.Demo;
+using SplitFlap.Audio.Analysis;
 using SplitFlap.Audio.Core;
+using SplitFlap.Audio.Music;
 using SplitFlap.Audio.Playback;
+using SplitFlap.Audio.Sequencing;
 using SplitFlap.Audio.Synthesis;
 
 namespace SplitFlap.Tests;
@@ -77,6 +81,36 @@ public sealed class AudioPerformanceTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>
+    ///  Compares the actual drum-player pump with and without a concurrent spectrum worker.
+    /// </summary>
+    [Fact(Explicit = true)]
+    [Trait("Category", "Performance")]
+    public void MeasureRhythm()
+    {
+        Workload[] workloads =
+        [
+            new("rhythm-playing", ReverbSettings.Off, DrumPlayer: true),
+            new("rhythm-spectrum", ReverbSettings.Off, DrumPlayer: true, Spectrum: true),
+            new("rhythm-idle-spectrum", ReverbSettings.Off, DrumPlayer: true, Spectrum: true, Idle: true)
+        ];
+
+        foreach (Workload workload in workloads)
+        {
+            Measure(workload, round: 0);
+        }
+
+        // Production kit voices retain their normal variation. These elapsed-time observations
+        // are not bit-exact A/B measurements or isolated analyzer CPU counters.
+        for (int round = 1; round <= 3; round++)
+        {
+            foreach (Workload workload in workloads)
+            {
+                output.WriteLine("PERF " + JsonSerializer.Serialize(Measure(workload, round)));
+            }
+        }
+    }
+
     private static Measurement Measure(Workload workload, int round)
     {
         // The fixture owns these gates. The sink signals shutdown; only after the engine joins
@@ -90,9 +124,21 @@ public sealed class AudioPerformanceTests(ITestOutputHelper output)
             engine.MaxPolyphony = 64;
             engine.Reverb = workload.Reverb;
             sink.Attach(engine);
+            using DrumMachinePlayer? player = workload.DrumPlayer
+                ? new DrumMachinePlayer(engine, DemoScores.OriginalBallad, new Tempo(120))
+                : null;
+            using AudioSpectrumSource? spectrum = workload.Spectrum ? new AudioSpectrumSource(engine) : null;
+            if (player is not null && !workload.Idle)
+            {
+                player.Start();
+            }
             start.Set();
 
             Assert.True(finished.Wait(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken));
+            if (spectrum?.Completion.IsFaulted == true)
+            {
+                spectrum.Completion.GetAwaiter().GetResult();
+            }
         }
 
         return sink.GetMeasurement(round);
@@ -106,7 +152,10 @@ public sealed class AudioPerformanceTests(ITestOutputHelper output)
         bool BoardBursts = false,
         bool TailBursts = false,
         bool OneBurst = false,
-        int WarmupBlocks = 128);
+        int WarmupBlocks = 128,
+        bool DrumPlayer = false,
+        bool Spectrum = false,
+        bool Idle = false);
 
     private sealed record Measurement(
         string Workload,

@@ -8,6 +8,7 @@ public sealed class DrumDemoInfrastructureTests
     [InlineData("kit", "Kit")]
     [InlineData("score", "Score")]
     [InlineData("spectrum", "Spectrum")]
+    [InlineData("document", "Document")]
     [InlineData("ALL", "All")]
     public void Options_ParseKnownScenarios(string value, string expected)
     {
@@ -38,6 +39,13 @@ public sealed class DrumDemoInfrastructureTests
     {
         Assert.False(StartupOptions.TryParse(["--scenario"], out _, out _));
         Assert.False(StartupOptions.TryParse(["--run-for"], out _, out _));
+    }
+
+    [Fact]
+    public void Options_CanIsolateUserPreferences()
+    {
+        Assert.True(StartupOptions.TryParse(["--no-settings"], out StartupOptions options, out _));
+        Assert.True(options.NoSettings);
     }
 
     [Fact]

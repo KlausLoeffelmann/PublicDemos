@@ -19,11 +19,12 @@ internal sealed class PercussionRenderer
     private PercussionSettings _pendingSettings;
     private decimal _barOrigin;
     private long _startSequence;
+    private long _pauseFrame;
     private int _bar;
     private int _step;
     private int _lastRenderedStep;
     private bool _firstBar;
-    private bool _playing;
+    private DrumTransportState _state;
     private bool _disposing;
     private bool _hasBlock;
 
@@ -43,6 +44,7 @@ internal sealed class PercussionRenderer
         _initialRevision = _activeSettings.Revision;
         _clock = new PercussionClock(sampleRate, _activeSettings.Tempo);
         _bank = new Cr78VoiceBank(sampleRate, noiseSeed);
+        ApplyMix(initialize: true);
         _history = new PercussionHistory(historyCapacity);
         _hitObserver = hitObserver;
     }
@@ -79,9 +81,7 @@ internal sealed class PercussionRenderer
             if (!_disposing)
             {
                 _disposing = true;
-                _playing = false;
-                _bank.ReleaseAll();
-                Record(frame);
+                StopReset(frame);
             }
 
             return;
@@ -93,48 +93,69 @@ internal sealed class PercussionRenderer
             return;
         }
 
-        _pendingSettings = requested!;
-        if (!_playing && ApplyPending())
-        {
-            Record(frame);
-        }
-
         for (int i = 0; i < count; i++)
         {
             PercussionCommand command = _commands[i];
+            _commands[i] = default;
+            AcceptSettings(command.Settings, frame);
             switch (command.Kind)
             {
                 case PercussionCommandKind.Start:
-                    if (!_playing)
+                    if (_state == DrumTransportState.Paused)
+                    {
+                        long pausedFrames = frame - _pauseFrame;
+                        _clock.Shift(pausedFrames);
+                        _barOrigin += pausedFrames;
+                        _state = DrumTransportState.Playing;
+                        _startSequence = command.Sequence;
+                        Record(frame);
+                    }
+                    else if (_state == DrumTransportState.Stopped)
                     {
                         ApplyPending();
                         _clock.Reset(frame);
                         _barOrigin = frame;
                         _bar = _step = _lastRenderedStep = 0;
                         _firstBar = true;
-                        _playing = true;
+                        _state = DrumTransportState.Playing;
                         _startSequence = command.Sequence;
                         Record(frame);
                     }
                     break;
 
+                case PercussionCommandKind.Pause:
+                    if (_state == DrumTransportState.Playing)
+                    {
+                        _pauseFrame = frame;
+                        _state = DrumTransportState.Paused;
+                        _bank.ReleaseAll();
+                        Record(frame);
+                    }
+                    else if (_state == DrumTransportState.Stopped)
+                    {
+                        // A one-shot may finish in the block between admission and consumption.
+                        _mailbox.CompletePause(command.Sequence);
+                    }
+                    break;
+
                 case PercussionCommandKind.Stop:
-                    _playing = false;
-                    _bank.ReleaseAll();
-                    ApplyPending();
-                    Record(frame);
+                case PercussionCommandKind.ApplyConfiguration:
+                    StopReset(frame);
                     break;
 
                 case PercussionCommandKind.Audition:
                     _bank.Trigger(command.Instrument, command.Velocity, _sampleRate / 4);
                     if (command.Instrument is Cr78Instrument.HiHat or Cr78Instrument.Cymbal)
                     {
-                        _bank.Trigger(Cr78Instrument.MetallicBeat,
-                            command.Velocity * _pendingSettings.MetallicLevel, _sampleRate / 4);
+                        _bank.TriggerMetallicLayer(command.Velocity, _sampleRate / 4);
                     }
                     break;
             }
         }
+
+        // Each ordered action used the settings captured when it was queued. Only now may
+        // later coalesced edits become pending; they cannot rewrite a preceding load/start.
+        AcceptSettings(requested!, frame);
     }
 
     /// <summary>
@@ -142,7 +163,7 @@ internal sealed class PercussionRenderer
     /// </summary>
     internal float Next(long frame)
     {
-        if (_playing && frame >= _clock.NextFrame)
+        if (_state == DrumTransportState.Playing && frame >= _clock.NextFrame)
         {
             RenderStep(frame);
         }
@@ -165,7 +186,7 @@ internal sealed class PercussionRenderer
                 isPlaybackSynchronized: deviceSynchronized && !unavailable);
         }
 
-        return new DrumPlaybackSnapshot(point.Bar, point.StepAt(playedFrame), point.Playing,
+        return new DrumPlaybackSnapshot(point.Bar, point.StepAt(playedFrame), point.State,
             requestedRevision != point.Revision, deviceSynchronized);
     }
 
@@ -182,7 +203,7 @@ internal sealed class PercussionRenderer
                     if (!_pendingSettings.Loop)
                     {
                         _bar = _activeSettings.Score.BarCount - 1;
-                        _playing = false;
+                        _state = DrumTransportState.Stopped;
                         _mailbox.CompleteStart(_startSequence);
                         Record(frame);
                         return;
@@ -214,8 +235,7 @@ internal sealed class PercussionRenderer
         // HH and CY are independent noise voices, not an 808 open/closed-hat choke pair.
         // Simultaneous HH/CY events excite their one shared metallic layer once, at the
         // stronger velocity. Its own decay continues independently of either noise tail.
-        _bank.Trigger(Cr78Instrument.MetallicBeat,
-            metallicVelocity * _pendingSettings.MetallicLevel, _sampleRate / 4);
+        _bank.TriggerMetallicLayer(metallicVelocity, _sampleRate / 4);
         _lastRenderedStep = _step;
         _step = (_step + 1) % PercussionScore.StepsPerBar;
         _clock.Advance();
@@ -230,7 +250,7 @@ internal sealed class PercussionRenderer
 
         _activeSettings = _pendingSettings;
         _clock.SetTempo(_activeSettings.Tempo);
-        if (!_playing)
+        if (_state == DrumTransportState.Stopped)
         {
             _bar = Math.Min(_bar, _activeSettings.Score.BarCount - 1);
         }
@@ -238,7 +258,34 @@ internal sealed class PercussionRenderer
         return true;
     }
 
+    private void AcceptSettings(PercussionSettings settings, long frame)
+    {
+        _pendingSettings = settings;
+        ApplyMix();
+        if (_state == DrumTransportState.Stopped && ApplyPending())
+        {
+            Record(frame);
+        }
+    }
+
+    private void ApplyMix(bool initialize = false)
+        => _bank.SetMix(_pendingSettings.MasterVolume, _pendingSettings.InstrumentVolumes,
+            _pendingSettings.MetallicEnabled, _pendingSettings.MetallicLevel, initialize);
+
+    private void StopReset(long frame)
+    {
+        _state = DrumTransportState.Stopped;
+        _bank.ReleaseAll();
+        ApplyPending();
+        _clock.Reset(frame);
+        _barOrigin = frame;
+        _pauseFrame = 0;
+        _bar = _step = _lastRenderedStep = 0;
+        _firstBar = true;
+        Record(frame);
+    }
+
     private void Record(long frame)
-        => _history.Write(new PercussionHistoryPoint(frame, _bar, _lastRenderedStep, _playing,
+        => _history.Write(new PercussionHistoryPoint(frame, _bar, _lastRenderedStep, _state,
             _barOrigin, _clock.FramesPerStep, _activeSettings.Revision));
 }

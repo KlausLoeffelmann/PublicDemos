@@ -25,16 +25,22 @@ internal static class Program
 
         s_automated = options.Scenario != DemoScenario.None;
         AppLogger.Initialize();
+        AppSettings settings = options.NoSettings || s_automated ? new AppSettings() : AppSettingsStore.Load();
         AppLogger.Information("Application", $"Starting scenario={options.Scenario}, runFor={options.RunFor}.");
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         Application.ThreadException += OnThreadException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         ApplicationConfiguration.Initialize();
-        Application.SetColorMode(SystemColorMode.System);
+        Application.SetColorMode(settings.Theme switch
+        {
+            AppTheme.Classic => SystemColorMode.Classic,
+            AppTheme.Dark => SystemColorMode.Dark,
+            _ => SystemColorMode.System
+        });
 
         try
         {
-            Application.Run(new MainForm(options));
+            Application.Run(new MainForm(options, settings));
             return Environment.ExitCode;
         }
         catch (Exception ex)

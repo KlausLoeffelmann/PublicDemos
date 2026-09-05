@@ -43,6 +43,10 @@ closing the user's demo instance.
   and melody, 32/64-clack stress, 64 sines, and a hall tail.
 - `MeasureLongIdle` additionally measures room and hall output after 64 simulated seconds with
   no new strikes. This catches subnormal feedback costs that fresh-silence measurements miss.
+- `MeasureRhythm` covers the reusable drum player with monitoring off/on and a concurrent
+  spectrum worker, plus a stopped player's idle cost. It runs the actual pump without a
+  device or UI; production kit variation is retained, so these are timing observations,
+  not bit-exact sample comparisons or separate analyzer CPU measurements.
 - `PERF` lines contain JSON with mean/p95/p99/maximum block-render elapsed time, render time
   per simulated audio second, bytes allocated per render block and per admitted voice,
   process-wide Gen0 counts, and a PCM checksum.
@@ -86,14 +90,17 @@ dotnet run --project .\DrumMachine.Demo\DrumMachine.Demo.csproj -c Release -- --
 dotnet run --project .\DrumMachine.Demo\DrumMachine.Demo.csproj -c Release -- --scenario all --run-for 30
 ```
 
-Its scenarios are `kit`, `score`, `spectrum`, and `all`. The kit scenario auditions
+Its scenarios are `kit`, `score`, `spectrum`, `document`, and `all`. The kit scenario auditions
 all percussion entries; score plays the original pattern once; spectrum checks
 that a known output tone reaches the playback-aligned analyzer. A deadline or
 manual close before a requested scenario completes is a failure, not a successful
 test merely because the process exited.
 
-This app keeps edits in memory and has no settings file, so it does not accept or
-need `--no-settings`. Its separate logs are
+The document scenario round-trips a temporary loop, exercises Undo/Redo and bar views,
+and checks Pause/Resume and Stop/Reset. The editor saves `.drumloop.json` documents;
+app preferences and five recent files use its own AppData `settings.json`.
+`--no-settings` bypasses preference/recents I/O; automated scenarios also bypass it
+automatically. Never let a scenario overwrite the user's loop files. Its separate logs are
 `%LocalAppData%\DrumMachine.Demo\Logs\drummachine-yyyyMMdd.log`.
 Keep original groove and model provenance documented; do not add recordings or
 commercial song arrangements as test fixtures.

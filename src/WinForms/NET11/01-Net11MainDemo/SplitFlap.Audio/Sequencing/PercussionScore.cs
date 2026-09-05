@@ -214,6 +214,13 @@ public sealed class PercussionScore
         return _hits.AsSpan(start, _stepOffsets[index + 1] - start);
     }
 
+    /// <summary>
+    ///  Compares caller-side document snapshots without treating a mixer-only edit as a new score.
+    /// </summary>
+    internal bool ContentEquals(PercussionScore other)
+        => ReferenceEquals(this, other) ||
+            (BarCount == other.BarCount && _hits.AsSpan().SequenceEqual(other._hits));
+
     private void ValidatePosition(int bar, Cr78Instrument instrument, int step)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(bar);

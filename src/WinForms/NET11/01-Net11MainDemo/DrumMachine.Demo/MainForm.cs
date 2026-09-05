@@ -1,53 +1,71 @@
 using System.ComponentModel;
-using System.Diagnostics;
+using DrumMachine.Demo.Controls;
+using DrumMachine.Demo.Documents;
 using SplitFlap.Audio.Analysis;
 using SplitFlap.Audio.Core;
 using SplitFlap.Audio.Music;
 using SplitFlap.Audio.Percussion;
-using SplitFlap.Audio.Playback;
 using SplitFlap.Audio.Sequencing;
 using SplitFlap.Audio.Synthesis;
 
 namespace DrumMachine.Demo;
 
 /// <summary>
-///  Demonstrates an original editable rhythm, procedurally modeled percussion, and the actual output spectrum.
+///  Hosts the loop document editor without making the UI responsible for musical timing.
 /// </summary>
 internal partial class MainForm : Form
 {
     private readonly StartupOptions _options;
     private readonly CancellationTokenSource _lifetime = new();
-    private PercussionScore _score = DemoScores.OriginalBallad;
+    private readonly LoopDocumentSession _session;
+    private readonly AppTheme _appliedTheme;
+    private AppSettings _settings;
     private AudioEngine? _engine;
     private DrumMachinePlayer? _player;
     private AudioSpectrumSource? _spectrum;
+    private SymbolIconFactory? _iconFactory;
+    private ToolbarIconSet? _icons;
     private float[] _spectrumReadback = [];
-    private bool _updatingGrid;
+    private bool _updatingControls = true;
+    private bool _busy;
     private bool _closing;
+    private bool _closeApproved;
+    private bool _confirmingClose;
     private bool _scenarioCompleted;
     private int _highlightedStep = -1;
     private Exception? _reportedAudioFailure;
 
+    private bool Automated => _options.Scenario != DemoScenario.None;
+    private bool IgnoreSettings => _options.NoSettings || Automated;
+    private bool AudioAvailable => _player is not null && _engine is not null && !_engine.Completion.IsCompleted;
+
     /// <summary>
-    ///  Creates the form without opening a device, including when used by the Designer.
+    ///  Creates a Designer-safe form without opening audio or reading user files.
     /// </summary>
     public MainForm() : this(StartupOptions.Interactive)
     {
     }
 
     /// <summary>
-    ///  Creates an interactive or timed scenario window.
+    ///  Creates an editor using preferences already read before UI initialization.
     /// </summary>
-    internal MainForm(StartupOptions options)
+    internal MainForm(StartupOptions options, AppSettings? settings = null)
     {
         _options = options;
+        _settings = settings ?? new AppSettings();
+        _appliedTheme = _settings.Theme;
+        _session = new LoopDocumentSession(new LoopDocument(DemoScores.OriginalBallad));
         InitializeComponent();
-        for (int bar = 0; bar < _score.BarCount; bar++)
+        _volumeSelector.Items.Add("Master");
+        foreach (Cr78Instrument instrument in Cr78Kit.Instruments)
         {
-            _barSelector.Items.Add(bar + 1);
+            _volumeSelector.Items.Add(Cr78Kit.GetDisplayName(instrument));
         }
 
-        _barSelector.SelectedIndex = 0;
+        _volumeSelector.SelectedIndex = 0;
+        _updatingControls = false;
+        RefreshDocumentControls(rebuildGrid: true);
+        RefreshRecentFiles();
     }
 
     /// <inheritdoc/>
@@ -59,6 +77,7 @@ internal partial class MainForm : Form
             return;
         }
 
+        InitializeIcons();
         CancellationToken cancellation = _lifetime.Token;
         if (_options.RunFor is { } duration)
         {
@@ -68,8 +87,6 @@ internal partial class MainForm : Form
 
         try
         {
-            // Device discovery can take time. It needs no UI thread; only assigning the finished
-            // source to a control does. Dispose a late result if the user closed during startup.
             AudioEngine engine = await Task.Run(() => AudioEngine.Create());
             if (cancellation.IsCancellationRequested)
             {
@@ -79,39 +96,40 @@ internal partial class MainForm : Form
 
             _engine = engine;
             _engine.Reverb = ReverbSettings.Off;
-            _engine.MasterVolume = _volume.Value / 100f;
-            _player = new DrumMachinePlayer(_engine, _score, new Tempo((int)_tempo.Value))
+            // The player's master fader is ramped along with its percussion channels.
+            // Leave the engine gain neutral so it is not applied a second time.
+            _engine.MasterVolume = 1f;
+            _player = new DrumMachinePlayer(engine, _session.Current.Score, new Tempo(_session.Current.TempoBpm));
+            ApplyToPlayer(reset: true);
+            if (_player is null)
             {
-                Loop = _loopCheckBox.Checked,
-                MetallicLevel = _metallic.Value / 100f
-            };
-            _spectrum = new AudioSpectrumSource(_engine);
+                return;
+            }
+
+            _spectrum = new AudioSpectrumSource(engine);
             _spectrumReadback = new float[_spectrum.BinCount];
             _spectrumControl.Source = _spectrum;
-            SetAudioControlsEnabled(true);
             _uiTimer.Start();
-            _statusLabel.Text = "Dry CR-78-style kit. Original score; edits and tempo changes apply at the next bar.";
-            AppLogger.Information("Audio", $"Opened {_engine.SampleRate} Hz output with a playback-aligned spectrum.");
-            _ = ObserveAudioAsync(_engine);
+            UpdateCommandState();
+            _statusLabel.Text = "Original groove. Score and tempo edits take effect at a bar boundary.";
+            AppLogger.Information("Audio", $"Opened {engine.SampleRate} Hz output with a playback-aligned spectrum.");
+            _ = ObserveAudioAsync(engine);
             _ = ObserveSpectrumAsync(_spectrum);
 
-            if (_options.Scenario != DemoScenario.None)
+            if (Automated)
             {
                 await RunScenarioAsync(_options.Scenario, cancellation);
                 cancellation.ThrowIfCancellationRequested();
                 _scenarioCompleted = true;
-                if (_player is not null)
-                {
-                    _player.Loop = _loopCheckBox.Checked;
-                }
-                SetAudioControlsEnabled(true);
+                ApplyToPlayer(reset: true);
                 AppLogger.Information("Harness", $"{_options.Scenario} scenario completed.");
                 _statusLabel.Text = $"{_options.Scenario} scenario completed.";
+                UpdateCommandState();
             }
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            // The close/deadline path records incomplete requested scenarios before cancellation.
+            // The deadline/close path records an incomplete scenario before cancelling it.
         }
         catch (Exception ex)
         {
@@ -120,7 +138,7 @@ internal partial class MainForm : Form
     }
 
     /// <inheritdoc/>
-    protected override void OnFormClosing(FormClosingEventArgs e)
+    protected override async void OnFormClosing(FormClosingEventArgs e)
     {
         base.OnFormClosing(e);
         if (e.Cancel || _closing)
@@ -128,8 +146,34 @@ internal partial class MainForm : Form
             return;
         }
 
+        if (!_closeApproved && !Automated)
+        {
+            e.Cancel = true;
+            if (_busy || _confirmingClose)
+            {
+                _statusLabel.Text = "Finish the current document operation before closing.";
+                return;
+            }
+
+            _confirmingClose = true;
+            await RunDocumentCommandAsync(async () =>
+            {
+                if (await ConfirmDiscardAsync())
+                {
+                    await PersistPreferencesAsync();
+                    _closeApproved = true;
+                }
+            });
+            _confirmingClose = false;
+            if (_closeApproved)
+            {
+                Close();
+            }
+            return;
+        }
+
         _closing = true;
-        if (_options.Scenario != DemoScenario.None && !_scenarioCompleted)
+        if (Automated && !_scenarioCompleted)
         {
             Environment.ExitCode = 1;
             AppLogger.Error("Harness", "The requested scenario was interrupted before completion.");
@@ -150,17 +194,30 @@ internal partial class MainForm : Form
             DisposeAudio();
         }
 
+        _icons?.Dispose();
+        _iconFactory?.Dispose();
+        _recentEmpty.Dispose();
+        _openDialog.Dispose();
+        _saveDialog.Dispose();
         _lifetime.Dispose();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        RebuildIcons();
     }
 
     /// <inheritdoc/>
     protected override void OnSystemColorsChanged(EventArgs e)
     {
         base.OnSystemColorsChanged(e);
-        if (_stepGrid is not null)
+        if (_stepGrid is not null && !_updatingControls)
         {
             HighlightStep(-1, force: true);
         }
+        RebuildIcons();
     }
 
     private async Task ObserveAudioAsync(AudioEngine engine)
@@ -186,12 +243,9 @@ internal partial class MainForm : Form
             AppLogger.Error("Spectrum", "The analyzer stopped.", ex);
             if (!_closing && ReferenceEquals(_spectrum, spectrum))
             {
-                if (!_spectrumControl.IsDisposed)
-                {
-                    _spectrumControl.Source = null;
-                }
-                _statusLabel.Text = $"Spectrum unavailable; healthy audio can continue. Logs: {AppPaths.LogDirectory}";
-                if (_options.Scenario != DemoScenario.None)
+                _spectrumControl.Source = null;
+                _statusLabel.Text = $"Spectrum unavailable; audio can continue. Logs: {AppPaths.LogDirectory}";
+                if (Automated)
                 {
                     Environment.ExitCode = 1;
                     Close();
@@ -208,30 +262,34 @@ internal partial class MainForm : Form
         }
 
         _reportedAudioFailure = exception;
-        Environment.ExitCode = 1;
         AppLogger.Error("Audio", "Playback or initialization failed.", exception);
         if (_closing)
         {
             return;
         }
 
-        SetAudioControlsEnabled(false);
         _uiTimer.Stop();
         DisposeAudio();
-        _statusLabel.Text = $"Audio failed. Logs: {AppPaths.LogDirectory}";
-        if (_options.Scenario != DemoScenario.None)
+        UpdateCommandState();
+        _statusLabel.Text = $"Audio unavailable; document editing is still available. Logs: {AppPaths.LogDirectory}";
+        if (Automated)
         {
+            Environment.ExitCode = 1;
             Close();
         }
         else
         {
-            MessageBox.Show(this, exception.Message, "Rhythm Demo", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, exception.Message, "Audio", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
     private void DisposeAudio()
     {
-        _spectrumControl.Source = null;
+        if (!_spectrumControl.IsDisposed)
+        {
+            _spectrumControl.Source = null;
+        }
+
         IDisposable?[] resources = [_spectrum, _player, _engine];
         _spectrum = null;
         _player = null;
@@ -245,7 +303,6 @@ internal partial class MainForm : Form
             }
             catch (Exception ex)
             {
-                // Finish independent cleanup, but retain every failure instead of hiding it.
                 failures.Add(ex);
             }
         }
@@ -253,75 +310,36 @@ internal partial class MainForm : Form
         if (failures.Count > 0)
         {
             Environment.ExitCode = 1;
-            AppLogger.Error("Shutdown", "One or more audio resources could not close.", new AggregateException(failures));
+            AppLogger.Error("Shutdown", "Audio resources could not all close.", new AggregateException(failures));
         }
     }
 
-    private void SetAudioControlsEnabled(bool enabled)
+    private void ApplyToPlayer(bool reset = false)
     {
-        bool interactive = enabled && (_options.Scenario == DemoScenario.None || _scenarioCompleted);
-        _transport.Enabled = interactive;
-        _scoreToolbar.Enabled = interactive;
-        _playButton.Enabled = enabled;
-        _stopButton.Enabled = enabled;
-        _metallicButton.Enabled = enabled;
-        _stepGrid.Enabled = interactive;
-    }
-
-    private void PlayButton_Click(object? sender, EventArgs e)
-        => WithPlayer(player => player.Start());
-
-    private void StopButton_Click(object? sender, EventArgs e)
-        => WithPlayer(player => player.Stop());
-
-    private void MetallicButton_Click(object? sender, EventArgs e)
-        => WithPlayer(player => player.Audition(Cr78Instrument.MetallicBeat, 0.8f));
-
-    private void LoopCheckBox_CheckedChanged(object? sender, EventArgs e)
-    {
-        if (_player is not null)
+        if (!AudioAvailable)
         {
-            WithPlayer(player => player.Loop = _loopCheckBox.Checked);
+            return;
         }
-    }
 
-    private void Tempo_ValueChanged(object? sender, EventArgs e)
-    {
-        if (_player is not null)
-        {
-            WithPlayer(player => player.Tempo = new Tempo((int)_tempo.Value));
-        }
-    }
-
-    private void Volume_ValueChanged(object? sender, EventArgs e)
-    {
-        _volumeLabel.Text = $"&Master {_volume.Value}%";
-        if (_engine is not null)
-        {
-            _engine.MasterVolume = _volume.Value / 100f;
-        }
-    }
-
-    private void Metallic_ValueChanged(object? sender, EventArgs e)
-    {
-        _metallicLabel.Text = $"Metallic la&yer {_metallic.Value}%";
-        if (_player is not null)
-        {
-            WithPlayer(player => player.MetallicLevel = _metallic.Value / 100f);
-        }
+        LoopDocument document = _session.Current;
+        float[] levels = Cr78Kit.Instruments.Select(instrument => document.PercussionVolumes[instrument] / 100f).ToArray();
+        WithPlayer(player => player.ApplyConfiguration(
+            document.Score, new Tempo(document.TempoBpm), document.MasterVolumePercent / 100f,
+            levels, document.Loop, document.MetallicEnabled, document.MetallicVolumePercent / 100f, reset));
     }
 
     private void WithPlayer(Action<DrumMachinePlayer> action)
     {
-        if (_player is null)
+        if (!AudioAvailable)
         {
-            _statusLabel.Text = "Audio is not ready.";
+            _statusLabel.Text = "Audio is not available.";
             return;
         }
 
         try
         {
-            action(_player);
+            action(_player!);
+            UpdateCommandState();
         }
         catch (Exception ex)
         {
@@ -329,207 +347,20 @@ internal partial class MainForm : Form
         }
     }
 
-    private void BarSelector_SelectedIndexChanged(object? sender, EventArgs e)
-        => LoadScoreGrid();
-
-    private void LoadScoreGrid()
-    {
-        if (_barSelector.SelectedIndex < 0)
-        {
-            return;
-        }
-
-        _updatingGrid = true;
-        try
-        {
-            _stepGrid.Rows.Clear();
-            foreach (Cr78Instrument instrument in Cr78Kit.Instruments)
-            {
-                object[] values = new object[2 + PercussionScore.StepsPerBar];
-                values[0] = Cr78Kit.GetDisplayName(instrument);
-                values[1] = "Play";
-                for (int step = 0; step < PercussionScore.StepsPerBar; step++)
-                {
-                    values[step + 2] = _score.HasHit(_barSelector.SelectedIndex, instrument, step);
-                }
-
-                int row = _stepGrid.Rows.Add(values);
-                _stepGrid.Rows[row].Tag = instrument;
-            }
-        }
-        finally
-        {
-            _updatingGrid = false;
-        }
-
-        HighlightStep(-1);
-    }
-
-    private void ResetButton_Click(object? sender, EventArgs e)
-    {
-        _score = DemoScores.OriginalBallad;
-        if (_player is not null)
-        {
-            WithPlayer(player => player.SetScore(_score));
-        }
-
-        LoadScoreGrid();
-    }
-
-    private void StepGrid_CellContentClick(object? sender, DataGridViewCellEventArgs e)
-    {
-        if (e.RowIndex >= 0 && e.ColumnIndex == _auditionColumn.Index
-            && _stepGrid.Rows[e.RowIndex].Tag is Cr78Instrument instrument)
-        {
-            WithPlayer(player => player.Audition(instrument));
-        }
-    }
-
-    private void StepGrid_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
-    {
-        if (_stepGrid.IsCurrentCellDirty && _stepGrid.CurrentCell is DataGridViewCheckBoxCell)
-        {
-            _stepGrid.CommitEdit(DataGridViewDataErrorContexts.Commit);
-        }
-    }
-
-    private void StepGrid_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
-    {
-        if (_updatingGrid || e.RowIndex < 0 || e.ColumnIndex < _step01.Index
-            || _barSelector.SelectedIndex < 0)
-        {
-            return;
-        }
-
-        if (_stepGrid.Rows[e.RowIndex].Tag is Cr78Instrument instrument)
-        {
-            bool enabled = _stepGrid.Rows[e.RowIndex].Cells[e.ColumnIndex].Value is true;
-            _score = _score.WithStep(_barSelector.SelectedIndex, instrument, e.ColumnIndex - _step01.Index, enabled);
-            WithPlayer(player => player.SetScore(_score));
-        }
-    }
-
-    private void StepGrid_DataError(object? sender, DataGridViewDataErrorEventArgs e)
-    {
-        AppLogger.Error("Editor", "A score cell could not be edited.", e.Exception);
-        _statusLabel.Text = "That score edit could not be applied.";
-        e.ThrowException = false;
-    }
-
-    private void UiTimer_Tick(object? sender, EventArgs e)
-    {
-        if (_player is null)
-        {
-            return;
-        }
-
-        DrumPlaybackSnapshot position = _player.GetPlaybackSnapshot();
-        int visibleStep = position.IsPlaying && position.Bar == _barSelector.SelectedIndex ? position.Step : -1;
-        HighlightStep(visibleStep);
-        string clock = position.IsPlaybackSynchronized ? "played audio" : "submitted audio";
-        string pending = position.HasPendingChanges ? " - edits pending next bar" : "";
-        _positionLabel.Text = position.IsPlaying
-            ? $"Bar {position.Bar + 1}, step {position.Step + 1} ({clock}){pending}"
-            : $"Stopped{pending}";
-    }
-
-    private void HighlightStep(int step, bool force = false)
-    {
-        if (_step01 is null || _step01.Index < 0
-            || _stepGrid.Columns.Count < _step01.Index + PercussionScore.StepsPerBar)
-        {
-            return;
-        }
-
-        if (!force && _highlightedStep == step)
-        {
-            return;
-        }
-
-        for (int i = 0; i < PercussionScore.StepsPerBar; i++)
-        {
-            DataGridViewColumn column = _stepGrid.Columns[_step01.Index + i];
-            column.DefaultCellStyle.BackColor = i == step ? SystemColors.Highlight : SystemColors.Window;
-            column.DefaultCellStyle.ForeColor = i == step ? SystemColors.HighlightText : SystemColors.WindowText;
-        }
-
-        _highlightedStep = step;
-    }
+    private void Play_Click(object? sender, EventArgs e) => WithPlayer(player => player.Start());
+    private void Pause_Click(object? sender, EventArgs e) => WithPlayer(player => player.Pause());
+    private void Stop_Click(object? sender, EventArgs e) => WithPlayer(player => player.Stop());
+    private void AuditionMetallic_Click(object? sender, EventArgs e)
+        => WithPlayer(player => player.Audition(Cr78Instrument.MetallicBeat, 0.8f));
 
     private void ExitTimer_Tick(object? sender, EventArgs e)
     {
         _exitTimer.Stop();
-        if (_options.Scenario != DemoScenario.None && !_scenarioCompleted)
+        if (Automated && !_scenarioCompleted)
         {
             Environment.ExitCode = 1;
-            AppLogger.Error("Harness", "The automatic-close deadline expired before the requested scenario completed.");
+            AppLogger.Error("Harness", "The deadline expired before the requested scenario completed.");
         }
-
         Close();
-    }
-
-    private async Task RunScenarioAsync(DemoScenario scenario, CancellationToken cancellation)
-    {
-        AudioEngine engine = _engine ?? throw new InvalidOperationException("The audio engine is unavailable.");
-        DrumMachinePlayer player = _player ?? throw new InvalidOperationException("The drum player is unavailable.");
-        AppLogger.Information("Harness", $"Running {scenario}.");
-
-        if (scenario is DemoScenario.Kit or DemoScenario.All)
-        {
-            foreach (Cr78Instrument instrument in Cr78Kit.Instruments.Append(Cr78Instrument.MetallicBeat))
-            {
-                _statusLabel.Text = $"Audition: {Cr78Kit.GetDisplayName(instrument)}";
-                await engine.Play(Cr78Kit.CreateVoice(engine.SampleRate, instrument, 0.75f))
-                    .WaitAsync(TimeSpan.FromSeconds(5), cancellation);
-                await Task.Delay(50, cancellation);
-            }
-        }
-
-        if (scenario is DemoScenario.Score or DemoScenario.All)
-        {
-            player.Loop = false;
-            player.Start();
-            await WaitUntilAsync(() => player.IsPlaying, TimeSpan.FromSeconds(5), cancellation);
-            await WaitUntilAsync(() => !player.IsPlaying, TimeSpan.FromSeconds(20), cancellation);
-        }
-
-        if (scenario is DemoScenario.Spectrum or DemoScenario.All)
-        {
-            const double frequency = 1_000;
-            VoiceChannel channel = engine.CreateChannel(VoicePatch.Default with { Volume = 0.25f });
-            Task tone = channel.PlaySoundAsync(frequency, TimeSpan.FromMilliseconds(900), cancellation);
-            await WaitUntilAsync(
-                () => SpectrumContains(frequency),
-                TimeSpan.FromSeconds(3),
-                cancellation);
-            await tone.WaitAsync(TimeSpan.FromSeconds(3), cancellation);
-        }
-    }
-
-    private bool SpectrumContains(double frequency)
-    {
-        if (_spectrum is null || !_spectrum.TryCopySpectrum(_spectrumReadback, out AudioSpectrumFrame frame))
-        {
-            return false;
-        }
-
-        double binWidth = frame.SampleRate / (double)frame.FftSize;
-        return frame.IsPlaybackSynchronized && frame.PeakLevel > 0.01f
-            && Math.Abs(frame.PeakFrequency - frequency) <= binWidth * 2;
-    }
-
-    private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout, CancellationToken cancellation)
-    {
-        Stopwatch clock = Stopwatch.StartNew();
-        while (!condition())
-        {
-            cancellation.ThrowIfCancellationRequested();
-            if (clock.Elapsed >= timeout)
-            {
-                throw new TimeoutException("The requested audio scenario did not reach its expected state.");
-            }
-
-            await Task.Delay(20, cancellation);
-        }
     }
 }

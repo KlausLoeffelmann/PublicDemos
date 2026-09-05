@@ -40,6 +40,14 @@ the full CR-78-style palette, not a commercial song transcription or recorded sa
   boundaries. Viewing another bar must not seek playback.
 - Stop/release/dispose are different operations. Stopping the score leaves
   individual audition available; disposing the player does not dispose its supplied engine.
+- Pause holds the fractional musical clock and releases current strikes while the engine
+  clock keeps running. Start resumes from the held position; Stop resets to the beginning.
+  Playback history must represent the delayed, completed-output state, not just a UI request.
+- Per-instrument faders apply to rendered channel output and existing tails, not by rewriting
+  score velocities. Muted generators keep advancing, and live gain changes use short ramps.
+  The player has a master gain; the rhythm app leaves AudioEngine.MasterVolume at unity.
+- Apply a newly opened document's score, tempo, mixer, loop, and metallic settings coherently.
+  File I/O and Undo history belong to the demo's document layer, never to the audio thread.
 - The existing wall-clock melody helpers remain useful examples, but are not the
   foundation for the precise repeating percussion score.
 
