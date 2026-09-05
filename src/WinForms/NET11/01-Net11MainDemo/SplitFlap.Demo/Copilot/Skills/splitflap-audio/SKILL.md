@@ -16,7 +16,7 @@ description: Develop, diagnose, document, and test the vanilla SplitFlap.Audio s
 | `Music` | Notes, accidentals, values, articulation, ornaments, tempo, and notation parsing |
 | `Playback` | Instrument patches, channels, sequencing, samples, WAV loading, and resampling |
 
-`SplitFlap.Demo\BoardSound.cs` is application glue. It converts animator events into clacks and jams while sharing one engine with the melody channel.
+`SplitFlap.Demo\BoardSound.cs` is application glue. It converts flap events into clacks while sharing one engine with the melody channel. Jam detection and recovery remain visual behavior; they do not add a separate buzzer or tone.
 
 ## Audio model
 

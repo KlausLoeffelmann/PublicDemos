@@ -278,7 +278,7 @@ public partial class MainForm : Form
         try
         {
             // Started from the UI thread: the continuation returns here, not to the audio pump.
-            // One observed lifetime task covers clacks and buzzes that have no per-voice task.
+            // One observed lifetime task covers clacks that have no per-voice task.
             await sound.Completion;
         }
         catch (Exception ex)

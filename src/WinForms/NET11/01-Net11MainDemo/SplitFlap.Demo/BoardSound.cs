@@ -1,8 +1,8 @@
 namespace SplitFlap.Demo;
 
 /// <summary>
-///  Glue between the animator and the audio engine: every fallen flap becomes a clack, every jam a
-///  short buzz. Voices are queued on the animator thread and rendered on the engine thread;
+///  Glue between the animator and the audio engine: every fallen flap becomes a clack.
+///  Jams do not add a separate sound. Voices are queued on the animator thread and rendered on the engine thread;
 ///  the UI observes only the engine's lifetime task for terminal failures.
 /// </summary>
 internal sealed class BoardSound : IDisposable
@@ -13,7 +13,6 @@ internal sealed class BoardSound : IDisposable
     private readonly Lock _eventSync = new();
     private readonly AudioEngine _engine;
     private readonly VoiceChannel _clacks;
-    private readonly VoiceChannel _buzz;
     private long _lastFrameTick;
     private int _clacksThisFrame;
     private bool _disposed;
@@ -21,21 +20,20 @@ internal sealed class BoardSound : IDisposable
     /// <summary>
     ///  Connects board events to a shared synthesis engine.
     /// </summary>
-    public BoardSound(SplitFlapAnimator animator)
+    /// <param name="animator">The board's source of flap events.</param>
+    /// <param name="sink">Optional output for device-independent diagnostics; null opens the default audio device.</param>
+    public BoardSound(SplitFlapAnimator animator, IAudioSink? sink = null)
     {
+        ArgumentNullException.ThrowIfNull(animator);
         _animator = animator;
-        _engine = AudioEngine.Create();
+        _engine = AudioEngine.Create(sink);
         _engine.Reverb = ReverbSettings.Hall;
         _engine.MaxPolyphony = 64;
 
         _clacks = _engine.CreateChannel();
         _clacks.ReverbSend = 0.35f;
 
-        _buzz = _engine.CreateChannel(VoicePatch.Lead with { Volume = 0.15f });
-        _buzz.ReverbSend = 0.1f;
-
         _animator.FlapFell += OnFlapFell;
-        _animator.Jammed += OnJammed;
     }
 
     /// <summary>
@@ -107,22 +105,6 @@ internal sealed class BoardSound : IDisposable
         }
     }
 
-    private void OnJammed(object? sender, FlapEventArgs e)
-    {
-        lock (_eventSync)
-        {
-            if (!_disposed)
-            {
-                _buzz.Trigger(new ToneVoice(
-                    _engine.SampleRate,
-                    _buzz.Patch,
-                    55,
-                    TimeSpan.FromMilliseconds(220),
-                    _buzz.Volume));
-            }
-        }
-    }
-
     /// <inheritdoc/>
     public void Dispose()
     {
@@ -132,7 +114,6 @@ internal sealed class BoardSound : IDisposable
             {
                 _disposed = true;
                 _animator.FlapFell -= OnFlapFell;
-                _animator.Jammed -= OnJammed;
             }
         }
 
