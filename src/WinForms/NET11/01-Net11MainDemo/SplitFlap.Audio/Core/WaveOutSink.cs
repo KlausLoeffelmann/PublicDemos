@@ -9,7 +9,7 @@ namespace SplitFlap.Audio.Core;
 ///  Four 20 ms buffers hold 80 ms of audio when full; device buffering adds to that,
 ///  so queue capacity is not a promise of end-to-end latency.
 /// </summary>
-public sealed class WaveOutSink : IAudioSink
+public sealed class WaveOutSink : IAudioSink, IAudioPlaybackProgress
 {
     private const int WhdrDone = 0x0000_0001;
     private static readonly int s_headerSize = Marshal.SizeOf<WaveHeader>();
@@ -28,6 +28,8 @@ public sealed class WaveOutSink : IAudioSink
     private IntPtr _device;
     private bool _stopping;
     private bool _disposed;
+    private long _submittedFrames;
+    private long _completedFrames;
 
     /// <summary>
     ///  Opens the default output device.
@@ -167,6 +169,18 @@ public sealed class WaveOutSink : IAudioSink
     public int FramesPerBuffer { get; }
 
     /// <summary>
+    ///  Gets the last observed whole-buffer completion; reading it never touches native memory.
+    /// </summary>
+    public long CompletedFrames
+        => Volatile.Read(ref _completedFrames);
+
+    /// <summary>
+    ///  Gets the maximum number of queued frames, excluding the engine's not-yet-submitted block.
+    /// </summary>
+    public int BufferCapacityFrames
+        => _buffers.Length * FramesPerBuffer;
+
+    /// <summary>
     ///  Copies and queues one complete PCM block, waiting for a returned buffer when necessary.
     /// </summary>
     /// <param name="pcm">Exactly <see cref="FramesPerBuffer"/> times the channel count samples.</param>
@@ -194,7 +208,10 @@ public sealed class WaveOutSink : IAudioSink
             int flags = Marshal.ReadInt32(slot.Header, s_flagsOffset);
             Marshal.WriteInt32(slot.Header, s_flagsOffset, flags & ~WhdrDone);
             Check("waveOutWrite", _native.Write(_device, slot.Header, (uint)s_headerSize));
+            _submittedFrames += FramesPerBuffer;
+            slot.EndFrame = _submittedFrames;
             slot.Queued = true;
+            ObserveReturnedBuffers();
         }
     }
 
@@ -246,13 +263,12 @@ public sealed class WaveOutSink : IAudioSink
         while (true)
         {
             ObjectDisposedException.ThrowIf(Volatile.Read(ref _stopping), this);
+            ObserveReturnedBuffers();
 
             foreach (BufferSlot slot in _buffers)
             {
-                if (!slot.Queued || (Marshal.ReadInt32(slot.Header, s_flagsOffset) & WhdrDone) != 0)
+                if (!slot.Queued)
                 {
-                    // A failed subsequent waveOutWrite must leave this returned slot reusable.
-                    slot.Queued = false;
                     return slot;
                 }
             }
@@ -262,8 +278,26 @@ public sealed class WaveOutSink : IAudioSink
         }
     }
 
+    private void ObserveReturnedBuffers()
+    {
+        long completed = _completedFrames;
+        foreach (BufferSlot slot in _buffers)
+        {
+            if (slot.Queued && (Marshal.ReadInt32(slot.Header, s_flagsOffset) & WhdrDone) != 0)
+            {
+                // WinMM plays submissions in order, even when their header slots are reused
+                // in a different order. Scan every returned slot before choosing a free one.
+                completed = Math.Max(completed, slot.EndFrame);
+                slot.Queued = false;
+            }
+        }
+
+        Volatile.Write(ref _completedFrames, completed);
+    }
+
     private void ReleaseNativeResources(List<Exception> errors)
     {
+        // Never observe WHDR_DONE here: reset marks discarded buffers done, not played.
         if (_device != IntPtr.Zero)
         {
             TryCleanup("waveOutReset", () => _native.Reset(_device), errors);
@@ -388,5 +422,10 @@ public sealed class WaveOutSink : IAudioSink
         ///  Tracks successful submission until a writer observes WHDR_DONE.
         /// </summary>
         internal bool Queued;
+
+        /// <summary>
+        ///  Stores the exclusive stream end of the most recent successful submission.
+        /// </summary>
+        internal long EndFrame;
     }
 }

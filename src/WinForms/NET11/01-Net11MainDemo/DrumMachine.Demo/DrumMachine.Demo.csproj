@@ -1,21 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net11.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>preview</LangVersion>
-    <RootNamespace>SplitFlap.Audio</RootNamespace>
+    <RootNamespace>DrumMachine.Demo</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="SplitFlap.Tests" />
-    <Using Include="SplitFlap.Audio.Core" />
-    <Using Include="SplitFlap.Audio.Synthesis" />
-    <Using Include="SplitFlap.Audio.Music" />
-    <Using Include="SplitFlap.Audio.Playback" />
+    <Compile Include="..\DemoSupport\RollingFileLog.cs" Link="Infrastructure\RollingFileLog.cs" />
+    <ProjectReference Include="..\SplitFlap.Audio\SplitFlap.Audio.csproj" />
   </ItemGroup>
 
 </Project>

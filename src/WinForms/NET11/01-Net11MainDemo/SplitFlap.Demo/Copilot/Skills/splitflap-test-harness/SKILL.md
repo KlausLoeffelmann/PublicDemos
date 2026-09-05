@@ -77,6 +77,32 @@ dotnet run --project .\SplitFlap.Demo\SplitFlap.Demo.csproj --no-build -- --scen
 
 The first `--` belongs to `dotnet run`; options after it go to the demo.
 
+## Rhythm demo
+
+The second application, `DrumMachine.Demo`, uses the same library and its spectrum control:
+
+```powershell
+dotnet run --project .\DrumMachine.Demo\DrumMachine.Demo.csproj -c Release -- --scenario spectrum --run-for 8
+dotnet run --project .\DrumMachine.Demo\DrumMachine.Demo.csproj -c Release -- --scenario all --run-for 30
+```
+
+Its scenarios are `kit`, `score`, `spectrum`, and `all`. The kit scenario auditions
+all percussion entries; score plays the original pattern once; spectrum checks
+that a known output tone reaches the playback-aligned analyzer. A deadline or
+manual close before a requested scenario completes is a failure, not a successful
+test merely because the process exited.
+
+This app keeps edits in memory and has no settings file, so it does not accept or
+need `--no-settings`. Its separate logs are
+`%LocalAppData%\DrumMachine.Demo\Logs\drummachine-yyyyMMdd.log`.
+Keep original groove and model provenance documented; do not add recordings or
+commercial song arrangements as test fixtures.
+
+Use fake sinks and controlled playback-progress sources for sample timing, FFT
+normalization, post-gain PCM, capture gaps, slow-reader behavior, and disposal.
+Opening the rhythm form or spectrum control for a layout test must not open a
+real audio endpoint; run WinForms layout/painting work on an STA thread.
+
 ## Results and logs
 
 - Exit code `0`: startup and the selected scenario completed successfully.

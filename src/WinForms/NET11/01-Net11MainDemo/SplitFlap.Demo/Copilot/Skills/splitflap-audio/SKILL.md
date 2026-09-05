@@ -7,7 +7,8 @@ description: Develop, diagnose, document, and test the vanilla SplitFlap.Audio s
 
 ## Architecture
 
-`SplitFlap.Audio` is dependency-free and has four layers:
+`SplitFlap.Audio` uses the .NET 11 WindowsDesktop/WinForms framework and no external
+audio/DSP NuGet packages. Its processing remains independent of UI painting:
 
 | Layer | Responsibility |
 |---|---|
@@ -15,8 +16,51 @@ description: Develop, diagnose, document, and test the vanilla SplitFlap.Audio s
 | `Synthesis` | Oscillators, noise, filter, ADSR envelope, reverb, and voice implementations |
 | `Music` | Notes, accidentals, values, articulation, ornaments, tempo, and notation parsing |
 | `Playback` | Instrument patches, channels, sequencing, samples, WAV loading, and resampling |
+| `Percussion` | Procedural CR-78-style instrument models and palette metadata |
+| `Sequencing` | Immutable percussion scores and sample-clocked transport |
+| `Analysis` | Optional output capture, playback-aligned FFT analysis, and coherent spectrum snapshots |
+| `WinForms` | Reusable `AudioSpectrumControl`, with no synthesis or FFT work in `OnPaint` |
 
 `SplitFlap.Demo\BoardSound.cs` is application glue. It converts flap events into clacks while sharing one engine with the melody channel. Jam detection and recovery remain visual behavior; they do not add a separate buzzer or tone.
+
+`DrumMachine.Demo` is a second consumer. It uses an original editable groove and
+the full CR-78-style palette, not a commercial song transcription or recorded samples.
+
+## Percussion and sample-clock timing
+
+- `Cr78Kit` supplies 13 percussion voices and a separate metallic-layer audition.
+  The metallic layer follows cymbal/hi-hat hits when its level is enabled.
+- Refer to the model notes under `SplitFlap.Audio\Percussion` for factory-target
+  provenance and approximations. Do not claim transistor-level hardware emulation.
+- `PercussionScore` describes instruments, zero-based bars/steps, velocity and
+  gate duration. The 16-step editor is data, not an array of UI-controlled timers.
+- `DrumMachinePlayer` owns reusable instrument state. Its audio sample clock
+  places hits; preserve fractional timing across loop boundaries.
+- Score and tempo changes are prepared off the audio thread and adopted at bar
+  boundaries. Viewing another bar must not seek playback.
+- Stop/release/dispose are different operations. Stopping the score leaves
+  individual audition available; disposing the player does not dispose its supplied engine.
+- The existing wall-clock melody helpers remain useful examples, but are not the
+  foundation for the precise repeating percussion score.
+
+## Output visualization
+
+- `AudioSpectrumControl` belongs to the existing audio assembly. Its runtime
+  `Source` is an `AudioSpectrumSource`, not Designer-serialized engine state.
+- Capture **actual final PCM**, including master gain and clipping, not a second
+  synthesized illustration. Monitoring must not change or delay the audio output.
+- `IAudioPlaybackProgress` is an optional sink capability. WinMM publishes cached
+  completed-buffer frame progress; the UI never polls native headers itself.
+- A spectrum can otherwise run ahead of the listener by the device queue depth.
+  Align the window with completed frames, and label custom sinks without a clock
+  as submitted-audio mode. This is still block/window/UI-latency limited.
+- Bounded reusable history and complete snapshot copies protect readers from
+  half-written data. Slow analysis drops visualization data, not audio.
+- FFT/windowing runs on an analyzer worker; `OnPaint` only draws finished data.
+  Observe analyzer completion/failure separately so visualization failure need
+  not stop healthy audio.
+- The host owns source/engine disposal. A control must not dispose a caller-owned
+  source, and opening the Designer must never open an audio device.
 
 ## Audio model
 

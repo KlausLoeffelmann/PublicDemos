@@ -173,11 +173,56 @@ public sealed class WaveOutSinkTests
 
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => sink.Write(pcm));
         AssertNativeError(error, "waveOutWrite", 17);
+        Assert.Equal(sink.FramesPerBuffer, sink.CompletedFrames);
 
         native.WriteResult = 0;
         sink.Write(pcm);
         Assert.Equal(firstHeader, native.LastHeader);
         Assert.Equal(3, native.WriteCount);
+        Assert.Equal(2 * sink.FramesPerBuffer, sink.CompletedFrames);
+    }
+
+    /// <summary>
+    ///  Observes every returned slot on the writer, while public progress reads only cached state.
+    /// </summary>
+    [Fact]
+    public void Progress_ScansAllReturnedHeadersAndNeverMovesBackwards()
+    {
+        using FakeWaveOut native = new() { CompleteWrites = false };
+        using WaveOutSink sink = new(native, bufferCount: 3);
+        short[] pcm = FillQueue(sink);
+        Assert.Equal(3 * sink.FramesPerBuffer, sink.BufferCapacityFrames);
+        Assert.Equal(0, sink.CompletedFrames);
+
+        native.CompleteBuffer(0);
+        native.CompleteBuffer(2);
+        Assert.Equal(0, sink.CompletedFrames);
+        sink.Write(pcm);
+
+        // Slot zero is the first free slot, but the later returned slot determines progress.
+        Assert.Equal(3 * sink.FramesPerBuffer, sink.CompletedFrames);
+        native.CompleteBuffer(1);
+        sink.Write(pcm);
+        Assert.Equal(3 * sink.FramesPerBuffer, sink.CompletedFrames);
+    }
+
+    /// <summary>
+    ///  Does not report reset-discarded buffers as played, including after disposal.
+    /// </summary>
+    [Fact]
+    public void Progress_DoesNotCountBuffersDiscardedByReset()
+    {
+        using FakeWaveOut native = new() { CompleteWrites = false };
+        using WaveOutSink sink = new(native, bufferCount: 3);
+        short[] pcm = FillQueue(sink);
+        native.CompleteBuffer(0);
+        sink.Write(pcm);
+        Assert.Equal(sink.FramesPerBuffer, sink.CompletedFrames);
+
+        sink.Dispose();
+
+        Assert.Equal(sink.FramesPerBuffer, sink.CompletedFrames);
+        Assert.Equal(0, native.PreparedCount);
     }
 
     /// <summary>

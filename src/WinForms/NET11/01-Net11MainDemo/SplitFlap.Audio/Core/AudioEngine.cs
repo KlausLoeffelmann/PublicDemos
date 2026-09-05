@@ -24,6 +24,7 @@ public sealed class AudioEngine : IDisposable
     private readonly float[] _dry;
     private readonly float[] _wet;
     private readonly short[] _pcm;
+    private readonly float[] _preClampPcm;
     private readonly Reverb _reverb;
     private Thread? _pump;
     private Exception? _pumpFailure;
@@ -31,6 +32,9 @@ public sealed class AudioEngine : IDisposable
     private bool _disposed;
     private bool _shutdownComplete;
     private int _maxPolyphony = 48;
+    private long _renderedFrames;
+    private long _submittedFrames;
+    private AudioOutputMonitor[] _outputMonitors = [];
 
     private AudioEngine(IAudioSink sink)
     {
@@ -39,6 +43,7 @@ public sealed class AudioEngine : IDisposable
         _dry = new float[frames];
         _wet = new float[frames];
         _pcm = new short[frames * sink.Format.Channels];
+        _preClampPcm = new float[frames];
         _reverb = new Reverb(sink.Format.SampleRate);
     }
 
@@ -93,6 +98,78 @@ public sealed class AudioEngine : IDisposable
     /// </remarks>
     public Task Completion
         => _completion.Task;
+
+    /// <summary>
+    ///  Gets the number of generated frames. While voices render a block, this is its starting frame.
+    /// </summary>
+    public long RenderedFrames
+        => Volatile.Read(ref _renderedFrames);
+
+    /// <summary>
+    ///  Gets the number of frames successfully handed to the sink.
+    /// </summary>
+    public long SubmittedFrames
+        => Volatile.Read(ref _submittedFrames);
+
+    /// <summary>
+    ///  Reads the completed device-buffer position, or the submitted position when no device clock exists.
+    /// </summary>
+    /// <param name="frames">Absolute frame position since this engine started.</param>
+    /// <returns>True for a device-backed position; false for the explicitly approximate submitted position.</returns>
+    public bool TryGetPlaybackPosition(out long frames)
+    {
+        if (_sink is IAudioPlaybackProgress progress)
+        {
+            frames = Math.Min(progress.CompletedFrames, SubmittedFrames);
+            return true;
+        }
+
+        frames = SubmittedFrames;
+        return false;
+    }
+
+    /// <summary>
+    ///  Attaches a preallocated output history without inserting analysis or callbacks into the pump.
+    /// </summary>
+    internal AudioOutputMonitor AttachOutputMonitor(int windowSize)
+    {
+        int capacity = _sink is IAudioPlaybackProgress progress ? progress.BufferCapacityFrames : 0;
+        AudioOutputMonitor monitor = new(Format, _dry.Length, capacity, windowSize);
+        lock (_admissionSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed || _stopping, this);
+            if (_pumpFailure is not null)
+            {
+                throw new InvalidOperationException("Cannot monitor an audio engine whose pump has failed.", _pumpFailure);
+            }
+
+            // Subscription changes allocate on the caller, not once per output block.
+            Volatile.Write(ref _outputMonitors, [.. _outputMonitors, monitor]);
+        }
+
+        return monitor;
+    }
+
+    /// <summary>
+    ///  Removes only this history subscription; it never stops the engine or another analyzer.
+    /// </summary>
+    internal void DetachOutputMonitor(AudioOutputMonitor monitor)
+    {
+        monitor.Stop();
+        lock (_admissionSync)
+        {
+            int index = Array.IndexOf(_outputMonitors, monitor);
+            if (index < 0)
+            {
+                return;
+            }
+
+            AudioOutputMonitor[] remaining = new AudioOutputMonitor[_outputMonitors.Length - 1];
+            Array.Copy(_outputMonitors, 0, remaining, 0, index);
+            Array.Copy(_outputMonitors, index + 1, remaining, index, remaining.Length - index);
+            Volatile.Write(ref _outputMonitors, remaining);
+        }
+    }
 
     /// <summary>
     ///  Creates an engine over a sink and starts pumping. <see langword="null"/> opens the default
@@ -159,6 +236,7 @@ public sealed class AudioEngine : IDisposable
             {
                 _disposed = true;
                 _stopping = true;
+                StopOutputMonitors();
             }
 
             // A sink may be blocked waiting for a device buffer. Disposal is its wake-up signal,
@@ -271,11 +349,19 @@ public sealed class AudioEngine : IDisposable
 
                 _reverb.Process(Reverb, _wet, _dry);
 
+                AudioOutputMonitor[] monitors = Volatile.Read(ref _outputMonitors);
                 float gain = MasterVolume * short.MaxValue;
 
                 for (int i = 0; i < frames; i++)
                 {
-                    short value = (short)Math.Clamp(_dry[i] * gain, short.MinValue, short.MaxValue);
+                    float scaled = _dry[i] * gain;
+                    short value = (short)Math.Clamp(scaled, short.MinValue, short.MaxValue);
+                    if (monitors.Length != 0)
+                    {
+                        // Record the actual conversion input only when somebody needs it.
+                        // Peak/clip calculations belong to the analyzer, not this audio loop.
+                        _preClampPcm[i] = scaled;
+                    }
 
                     for (int c = 0; c < channels; c++)
                     {
@@ -285,7 +371,16 @@ public sealed class AudioEngine : IDisposable
 
                 // The blocking sink write is the engine's clock: when the device consumes one
                 // block, room becomes available for exactly the next block.
+                long startFrame = _renderedFrames;
+                Volatile.Write(ref _renderedFrames, startFrame + frames);
                 _sink.Write(_pcm);
+                Volatile.Write(ref _submittedFrames, _renderedFrames);
+                foreach (AudioOutputMonitor monitor in monitors)
+                {
+                    // A failed sink write never reaches capture. Readers see the same PCM
+                    // that was submitted, not a second synthesis or a render-ahead estimate.
+                    monitor.TryWrite(startFrame, _pcm, _preClampPcm);
+                }
             }
         }
         catch (ObjectDisposedException) when (_stopping)
@@ -315,6 +410,11 @@ public sealed class AudioEngine : IDisposable
                 CompleteInterruptedVoice(pending, failure);
             }
 
+            lock (_admissionSync)
+            {
+                StopOutputMonitors();
+            }
+
             if (failure is null)
             {
                 _completion.TrySetResult();
@@ -324,6 +424,16 @@ public sealed class AudioEngine : IDisposable
                 _completion.TrySetException(failure);
             }
         }
+    }
+
+    private void StopOutputMonitors()
+    {
+        foreach (AudioOutputMonitor monitor in _outputMonitors)
+        {
+            monitor.Stop();
+        }
+
+        Volatile.Write(ref _outputMonitors, []);
     }
 
     private static void CompleteInterruptedVoice(ActiveVoice entry, Exception? failure)
