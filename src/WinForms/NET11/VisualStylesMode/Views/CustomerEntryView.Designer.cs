@@ -1232,7 +1232,6 @@ partial class CustomerEntryView
     private FlowLayoutPanel _accountOptionsFlowPanel;
     private CheckBox _paperlessCheckBox;
     private CheckBox _priorityCheckBox;
-    private TextBox textBox1;
     private ToolStripButton _pasteToolStripButton;
     private ToolStripButton _cutToolStripButton;
     private ToolStripButton _copyToolStripButton;

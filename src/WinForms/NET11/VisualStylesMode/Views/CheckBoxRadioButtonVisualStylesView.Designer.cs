@@ -72,16 +72,20 @@ partial class CheckBoxRadioButtonVisualStylesView
         _matrixTableLayoutPanel.AutoSize = true;
         _matrixTableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _matrixTableLayoutPanel.ColumnCount = 7;
-        for (int column = 0; column < 7; column++)
-        {
-            _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
-        }
+        _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+        _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
 
         _matrixTableLayoutPanel.RowCount = 5;
-        for (int row = 0; row < 5; row++)
-        {
-            _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
-        }
+        _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
+        _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
+        _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
+        _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
+        _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
 
         _matrixTableLayoutPanel.Location = new Point(3, 51);
         _matrixTableLayoutPanel.Name = "_matrixTableLayoutPanel";
