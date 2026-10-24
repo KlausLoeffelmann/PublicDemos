@@ -1,4 +1,4 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using WinForms.Audio.Core;
 using WinForms.Audio.Music;
 using WinForms.Audio.Percussion;
@@ -679,6 +679,69 @@ public sealed class PercussionScoreTests
         Assert.True(snapshot.IsPlaying);
         Assert.False(snapshot.IsPlaybackSynchronized);
         Assert.Equal(0, snapshot.Step);
+    }
+
+    /// <summary>
+    ///  Inserts, removes, and copies bars without aliasing the source, and fills only the requested tracks.
+    /// </summary>
+    [Fact]
+    public void Score_InsertsRemovesCopiesFillsAndClearsBars()
+    {
+        PercussionScore score = new(2,
+        [
+            new(0, 0, Cr78Instrument.Guiro, 0.4f, GateSteps: 6),
+            new(0, 2, Cr78Instrument.Guiro, 0.2f),
+            new(0, 0, Cr78Instrument.SnareDrum, 0.7f),
+            new(1, 4, Cr78Instrument.SnareDrum, 0.5f)
+        ]);
+
+        PercussionScore inserted = score.InsertBar(1);
+        Assert.Equal(3, inserted.BarCount);
+        Assert.True(inserted.HasHit(2, Cr78Instrument.SnareDrum, 4));
+        Assert.False(inserted.HasHit(1, Cr78Instrument.SnareDrum, 4));
+        Assert.True(score.HasHit(1, Cr78Instrument.SnareDrum, 4));
+
+        PercussionScore removed = score.RemoveBar(0);
+        Assert.Equal(1, removed.BarCount);
+        Assert.True(removed.HasHit(0, Cr78Instrument.SnareDrum, 4));
+        Assert.False(removed.HasHit(0, Cr78Instrument.Guiro, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => removed.RemoveBar(0));
+
+        PercussionScore copied = score.DuplicateBar(0, [Cr78Instrument.Guiro]);
+        Assert.Equal(3, copied.BarCount);
+        PercussionHit scrape = Assert.Single(copied.Hits, hit => hit.Bar == 1 && hit.Instrument == Cr78Instrument.Guiro && hit.Step == 0);
+        Assert.Equal(0.4f, scrape.Velocity);
+        Assert.Equal(6, scrape.GateSteps);
+        PercussionHit copiedOffGrid = Assert.Single(copied.Hits, hit => hit.Bar == 1 && hit.Instrument == Cr78Instrument.Guiro && hit.Step == 2);
+        Assert.Equal(0.2f, copiedOffGrid.Velocity);
+        Assert.False(copied.HasHit(1, Cr78Instrument.SnareDrum, 0));
+        Assert.True(copied.HasHit(2, Cr78Instrument.SnareDrum, 4));
+
+        PercussionScore filled = score.FillBars([0], [Cr78Instrument.Guiro], 4);
+        PercussionHit kept = Assert.Single(filled.Hits, hit => hit.Bar == 0 && hit.Step == 0 && hit.Instrument == Cr78Instrument.Guiro);
+        Assert.Equal(0.4f, kept.Velocity);
+        Assert.Equal(6, kept.GateSteps);
+        Assert.False(filled.HasHit(0, Cr78Instrument.Guiro, 2));
+        Assert.True(filled.HasHit(0, Cr78Instrument.Guiro, 4));
+        Assert.True(filled.HasHit(0, Cr78Instrument.SnareDrum, 0));
+        Assert.True(score.HasHit(0, Cr78Instrument.Guiro, 2));
+
+        PercussionScore whole = score.FillBars([1], [Cr78Instrument.BassDrum], 16);
+        Assert.True(whole.HasHit(1, Cr78Instrument.BassDrum, 0));
+        Assert.False(whole.HasHit(1, Cr78Instrument.BassDrum, 8));
+        Assert.True(whole.HasHit(1, Cr78Instrument.SnareDrum, 4));
+
+        PercussionScore cleared = score.ClearBars([0, 1], [Cr78Instrument.SnareDrum]);
+        Assert.False(cleared.HasHit(0, Cr78Instrument.SnareDrum, 0));
+        Assert.False(cleared.HasHit(1, Cr78Instrument.SnareDrum, 4));
+        Assert.True(cleared.HasHit(0, Cr78Instrument.Guiro, 2));
+
+        Assert.Throws<ArgumentException>(() => score.FillBars([], [Cr78Instrument.BassDrum], 1));
+        Assert.Throws<ArgumentException>(() => score.FillBars([0, 0], [Cr78Instrument.BassDrum], 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => score.FillBars([0], [Cr78Instrument.BassDrum], 3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => score.FillBars([0], [Cr78Instrument.MetallicBeat], 1));
+        Assert.Throws<ArgumentException>(() => score.ClearBars([0], []));
+        Assert.Throws<ArgumentException>(() => score.DuplicateBar(0, [Cr78Instrument.BassDrum, Cr78Instrument.BassDrum]));
     }
 
     private static double RenderRange(PercussionRenderer renderer, long start, long end, int blockFrames = 128)

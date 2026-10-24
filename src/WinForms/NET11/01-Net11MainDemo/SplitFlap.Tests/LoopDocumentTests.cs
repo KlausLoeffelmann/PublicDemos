@@ -32,7 +32,7 @@ public sealed class LoopDocumentTests
         Assert.True(document.Loop);
         Assert.False(document.MetallicEnabled);
         Assert.Equal(0, document.MetallicVolumePercent);
-        Assert.Equal(13, document.PercussionVolumes.Count);
+        Assert.Equal(17, document.PercussionVolumes.Count);
         Assert.All(Cr78Kit.Instruments, instrument => Assert.Equal(100, document.PercussionVolumes[instrument]));
     }
 
@@ -159,7 +159,7 @@ public sealed class LoopDocumentTests
         string path = files.File("roundtrip.drumloop.json");
         Dictionary<Cr78Instrument, int> levels = Cr78Kit.Instruments
             .Select((instrument, index) => (instrument, index))
-            .ToDictionary(entry => entry.instrument, entry => entry.index * 8);
+            .ToDictionary(entry => entry.instrument, entry => entry.index * 6);
         PercussionScore score = new(4,
         [
             new(0, 0, Cr78Instrument.HiHat, 0),
@@ -181,8 +181,8 @@ public sealed class LoopDocumentTests
         JsonElement root = json.RootElement;
         Assert.Equal(LoopDocumentStore.FormatIdentifier, root.GetProperty("format").GetString());
         Assert.Equal(LoopDocumentStore.KitIdentifier, root.GetProperty("kit").GetString());
-        Assert.Equal(13, root.GetProperty("score").GetProperty("tracks").GetArrayLength());
-        Assert.Equal(13, root.GetProperty("mixer").GetProperty("percussionVolumes").GetArrayLength());
+        Assert.Equal(17, root.GetProperty("score").GetProperty("tracks").GetArrayLength());
+        Assert.Equal(17, root.GetProperty("mixer").GetProperty("percussionVolumes").GetArrayLength());
         Assert.All(root.GetProperty("score").GetProperty("tracks").EnumerateArray(), track =>
             Assert.Equal(JsonValueKind.String, track.GetProperty("instrument").ValueKind));
         Assert.Contains(root.GetProperty("score").GetProperty("tracks").EnumerateArray(),
@@ -214,7 +214,7 @@ public sealed class LoopDocumentTests
     /// </summary>
     [Theory]
     [InlineData("format", "\"other\"")]
-    [InlineData("version", "2")]
+    [InlineData("version", "3")]
     [InlineData("version", "\"1\"")]
     [InlineData("kit", "\"unknown-kit\"")]
     [InlineData("tempoBpm", "39")]
@@ -557,8 +557,8 @@ public sealed class LoopDocumentTests
         return new JsonObject
         {
             ["format"] = "drumloop",
-            ["version"] = 1,
-            ["kit"] = "cr78-procedural-v1",
+            ["version"] = LoopDocumentStore.CurrentVersion,
+            ["kit"] = LoopDocumentStore.KitIdentifier,
             ["tempoBpm"] = 92,
             ["loop"] = true,
             ["score"] = new JsonObject { ["bars"] = 4, ["stepsPerBar"] = 16, ["tracks"] = tracks },

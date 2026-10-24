@@ -1,4 +1,4 @@
-using DrumMachine.Demo.Controls;
+﻿using DrumMachine.Demo.Controls;
 using DrumMachine.Demo.Documents;
 using WinForms.Audio.Percussion;
 using WinForms.Audio.Sequencing;
@@ -10,17 +10,21 @@ partial class MainForm
     private BarViewWindow ViewWindow => new(
         _session.Current.Score.BarCount, _settings.BarsPerView, Math.Max(0, _barSelector.SelectedIndex));
 
-    private void ApplyEdit(LoopDocument document, string description, bool rebuildGrid = false)
+    private bool ApplyEdit(LoopDocument document, string description, bool rebuildGrid = false, int? selectedPage = null)
     {
         if (_updatingControls)
         {
-            return;
+            return false;
         }
-        if (_session.Apply(document, description))
+
+        if (!_session.Apply(document, description))
         {
-            ApplyToPlayer();
-            RefreshDocumentControls(rebuildGrid);
+            return false;
         }
+
+        ApplyToPlayer();
+        RefreshDocumentControls(rebuildGrid, selectedPage);
+        return true;
     }
 
     private void Slider_GestureStarted(object? sender, EventArgs e)
@@ -194,30 +198,33 @@ partial class MainForm
             _stepGrid.Rows.Clear();
             for (int i = 0; i < 32; i++)
             {
-                DataGridViewColumn column = _stepGrid.Columns[i + 2];
+                DataGridViewColumn column = _stepGrid.Columns[i + FirstStepColumn];
                 column.Visible = i < view.BarsPerView * 16;
                 column.HeaderText = $"{view.FirstBar + i / 16 + 1}:{i % 16 + 1}";
             }
 
             foreach (Cr78Instrument instrument in Cr78Kit.Instruments)
             {
-                object[] values = new object[34];
-                values[0] = Cr78Kit.GetDisplayName(instrument);
-                values[1] = "Play";
+                bool selected = _selectedTracks.Contains(instrument);
+                object[] values = new object[_stepGrid.Columns.Count];
+                values[_trackColumn.Index] = selected;
+                values[_instrumentColumn.Index] = Cr78Kit.GetDisplayName(instrument);
+                values[_auditionColumn.Index] = "Play";
                 for (int i = 0; i < 32; i++)
                 {
-                    values[i + 2] = i < view.BarsPerView * 16 && view.TryGetPosition(i, out int bar, out int step)
+                    values[i + FirstStepColumn] = i < view.BarsPerView * 16 && view.TryGetPosition(i, out int bar, out int step)
                         && _session.Current.Score.HasHit(bar, instrument, step);
                 }
                 DataGridViewRow row = _stepGrid.Rows[_stepGrid.Rows.Add(values)];
                 row.Tag = instrument;
+                ApplyTrackStyle(row, selected);
                 for (int i = 0; i < view.BarsPerView * 16; i++)
                 {
                     bool valid = view.TryGetPosition(i, out int bar, out int step);
-                    row.Cells[i + 2].ReadOnly = !valid;
-                    row.Cells[i + 2].ToolTipText = valid
+                    row.Cells[i + FirstStepColumn].ReadOnly = !valid;
+                    row.Cells[i + FirstStepColumn].ToolTipText = valid
                         ? $"{Cr78Kit.GetDisplayName(instrument)}, bar {bar + 1}, step {step + 1}"
-                        : "This loop has no second bar here; View does not add bars.";
+                        : "This loop has no second bar here. View only changes the visible range; use Add bar to lengthen the score.";
                 }
             }
         }
@@ -247,11 +254,23 @@ partial class MainForm
 
     private void StepGrid_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
     {
-        if (_updatingControls || e.RowIndex < 0 || e.ColumnIndex < 2)
+        if (_updatingControls || e.RowIndex < 0)
         {
             return;
         }
-        int displayedStep = e.ColumnIndex - 2;
+
+        if (e.ColumnIndex == _trackColumn.Index)
+        {
+            UpdateTrackSelectionFromRow(e.RowIndex);
+            return;
+        }
+
+        if (e.ColumnIndex < FirstStepColumn)
+        {
+            return;
+        }
+
+        int displayedStep = e.ColumnIndex - FirstStepColumn;
         BarViewWindow view = ViewWindow;
         if (displayedStep < view.BarsPerView * 16
             && view.TryGetPosition(displayedStep, out int bar, out int step)
@@ -287,6 +306,27 @@ partial class MainForm
         _stepGrid.Enabled = editing;
         _tempo.Enabled = _volume.Enabled = _volumeSelector.Enabled = _metallic.Enabled = editing;
         _loopButton.Enabled = _metallicButton.Enabled = _barSelector.Enabled = editing;
+        bool canLengthen = editing && _session.Current.Score.BarCount < PercussionScore.MaximumBars;
+        bool hasTracks = _selectedTracks.Count > 0;
+        _addBarButton.Enabled = _addBarMenuItem.Enabled = canLengthen;
+        _deleteBarButton.Enabled = _deleteBarMenuItem.Enabled = editing && _session.Current.Score.BarCount > 1;
+        _copyBarButton.Enabled = _copyBarMenuItem.Enabled = canLengthen && hasTracks;
+        _fillButton.Enabled = _fillMenu.Enabled = editing && hasTracks;
+        _clearButton.Enabled = _clearMenuItem.Enabled = editing && hasTracks;
+        _selectAllButton.Enabled = _selectAllMenuItem.Enabled = editing;
+        _selectNoneButton.Enabled = _selectNoneMenuItem.Enabled = editing;
+        _scopeSelector.Enabled = _noteValueSelector.Enabled = editing;
+        _presetSelector.Enabled = _presetName.Enabled = editing;
+        _savePresetButton.Enabled = _savePresetMenuItem.Enabled = editing && _presetSelector.SelectedIndex >= 0;
+        _recallPresetButton.Enabled = _recallPresetMenuItem.Enabled = editing && _presetSelector.SelectedIndex >= 0;
+        UpdateSoundCommandState(editing);
+        RefreshSoundStatus();
+        _currentBarScopeMenuItem.Checked = !_editAllBars;
+        _allBarsScopeMenuItem.Checked = _editAllBars;
+        if (_barSelector.SelectedIndex >= 0)
+        {
+            _targetBarLabel.Text = $"Target: Bar {CurrentBar + 1}";
+        }
         _playButton.Enabled = audio && _player!.State != DrumTransportState.Playing;
         _pauseButton.Enabled = audio && _player!.State == DrumTransportState.Playing;
         _stopButton.Enabled = _auditionMetallicButton.Enabled = audio;
@@ -310,7 +350,7 @@ partial class MainForm
 
     private void HighlightStep(int displayedStep, bool force = false)
     {
-        if (_stepGrid is null || _stepGrid.Columns.Count < 34 || _barSelector.SelectedIndex < 0)
+        if (_stepGrid is null || _stepGrid.Columns.Count < 35 || _barSelector.SelectedIndex < 0)
         {
             return;
         }
@@ -323,11 +363,8 @@ partial class MainForm
         for (int i = 0; i < 32; i++)
         {
             bool missing = i < view.BarsPerView * 16 && !view.TryGetPosition(i, out _, out _);
-            DataGridViewColumn column = _stepGrid.Columns[i + 2];
-            column.DefaultCellStyle.BackColor = i == displayedStep ? SystemColors.Highlight
-                : missing ? SystemColors.Control : SystemColors.Window;
-            column.DefaultCellStyle.ForeColor = i == displayedStep ? SystemColors.HighlightText
-                : missing ? SystemColors.GrayText : SystemColors.WindowText;
+            _stepGrid.ApplyStepColumnStyle(
+                _stepGrid.Columns[i + FirstStepColumn], i, playing: i == displayedStep, missing);
         }
         _highlightedStep = displayedStep;
     }

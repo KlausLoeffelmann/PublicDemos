@@ -1,6 +1,7 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using DrumMachine.Demo;
 using DrumMachine.Demo.Documents;
+using WinForms.Audio.Percussion;
 
 namespace SplitFlap.Tests;
 
@@ -100,7 +101,7 @@ public sealed class DrumAppSettingsTests
     {
         using LoopTestFiles files = new();
         string path = Path.Combine(files.DirectoryPath, "app-data", "settings.json");
-        AppSettings expected = new()
+        AppSettings expected = new AppSettings
         {
             Theme = (AppTheme)theme,
             IconSize = (ToolbarIconSize)iconSize,
@@ -108,7 +109,7 @@ public sealed class DrumAppSettingsTests
             DefaultFolder = files.DirectoryPath,
             BarsPerView = 2,
             RecentFiles = Enumerable.Range(1, 5).Select(index => files.File($"{index}.drumloop.json")).ToArray()
-        };
+        }.WithTrackPreset(1, "Drums", [Cr78Instrument.SnareDrum, Cr78Instrument.BassDrum]);
 
         await AppSettingsStore.SaveAsync(expected, path, TestContext.Current.CancellationToken);
         AppSettings actual = AppSettingsStore.Load(path);
@@ -119,6 +120,9 @@ public sealed class DrumAppSettingsTests
         Assert.Equal(expected.DefaultFolder, actual.DefaultFolder);
         Assert.Equal(expected.RecentFiles, actual.RecentFiles);
         Assert.Equal(expected.BarsPerView, actual.BarsPerView);
+        Assert.Equal("Drums", actual.TrackPresets[1].Name);
+        Assert.Equal([Cr78Instrument.BassDrum, Cr78Instrument.SnareDrum], actual.TrackPresets[1].Instruments);
+        Assert.All(actual.TrackPresets.Where((_, index) => index != 1), preset => Assert.Empty(preset.Instruments));
         string json = await System.IO.File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         Assert.Contains($"\"{expected.Theme}\"", json, StringComparison.Ordinal);
         Assert.Contains($"\"{expected.IconSize}\"", json, StringComparison.Ordinal);
@@ -175,6 +179,7 @@ public sealed class DrumAppSettingsTests
     /// </summary>
     [Theory]
     [InlineData("version", "3")]
+    [InlineData("version", "4")]
     [InlineData("theme", "\"Unknown\"")]
     [InlineData("theme", "1")]
     [InlineData("theme", "\"1\"")]
@@ -247,6 +252,79 @@ public sealed class DrumAppSettingsTests
         Assert.Equal(AppFontSize.Small, actual.FontSize);
         Assert.Equal(files.DirectoryPath, actual.DefaultFolder);
         Assert.Equal(2, actual.BarsPerView);
+        Assert.Equal(8, actual.TrackPresets.Count);
+        Assert.All(actual.TrackPresets, preset => Assert.Empty(preset.Instruments));
+    }
+
+    /// <summary>
+    ///  Migrates a version-two file that has no preset array without discarding its other choices.
+    /// </summary>
+    [Fact]
+    public void Settings_VersionTwoKeepsChoicesAndStartsWithEmptyPresets()
+    {
+        using LoopTestFiles files = new();
+        string path = files.File("settings.json");
+        System.IO.File.WriteAllText(path, CreateValidJson(files.DirectoryPath).ToJsonString());
+
+        AppSettings actual = AppSettingsStore.Load(path);
+
+        Assert.Equal(AppTheme.Dark, actual.Theme);
+        Assert.Equal(ToolbarIconSize.Large, actual.IconSize);
+        Assert.Equal(AppFontSize.Xxl, actual.FontSize);
+        Assert.Equal(2, actual.BarsPerView);
+        Assert.Equal(8, actual.TrackPresets.Count);
+        Assert.All(actual.TrackPresets, preset =>
+        {
+            Assert.Equal("", preset.Name);
+            Assert.Empty(preset.Instruments);
+        });
+    }
+
+    /// <summary>
+    ///  Rejects a version-three preset list that is the wrong length or contains an unusable selection.
+    /// </summary>
+    [Theory]
+    [InlineData("count")]
+    [InlineData("unknown")]
+    [InlineData("numeric")]
+    [InlineData("metallic")]
+    [InlineData("duplicate")]
+    [InlineData("name")]
+    public void Settings_InvalidTrackPresetsUseCompleteDefaults(string problem)
+    {
+        using LoopTestFiles files = new();
+        JsonObject json = CreateValidJson(files.DirectoryPath);
+        json["version"] = 3;
+        JsonArray presets = [];
+        int count = problem == "count" ? 7 : 8;
+        for (int slot = 0; slot < count; slot++)
+        {
+            JsonArray instruments = [];
+            if (slot == 0)
+            {
+                foreach (string token in problem switch
+                {
+                    "unknown" => ["NotADrum"],
+                    "numeric" => ["0"],
+                    "metallic" => ["MetallicBeat"],
+                    "duplicate" => ["BassDrum", "BassDrum"],
+                    _ => Array.Empty<string>()
+                })
+                {
+                    instruments.Add(token);
+                }
+            }
+            presets.Add(new JsonObject
+            {
+                ["name"] = problem == "name" && slot == 0 ? new string('a', 41) : "",
+                ["instruments"] = instruments
+            });
+        }
+
+        json["trackPresets"] = presets;
+        string path = files.File("settings.json");
+        System.IO.File.WriteAllText(path, json.ToJsonString());
+        AssertDefaults(AppSettingsStore.Load(path));
     }
 
     /// <summary>
@@ -286,6 +364,7 @@ public sealed class DrumAppSettingsTests
     [InlineData("relative-recent")]
     [InlineData("duplicate-recent")]
     [InlineData("too-many-recents")]
+    [InlineData("preset-count")]
     public async Task Settings_InvalidSavePropagatesAndPreservesThePreviousFile(string problem)
     {
         using LoopTestFiles files = new();
@@ -306,6 +385,7 @@ public sealed class DrumAppSettingsTests
             {
                 RecentFiles = Enumerable.Range(1, 6).Select(index => files.File($"{index}.json")).ToArray()
             },
+            "preset-count" => valid with { TrackPresets = [] },
             _ => throw new ArgumentException(nameof(problem))
         };
 
@@ -378,5 +458,138 @@ public sealed class DrumAppSettingsTests
         Assert.Equal(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), settings.DefaultFolder);
         Assert.Empty(settings.RecentFiles);
         Assert.Equal(1, settings.BarsPerView);
+        Assert.Equal(8, settings.TrackPresets.Count);
+        Assert.All(settings.TrackPresets, preset =>
+        {
+            Assert.Equal("", preset.Name);
+            Assert.Empty(preset.Instruments);
+        });
+        Assert.False(string.IsNullOrWhiteSpace(settings.RecordingsFolder));
+        Assert.False(string.IsNullOrWhiteSpace(settings.SoundPresetFolder));
+        Assert.False(string.IsNullOrWhiteSpace(settings.LastWavImportFolder));
+        Assert.False(settings.Window.HasBounds);
+        Assert.Equal(0, settings.SpectrumSplitterDistanceDip);
+        Assert.Empty(settings.StepGridColumns);
+    }
+
+    /// <summary>
+    ///  Migrates retired track tokens and supplies the new folder defaults without discarding version-three choices.
+    /// </summary>
+    [Fact]
+    public void Settings_VersionThreeMigratesLegacyTrackSelections()
+    {
+        using LoopTestFiles files = new();
+        JsonObject json = CreateValidJson(files.DirectoryPath);
+        json["version"] = 3;
+        JsonArray presets = [];
+        for (int slot = 0; slot < 8; slot++)
+        {
+            JsonArray instruments = [];
+            if (slot == 0)
+            {
+                instruments.Add("Maracas");
+                instruments.Add("Claves");
+            }
+            presets.Add(new JsonObject { ["name"] = slot == 0 ? "Legacy" : "", ["instruments"] = instruments });
+        }
+
+        json["trackPresets"] = presets;
+        string path = files.File("settings.json");
+        System.IO.File.WriteAllText(path, json.ToJsonString());
+
+        AppSettings actual = AppSettingsStore.Load(path);
+
+        Assert.Equal(["Tambourine2", "Guiro2"], actual.TrackPresets[0].Instruments.Select(item => item.ToString()));
+        Assert.Equal("Legacy", actual.TrackPresets[0].Name);
+        Assert.Equal(AppTheme.Dark, actual.Theme);
+        Assert.True(Directory.Exists(actual.RecordingsFolder));
+        Assert.True(Directory.Exists(actual.SoundPresetFolder));
+        Assert.False(actual.Window.HasBounds);
+    }
+
+    /// <summary>
+    ///  Round-trips recordings, preset, and import folders plus window and column layout.
+    /// </summary>
+    [Fact]
+    public async Task Settings_RoundTripFoldersWindowAndColumns()
+    {
+        using LoopTestFiles files = new();
+        string path = Path.Combine(files.DirectoryPath, "app-data", "settings.json");
+        AppSettings expected = new AppSettings
+        {
+            DefaultFolder = files.DirectoryPath,
+            RecordingsFolder = files.DirectoryPath,
+            SoundPresetFolder = files.DirectoryPath,
+            LastWavImportFolder = files.DirectoryPath,
+            Window = new WindowPlacement
+            {
+                X = 40,
+                Y = 50,
+                Width = 1100,
+                Height = 760,
+                IsMaximized = true,
+                SavedDpi = 144
+            },
+            SpectrumSplitterDistanceDip = 180,
+            StepGridColumns = StepGridColumnPreference.Names
+                .Select((name, index) => new StepGridColumnPreference
+                {
+                    Name = name,
+                    DisplayIndex = index,
+                    WidthDip = 40
+                })
+                .ToArray()
+        };
+
+        await AppSettingsStore.SaveAsync(expected, path, TestContext.Current.CancellationToken);
+        AppSettings actual = AppSettingsStore.Load(path);
+
+        Assert.Equal(files.DirectoryPath, actual.RecordingsFolder);
+        Assert.Equal(files.DirectoryPath, actual.SoundPresetFolder);
+        Assert.Equal(files.DirectoryPath, actual.LastWavImportFolder);
+        Assert.Equal(expected.Window, actual.Window);
+        Assert.Equal(180, actual.SpectrumSplitterDistanceDip);
+        Assert.Equal(expected.StepGridColumns, actual.StepGridColumns);
+        string json = await System.IO.File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        Assert.Contains("\"version\": 4", json, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    ///  Rejects a version-four file that is missing one of the new required fields.
+    /// </summary>
+    [Theory]
+    [InlineData("recordingsFolder")]
+    [InlineData("soundPresetFolder")]
+    [InlineData("lastWavImportFolder")]
+    [InlineData("windowPlacement")]
+    [InlineData("spectrumSplitterDip")]
+    [InlineData("stepGridColumns")]
+    public async Task Settings_VersionFourMissingFieldsUseCompleteDefaults(string property)
+    {
+        using LoopTestFiles files = new();
+        string path = files.File("settings.json");
+        await AppSettingsStore.SaveAsync(
+            new AppSettings { DefaultFolder = files.DirectoryPath, Theme = AppTheme.Dark },
+            path,
+            TestContext.Current.CancellationToken);
+        JsonObject json = JsonNode.Parse(System.IO.File.ReadAllText(path))!.AsObject();
+        LoopTestFiles.RemoveJsonProperty(json, property);
+        System.IO.File.WriteAllText(path, json.ToJsonString());
+
+        AssertDefaults(AppSettingsStore.Load(path));
+    }
+
+    [Theory]
+    [InlineData(96, 800, 600)]
+    [InlineData(144, 1200, 900)]
+    [InlineData(192, 1600, 1200)]
+    public void Placement_ScalesSaved96DpiSizeTo144And192(int dpi, int width, int height)
+    {
+        WindowPlacement saved = new() { X = 12, Y = 18, Width = 800, Height = 600, SavedDpi = 96 };
+        Rectangle scaled = saved.ScaleToDpi(dpi);
+        Assert.Equal(new Rectangle(12, 18, width, height), scaled);
+        Assert.Equal(36, WindowPlacement.ScaleFromDip(36, 96));
+        Assert.Equal(dpi == 96 ? 36 : dpi == 144 ? 54 : 72, WindowPlacement.ScaleFromDip(36, dpi));
+        Assert.False(WindowPlacement.IsUsableOnScreen(new Rectangle(-20_000, -20_000, 900, 700)));
     }
 }

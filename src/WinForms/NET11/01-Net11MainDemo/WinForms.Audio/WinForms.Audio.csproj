@@ -12,7 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Percussion\MeasuredModels.json" />
     <InternalsVisibleTo Include="SplitFlap.Tests" />
+    <InternalsVisibleTo Include="DrumMachine.Analysis" />
     <Using Include="WinForms.Audio.Core" />
     <Using Include="WinForms.Audio.Synthesis" />
     <Using Include="WinForms.Audio.Music" />

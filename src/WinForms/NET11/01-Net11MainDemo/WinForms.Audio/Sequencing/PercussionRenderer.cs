@@ -144,7 +144,8 @@ internal sealed class PercussionRenderer
                     break;
 
                 case PercussionCommandKind.Audition:
-                    _bank.Trigger(command.Instrument, command.Velocity, _sampleRate / 4);
+                    _bank.Trigger(command.Instrument, command.Velocity,
+                        command.Instrument == Cr78Instrument.Guiro2 ? _sampleRate * 4 / 5 : _sampleRate / 4);
                     if (command.Instrument is Cr78Instrument.HiHat or Cr78Instrument.Cymbal)
                     {
                         _bank.TriggerMetallicLayer(command.Velocity, _sampleRate / 4);
@@ -269,8 +270,11 @@ internal sealed class PercussionRenderer
     }
 
     private void ApplyMix(bool initialize = false)
-        => _bank.SetMix(_pendingSettings.MasterVolume, _pendingSettings.InstrumentVolumes,
+    {
+        _bank.SetSamples(_pendingSettings.Samples);
+        _bank.SetMix(_pendingSettings.MasterVolume, _pendingSettings.InstrumentVolumes,
             _pendingSettings.MetallicEnabled, _pendingSettings.MetallicLevel, initialize);
+    }
 
     private void StopReset(long frame)
     {

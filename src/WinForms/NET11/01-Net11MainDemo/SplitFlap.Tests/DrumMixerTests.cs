@@ -1,5 +1,6 @@
 using WinForms.Audio.Music;
 using WinForms.Audio.Percussion;
+using WinForms.Audio.Playback;
 using WinForms.Audio.Sequencing;
 
 namespace SplitFlap.Tests;
@@ -10,18 +11,19 @@ namespace SplitFlap.Tests;
 public sealed class DrumMixerTests
 {
     /// <summary>
-    ///  Unity defaults preserve the old sample-by-sample sum, seeds, gates, retriggers, and calibration.
+    ///  Below limiting, the fixed +12 dB calibration preserves the exact sum, seeds, gates and retriggers.
     /// </summary>
     [Fact]
-    public void DefaultRenderer_IsBitExactWithTheOriginalUnmixedChannels()
+    public void DefaultRenderer_IsBitExactWithTheCalibratedUnmixedChannels()
     {
         const int sampleRate = 32_000;
         const uint seed = 42;
+        Assert.Equal(4f, Cr78VoiceBank.PercussionOutputGain);
         PercussionScore score = new(1, Cr78Kit.Instruments.Select((instrument, step) =>
-            new PercussionHit(0, step, instrument, 0.4f + step * 0.04f, GateSteps: 7)));
+            new PercussionHit(0, step % 16, instrument, 0.35f + step * 0.035f, GateSteps: 7)));
         PercussionMailbox mailbox = new(score, new Tempo(960));
         PercussionRenderer renderer = new(sampleRate, mailbox, seed);
-        Cr78Generator[] original = Enumerable.Range(0, 14).Select(i =>
+        Cr78Generator[] original = Enumerable.Range(0, 20).Select(i =>
             new Cr78Generator(sampleRate, (Cr78Instrument)i, ChannelSeed(seed, (Cr78Instrument)i))).ToArray();
         Assert.Equal(1f, mailbox.Settings.MasterVolume);
         Assert.True(mailbox.Settings.MetallicEnabled);
@@ -49,8 +51,9 @@ public sealed class DrumMixerTests
                 expected += generator.Next();
             }
 
+            expected *= Cr78VoiceBank.PercussionOutputGain;
+            Assert.InRange(Math.Abs(expected), 0f, Cr78VoiceBank.OutputPeakCeiling);
             Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(renderer.Next(frame)));
-            Assert.InRange(Math.Abs(expected), 0f, 0.9051f);
         }
     }
 
@@ -267,7 +270,7 @@ public sealed class DrumMixerTests
         for (int frame = 0; frame < 2_000; frame++)
         {
             float actual = renderer.Next(frame);
-            Assert.Equal(metallic.Next() * 0.25f, actual);
+            Assert.Equal(metallic.Next() * 0.25f * Cr78VoiceBank.PercussionOutputGain, actual);
             energy += Math.Abs(actual);
         }
 
@@ -291,7 +294,7 @@ public sealed class DrumMixerTests
         renderer.BeginBlock(0);
         for (int frame = 0; frame < 300; frame++)
         {
-            Assert.Equal(reference.Next() * 0.65f, renderer.Next(frame));
+            Assert.Equal(reference.Next() * 0.65f * Cr78VoiceBank.PercussionOutputGain, renderer.Next(frame));
         }
 
         mailbox.SetMetallicEnabled(false);
@@ -318,7 +321,7 @@ public sealed class DrumMixerTests
         double resumedEnergy = 0;
         for (int frame = 1_000; frame < 2_000; frame++)
         {
-            float expected = reference.Next() * 0.65f;
+            float expected = reference.Next() * 0.65f * Cr78VoiceBank.PercussionOutputGain;
             float actual = renderer.Next(frame);
             if (frame >= 1_240)
             {
@@ -356,7 +359,7 @@ public sealed class DrumMixerTests
                 renderer.BeginBlock(frame);
             }
 
-            float expected = reference.Next() * 0.5f;
+            float expected = reference.Next() * 0.5f * Cr78VoiceBank.PercussionOutputGain;
             float actual = renderer.Next(frame);
             if (frame >= 240)
             {
@@ -373,7 +376,7 @@ public sealed class DrumMixerTests
         renderer.BeginBlock(1_000);
         for (int frame = 1_000; frame < 2_000; frame++)
         {
-            float expected = reference.Next() * 0.25f * 0.5f;
+            float expected = reference.Next() * 0.25f * 0.5f * Cr78VoiceBank.PercussionOutputGain;
             float actual = renderer.Next(frame);
             if (frame >= 1_240)
             {
@@ -400,14 +403,14 @@ public sealed class DrumMixerTests
         mailbox.Start();
         Render(renderer, 0, 1_000);
         long revision = mailbox.Settings.Revision;
-        float[] volumes = Enumerable.Range(0, 13).Select(index => index / 12f).ToArray();
+        float[] volumes = Enumerable.Range(0, Cr78Kit.Instruments.Count).Select(index => index / 16f).ToArray();
         mailbox.ApplyConfiguration(equivalent, new Tempo(120), 0.4f, volumes, false, false, 0.75f);
         PercussionSettings snapshot = mailbox.Settings;
         Assert.Equal(revision, snapshot.Revision);
         Array.Fill(volumes, float.NaN);
         for (int i = 0; i < Cr78Kit.Instruments.Count; i++)
         {
-            Assert.Equal(i / 12f, mailbox.GetInstrumentVolume(Cr78Kit.Instruments[i]));
+            Assert.Equal(i / 16f, mailbox.GetInstrumentVolume(Cr78Kit.Instruments[i]));
         }
 
         Assert.False(renderer.GetSnapshot(1_000, true).HasPendingChanges);
@@ -415,7 +418,7 @@ public sealed class DrumMixerTests
         Assert.False(renderer.GetSnapshot(2_000, true).HasPendingChanges);
         mailbox.SetInstrumentVolume(Cr78Instrument.SnareDrum, 0.9f);
         mailbox.SetMetallicLevel(0.1f);
-        Assert.Equal(1 / 12f, snapshot.InstrumentVolumes[(int)Cr78Instrument.SnareDrum]);
+        Assert.Equal(2 / 16f, snapshot.InstrumentVolumes[2]);
         Assert.Equal(0.75f, snapshot.MetallicLevel);
         Assert.Equal(revision, mailbox.Settings.Revision);
         mailbox.ApplyConfiguration(original.WithStep(0, Cr78Instrument.HiHat, 2, true),
@@ -468,7 +471,7 @@ public sealed class DrumMixerTests
     }
 
     /// <summary>
-    ///  Rapid finite target changes stay inside the calibrated sum bound and end at exact mute.
+    ///  Rapid finite target changes stay inside the peak ceiling and end at exact mute.
     /// </summary>
     [Fact]
     public void RapidRamps_StayFiniteBoundedAndEventuallyExactlySilent()
@@ -484,7 +487,7 @@ public sealed class DrumMixerTests
             {
                 float value = bank.Next();
                 Assert.True(float.IsFinite(value));
-                Assert.InRange(Math.Abs(value), 0f, 0.9051f);
+                Assert.InRange(Math.Abs(value), 0f, Cr78VoiceBank.OutputPeakCeiling);
             }
         }
 
@@ -531,6 +534,84 @@ public sealed class DrumMixerTests
 
             cursor += 512;
         }
+    }
+
+    /// <summary>
+    ///  Dense full-scale imports are limited without flat clipping, recover smoothly, and still mute.
+    /// </summary>
+    [Theory]
+    [InlineData(32_000, 1)]
+    [InlineData(32_000, -1)]
+    [InlineData(48_000, 1)]
+    [InlineData(48_000, -1)]
+    [InlineData(192_000, 1)]
+    [InlineData(192_000, -1)]
+    public void OutputLimiter_BoundsOverloadAndRecoversAtEveryRate(int sampleRate, int sign)
+    {
+        int overloadFrames = sampleRate / 200;
+        short[] pcm = Enumerable.Repeat((short)(sign * 2048), sampleRate).ToArray();
+        Array.Fill(pcm, (short)(sign * short.MaxValue), 0, overloadFrames);
+        Sample sample = Sample.FromPcm(pcm, sampleRate, targetRate: sampleRate);
+        PercussionSampleSet samples = new(
+            Cr78Kit.Instruments.ToDictionary(instrument => instrument, _ => sample), sampleRate);
+        Cr78VoiceBank bank = new(sampleRate, 42);
+        Cr78VoiceBank reference = new(sampleRate, 42);
+        bank.SetSamples(samples);
+        reference.SetSamples(samples);
+        reference.SetMix(0.125f, UnityVolumes(), true, 1f, initialize: true);
+        foreach (Cr78Instrument instrument in Cr78Kit.Instruments)
+        {
+            bank.Trigger(instrument, 1f, 1);
+            reference.Trigger(instrument, 1f, 1);
+        }
+
+        double previousGain = 0;
+        for (int frame = 0; frame < sampleRate * 4 / 5; frame++)
+        {
+            float expected = reference.Next() * 8;
+            float actual = bank.Next();
+            Assert.True(float.IsFinite(actual));
+            Assert.InRange(Math.Abs(actual), 0f, Cr78VoiceBank.OutputPeakCeiling);
+            if (frame < overloadFrames)
+            {
+                Assert.True(Math.Abs(expected) > Cr78VoiceBank.OutputPeakCeiling * 2);
+                Assert.Equal(sign * Cr78VoiceBank.OutputPeakCeiling, actual);
+            }
+            else
+            {
+                double gain = actual / (double)expected;
+                Assert.InRange(gain, previousGain - 1e-6, 1);
+                if (frame == overloadFrames)
+                {
+                    Assert.InRange(gain, 0.1, 0.5);
+                }
+
+                if (frame > sampleRate * 3 / 10)
+                {
+                    Assert.InRange(gain, 0.998, 1);
+                }
+
+                if (frame > sampleRate * 7 / 10)
+                {
+                    Assert.Equal(expected, actual);
+                }
+
+                previousGain = gain;
+            }
+        }
+
+        bank.SetMix(0, UnityVolumes(), false, 0);
+        for (int frame = 0; frame < sampleRate / 5 + 1; frame++)
+        {
+            float actual = bank.Next();
+            Assert.True(float.IsFinite(actual));
+            if (frame >= sampleRate / 200)
+            {
+                Assert.Equal(0f, actual);
+            }
+        }
+
+        Assert.False(bank.IsActive);
     }
 
     private static float[] UnityVolumes() => Enumerable.Repeat(1f, Cr78Kit.Instruments.Count).ToArray();

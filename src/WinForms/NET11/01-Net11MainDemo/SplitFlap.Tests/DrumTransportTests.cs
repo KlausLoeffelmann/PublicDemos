@@ -282,7 +282,7 @@ public sealed class DrumTransportTests
             (frame, hit) => onsets.Add((frame, hit.Instrument)));
         mailbox.Start();
         Render(renderer, 0, 12_345);
-        float[] volumes = Enumerable.Repeat(0.4f, 13).ToArray();
+        float[] volumes = Enumerable.Repeat(0.4f, Cr78Kit.Instruments.Count).ToArray();
         mailbox.ApplyConfiguration(loaded, new Tempo(90), 0.25f, volumes, false, false, 0.7f, resetTransport: true);
         Array.Fill(volumes, 0f);
         Assert.Equal(0.4f, mailbox.GetInstrumentVolume(Cr78Instrument.Cowbell));

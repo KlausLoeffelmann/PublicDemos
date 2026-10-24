@@ -274,6 +274,8 @@ partial class MainForm
         {
             return;
         }
+
+        CaptureWindowLayout();
         try
         {
             await AppSettingsStore.SaveAsync(_settings, null, _lifetime.Token);

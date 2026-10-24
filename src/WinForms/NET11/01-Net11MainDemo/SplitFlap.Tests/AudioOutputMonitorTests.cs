@@ -1,4 +1,4 @@
-using WinForms.Audio.Core;
+﻿using WinForms.Audio.Core;
 using WinForms.Audio.Synthesis;
 using System.Threading.Channels;
 
@@ -138,18 +138,19 @@ public sealed class AudioOutputMonitorTests
         Assert.True(monitor.TryWrite(4, block, beforeClamp));
         using ManualResetEventSlim held = new(false);
         using ManualResetEventSlim release = new(false);
+        CancellationToken cancellation = TestContext.Current.CancellationToken;
         Task reader = Task.Run(() =>
         {
             lock (monitor.CopySynchronization)
             {
                 held.Set();
-                release.Wait(TimeSpan.FromSeconds(5));
+                release.Wait(TimeSpan.FromSeconds(5), cancellation);
             }
-        }, TestContext.Current.CancellationToken);
+        }, cancellation);
 
         try
         {
-            Assert.True(held.Wait(TimeSpan.FromSeconds(5)));
+            Assert.True(held.Wait(TimeSpan.FromSeconds(5), cancellation));
             Assert.False(monitor.TryWrite(8, block, beforeClamp));
             Assert.Equal(1, monitor.DroppedBlocks);
         }

@@ -18,6 +18,7 @@ internal sealed class Cr78Generator
     private int _releaseLeft = -1;
     private float _correction;
     private float _lastSample;
+    private float[]? _sampleOverride;
 
     /// <summary>
     ///  Prepares both strikes and shared procedural waveforms without allocating on later hits.
@@ -28,7 +29,7 @@ internal sealed class Cr78Generator
         Cr78Kit.ValidateInstrument(instrument);
         ArgumentOutOfRangeException.ThrowIfZero(noiseSeed);
         Cr78Preset preset = Cr78Preset.For(instrument);
-        _level = preset.Level;
+        _level = preset.Level * (Cr78Kit.Instruments.Contains(instrument) ? 0.63f : 1f);
         _fadeSamples = Math.Max(1, sampleRate / 200);
         bool pulse = instrument is Cr78Instrument.Cowbell or Cr78Instrument.Tambourine or Cr78Instrument.MetallicBeat;
         Cr78WaveTable? first = CreateTable(preset.Frequency);
@@ -63,7 +64,7 @@ internal sealed class Cr78Generator
 
         bool wasActive = IsActive;
         (_current, _previous) = (_previous, _current);
-        _current.Start(velocity, gateSamples);
+        _current.Start(velocity, gateSamples, _sampleOverride);
         _crossfadeLeft = wasActive ? _fadeSamples : 0;
 
         // Usually the old strike simply becomes the fading lane. If another hit arrives
@@ -73,6 +74,12 @@ internal sealed class Cr78Generator
         _correctionLeft = _correction == 0 ? 0 : _fadeSamples;
         _releaseLeft = -1;
     }
+
+    /// <summary>
+    ///  Selects owned, rate-matched PCM for subsequent hits without mutating an existing tail.
+    /// </summary>
+    internal void SetSample(float[]? sample)
+        => _sampleOverride = sample;
 
     /// <summary>
     ///  Starts a short release of all overlapping strikes without abruptly clearing their output.
@@ -134,6 +141,10 @@ internal sealed class Cr78Generator
         private readonly int _sampleRate;
         private readonly Cr78Instrument _instrument;
         private readonly NoiseSource _noise;
+        private readonly float[]? _modeledStrike;
+        private float[]? _activeData;
+        private bool _imported;
+        private bool _extendedScrape;
         private readonly double _decay;
         private readonly double _fastDecay;
         private readonly int _attackSamples;
@@ -169,6 +180,7 @@ internal sealed class Cr78Generator
             _sampleRate = sampleRate;
             _instrument = instrument;
             _noise = new NoiseSource(seed);
+            _modeledStrike = MeasuredPercussionModel.Prepare(instrument, sampleRate, seed);
             _first = new Cr78Oscillator(first, preset.Frequency, sampleRate);
             _second = new Cr78Oscillator(second, preset.SecondFrequency, sampleRate);
             _third = new Cr78Oscillator(third, preset.ThirdFrequency, sampleRate);
@@ -197,8 +209,11 @@ internal sealed class Cr78Generator
         /// <summary>
         ///  Excites fresh modal/envelope state without resetting the continuing random stream.
         /// </summary>
-        internal void Start(float velocity, long gateSamples)
+        internal void Start(float velocity, long gateSamples, float[]? sampleOverride)
         {
+            _activeData = sampleOverride ?? _modeledStrike;
+            _imported = sampleOverride is not null;
+            _extendedScrape = false;
             _first.Reset();
             _second.Reset();
             _third.Reset();
@@ -222,6 +237,11 @@ internal sealed class Cr78Generator
             if (!IsActive)
             {
                 return 0;
+            }
+
+            if (_activeData is not null)
+            {
+                return NextModeled();
             }
 
             float first = _first.Next();
@@ -284,12 +304,79 @@ internal sealed class Cr78Generator
             return LastSample;
         }
 
+        private float NextModeled()
+        {
+            bool scrape = !_imported && _instrument is (Cr78Instrument.Guiro or Cr78Instrument.Guiro2);
+            long age = _age;
+            int position;
+            if (scrape)
+            {
+                long sustainEnd = (long)(_sampleRate * (_instrument == Cr78Instrument.Guiro ? 0.25 : 0.8));
+                _extendedScrape |= age >= sustainEnd && _gateLeft > 0;
+                if (_extendedScrape)
+                {
+                    int loop = Math.Max(1, _sampleRate / 10);
+                    int fade = Math.Min(_sampleRate / 200, loop / 2);
+                    position = (int)(sustainEnd - loop + fade + (age - sustainEnd) % (loop - fade));
+                    int remaining = (int)sustainEnd - position;
+                    if (remaining <= fade)
+                    {
+                        float weight = remaining / (float)fade;
+                        LastSample = _activeData![position] * weight
+                            + _activeData[(int)sustainEnd - loop + fade - remaining] * (1 - weight);
+                    }
+                    else
+                    {
+                        LastSample = _activeData![position];
+                    }
+                }
+                else
+                {
+                    LastSample = age < _activeData!.Length ? _activeData[(int)age] : 0;
+                    int fade = _sampleRate / 200;
+                    long remaining = sustainEnd - age;
+                    if (remaining > 0 && remaining <= fade && _gateLeft > fade)
+                    {
+                        float weight = remaining / (float)fade;
+                        int loopStart = (int)sustainEnd - _sampleRate / 10;
+                        LastSample = LastSample * weight
+                            + _activeData[loopStart + fade - (int)remaining] * (1 - weight);
+                    }
+                }
+
+                if (--_gateLeft <= 0)
+                {
+                    _envelope *= _decay;
+                    if (++_decayAge >= _maximumDecaySamples)
+                    {
+                        Clear();
+                        return 0;
+                    }
+                }
+            }
+            else
+            {
+                if (age >= _activeData!.Length)
+                {
+                    Clear();
+                    return 0;
+                }
+
+                LastSample = _activeData[(int)age];
+            }
+
+            LastSample *= _velocity * (float)_envelope;
+            _age++;
+            return LastSample;
+        }
+
         /// <summary>
         ///  Removes all feedback and envelope residue while preserving the next hit's noise variation.
         /// </summary>
         internal void Clear()
         {
             IsActive = false;
+            _activeData = null;
             _envelope = _fastEnvelope = 0;
             _filter.Clear();
             LastSample = 0;

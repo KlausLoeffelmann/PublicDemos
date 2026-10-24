@@ -122,6 +122,13 @@ public sealed class DrumMachinePlayer : IDisposable
         => _mailbox.SetScore(score);
 
     /// <summary>
+    ///  Replaces all recorded sound overrides at the next audio block without changing fixed tracks.
+    ///  Missing entries use synthesis. Caller-owned sample arrays are defensively copied.
+    /// </summary>
+    public void SetSamples(IReadOnlyDictionary<Cr78Instrument, Sample> samples)
+        => _mailbox.SetSamples(new PercussionSampleSet(samples, _engine.SampleRate));
+
+    /// <summary>
     ///  Gets a primary percussion fader; MetallicBeat uses the separate layer controls instead.
     /// </summary>
     public float GetInstrumentVolume(Cr78Instrument instrument)

@@ -6,19 +6,20 @@ namespace WinForms.Audio.Percussion;
 ///  Creates dry, procedural CR-78-style sounds without recordings or an audio-device dependency.
 /// </summary>
 /// <remarks>
-///  These are analog-inspired models, not circuit emulation. The adjacent README records the
-///  factory targets, the one-tenth-amplitude decay convention, and the remaining approximations.
+///  These are fitted modal/colored-noise models, not circuit emulation or recorded samples.
+///  The adjacent README describes the measured targets and remaining approximations.
 /// </remarks>
 public static class Cr78Kit
 {
     private static readonly ReadOnlyCollection<Cr78Instrument> s_instruments =
         Array.AsReadOnly(new[]
         {
-            Cr78Instrument.BassDrum, Cr78Instrument.SnareDrum, Cr78Instrument.RimShot,
-            Cr78Instrument.HiHat, Cr78Instrument.Cymbal, Cr78Instrument.Maracas,
-            Cr78Instrument.Claves, Cr78Instrument.Cowbell, Cr78Instrument.HighBongo,
-            Cr78Instrument.LowBongo, Cr78Instrument.LowConga, Cr78Instrument.Tambourine,
-            Cr78Instrument.Guiro
+            Cr78Instrument.BassDrum, Cr78Instrument.BassDrumAccent,
+            Cr78Instrument.SnareDrum, Cr78Instrument.SnareDrumAccent, Cr78Instrument.RimShot,
+            Cr78Instrument.HiHat, Cr78Instrument.HiHatAccent, Cr78Instrument.MetallicHiHat,
+            Cr78Instrument.Cymbal, Cr78Instrument.HighBongo, Cr78Instrument.LowBongo,
+            Cr78Instrument.LowConga, Cr78Instrument.Cowbell, Cr78Instrument.Tambourine,
+            Cr78Instrument.Tambourine2, Cr78Instrument.Guiro, Cr78Instrument.Guiro2
         });
 
     /// <summary>
@@ -32,7 +33,7 @@ public static class Cr78Kit
     public const int MaximumSampleRate = 192_000;
 
     /// <summary>
-    ///  The thirteen percussion entries, excluding the separate metallic-layer audition.
+    ///  The seventeen fixed stock tracks, excluding legacy sounds and the auxiliary metallic layer.
     /// </summary>
     public static IReadOnlyList<Cr78Instrument> Instruments
         => s_instruments;
@@ -43,10 +44,14 @@ public static class Cr78Kit
     public static string GetDisplayName(Cr78Instrument instrument)
         => instrument switch
         {
-            Cr78Instrument.BassDrum => "Bass drum",
+            Cr78Instrument.BassDrum => "Kick drum",
+            Cr78Instrument.BassDrumAccent => "Accented kick drum",
             Cr78Instrument.SnareDrum => "Snare drum",
+            Cr78Instrument.SnareDrumAccent => "Accented snare drum",
             Cr78Instrument.RimShot => "Rim shot",
             Cr78Instrument.HiHat => "Hi-hat",
+            Cr78Instrument.HiHatAccent => "Accented hi-hat",
+            Cr78Instrument.MetallicHiHat => "Metallic hi-hat",
             Cr78Instrument.Cymbal => "Cymbal",
             Cr78Instrument.Maracas => "Maracas",
             Cr78Instrument.Claves => "Claves",
@@ -54,8 +59,10 @@ public static class Cr78Kit
             Cr78Instrument.HighBongo => "High bongo",
             Cr78Instrument.LowBongo => "Low bongo",
             Cr78Instrument.LowConga => "Low conga",
-            Cr78Instrument.Tambourine => "Tambourine",
-            Cr78Instrument.Guiro => "Guiro",
+            Cr78Instrument.Tambourine => "Tambourine 1",
+            Cr78Instrument.Tambourine2 => "Tambourine 2",
+            Cr78Instrument.Guiro => "Guiro 1",
+            Cr78Instrument.Guiro2 => "Guiro 2",
             Cr78Instrument.MetallicBeat => "Metallic beat (CY/HH layer)",
             _ => throw new ArgumentOutOfRangeException(nameof(instrument))
         };
@@ -111,12 +118,31 @@ public static class Cr78Kit
     /// </summary>
     internal static void ValidateInstrument(Cr78Instrument instrument, bool allowMetallic = true)
     {
-        int maximum = (int)(allowMetallic ? Cr78Instrument.MetallicBeat : Cr78Instrument.Guiro);
-        if ((uint)instrument > maximum)
+        if (!Enum.IsDefined(instrument) || (!allowMetallic && instrument == Cr78Instrument.MetallicBeat))
         {
             throw new ArgumentOutOfRangeException(nameof(instrument),
-                allowMetallic ? "Unknown percussion sound." : "Scores contain the thirteen percussion sounds, not the metallic layer.");
+                allowMetallic ? "Unknown percussion sound." : "The auxiliary metallic layer is not a score track.");
         }
+    }
+
+    /// <summary>
+    ///  Maps retired stock track identifiers to their replacements when reading older documents.
+    /// </summary>
+    public static Cr78Instrument GetCurrentInstrument(Cr78Instrument instrument)
+        => instrument switch
+        {
+            Cr78Instrument.Maracas => Cr78Instrument.Tambourine2,
+            Cr78Instrument.Claves => Cr78Instrument.Guiro2,
+            _ => instrument
+        };
+
+    /// <summary>
+    ///  Gets a stock fader's position independently of stable enum identifiers.
+    /// </summary>
+    internal static int GetInstrumentIndex(Cr78Instrument instrument)
+    {
+        int index = s_instruments.IndexOf(GetCurrentInstrument(instrument));
+        return index >= 0 ? index : throw new ArgumentOutOfRangeException(nameof(instrument));
     }
 
     /// <summary>
@@ -143,7 +169,7 @@ public static class Cr78Kit
         internal OneShot(int sampleRate, Cr78Instrument instrument, float velocity, float metallicLevel, uint seed)
         {
             _sound = new Cr78Generator(sampleRate, instrument, seed);
-            _sound.Trigger(velocity, sampleRate / 4);
+            _sound.Trigger(velocity, instrument == Cr78Instrument.Guiro2 ? sampleRate * 4 / 5 : sampleRate / 4);
             if (metallicLevel > 0f && instrument is Cr78Instrument.HiHat or Cr78Instrument.Cymbal)
             {
                 _metallic = new Cr78Generator(sampleRate, Cr78Instrument.MetallicBeat, (seed ^ 0x9E3779B9u) | 1u);

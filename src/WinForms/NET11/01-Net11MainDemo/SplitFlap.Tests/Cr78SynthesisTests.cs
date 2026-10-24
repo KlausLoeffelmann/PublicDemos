@@ -14,11 +14,11 @@ public sealed class Cr78SynthesisTests
     [Fact]
     public void Catalog_ContainsFullPaletteAndSeparateMetallicLayer()
     {
-        Assert.Equal(13, Cr78Kit.Instruments.Count);
-        Assert.Equal(14, Enum.GetValues<Cr78Instrument>().Length);
+        Assert.Equal(17, Cr78Kit.Instruments.Count);
+        Assert.Equal(20, Enum.GetValues<Cr78Instrument>().Length);
         Assert.DoesNotContain(Cr78Instrument.MetallicBeat, Cr78Kit.Instruments);
-        Assert.Equal(13, Cr78Kit.Instruments.Distinct().Count());
-        Assert.Equal(14, Enum.GetValues<Cr78Instrument>().Select(Cr78Kit.GetDisplayName).Distinct().Count());
+        Assert.Equal(17, Cr78Kit.Instruments.Distinct().Count());
+        Assert.Equal(20, Enum.GetValues<Cr78Instrument>().Select(Cr78Kit.GetDisplayName).Distinct().Count());
         Assert.Contains("layer", Cr78Kit.GetDisplayName(Cr78Instrument.MetallicBeat));
         Assert.Throws<ArgumentOutOfRangeException>(() => Cr78Kit.GetDisplayName((Cr78Instrument)99));
         Assert.Throws<NotSupportedException>(() =>
@@ -79,7 +79,7 @@ public sealed class Cr78SynthesisTests
         }
 
         Assert.Throws<ArgumentOutOfRangeException>(() => Cr78Kit.CreateVoice(48_000, (Cr78Instrument)(-1)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Cr78Kit.CreateVoice(48_000, (Cr78Instrument)14));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Cr78Kit.CreateVoice(48_000, (Cr78Instrument)20));
         Assert.Throws<ArgumentOutOfRangeException>(() => Cr78Kit.CreateVoice(48_000, Cr78Instrument.Cymbal, 1, 0, 0));
         IVoice silent = Cr78Kit.CreateVoice(48_000, Cr78Instrument.BassDrum, velocity: 0);
         Assert.True(silent.IsFinished);
@@ -87,37 +87,42 @@ public sealed class Cr78SynthesisTests
     }
 
     /// <summary>
-    ///  Measures late modal zero crossings and the scanned V-to-V/10 decay convention.
+    ///  Measures the reference recordings' principal resonances and ninety-percent energy times.
     /// </summary>
     [Theory]
-    [InlineData(Cr78Instrument.BassDrum, 62.5, 100)]
-    [InlineData(Cr78Instrument.HighBongo, 600, 40)]
-    [InlineData(Cr78Instrument.LowBongo, 400, 40)]
-    [InlineData(Cr78Instrument.LowConga, 208, 150)]
-    [InlineData(Cr78Instrument.Claves, 2630, 18)]
-    [InlineData(Cr78Instrument.RimShot, 1480, 5)]
-    public void DampedModes_FollowNominalFrequencyAndD20(Cr78Instrument instrument, double frequency, double d20Milliseconds)
+    [InlineData(Cr78Instrument.BassDrum, 60, 0.053)]
+    [InlineData(Cr78Instrument.HighBongo, 590, 0.018)]
+    [InlineData(Cr78Instrument.LowBongo, 389, 0.009)]
+    [InlineData(Cr78Instrument.LowConga, 196, 0.070)]
+    [InlineData(Cr78Instrument.RimShot, 1408, 0.0013)]
+    public void DampedModes_FollowMeasuredResonanceAndEnergyDecay(
+        Cr78Instrument instrument, double frequency, double energy90Seconds)
     {
         const int sampleRate = 48_000;
         float[] samples = Render(Cr78Kit.CreateVoice(sampleRate, instrument, 1, 0, 123), sampleRate);
-        int d20 = (int)Math.Round(sampleRate * d20Milliseconds / 1_000);
-        List<double> crossings = [];
-        for (int i = Math.Max(1, (int)(d20 * 0.8)); i < d20 * 2.8; i++)
+        double strongest = 0;
+        double measuredFrequency = 0;
+        for (double candidate = frequency * 0.75; candidate < frequency * 1.25; candidate += frequency / 200)
         {
-            if (samples[i - 1] <= 0 && samples[i] > 0)
+            double magnitude = Magnitude(samples, sampleRate, candidate);
+            if (magnitude > strongest)
             {
-                crossings.Add(i - 1 + -samples[i - 1] / (double)(samples[i] - samples[i - 1]));
+                strongest = magnitude;
+                measuredFrequency = candidate;
             }
         }
 
-        Assert.True(crossings.Count >= 5);
-        double measured = (crossings.Count - 1) * sampleRate / (crossings[^1] - crossings[0]);
-        Assert.InRange(measured, frequency * 0.985, frequency * 1.015);
-        int window = Math.Max(16, (int)Math.Round(sampleRate * 2 / frequency));
-        double initial = Rms(samples.AsSpan(d20 / 2, window));
-        double decayed = Rms(samples.AsSpan(d20 / 2 + d20, window));
-        Assert.InRange(decayed / initial, 0.07, 0.14);
-        Assert.InRange(samples.Length, d20 * 5 - 1, d20 * 5 + 1);
+        Assert.InRange(measuredFrequency, frequency * 0.96, frequency * 1.04);
+        double totalEnergy = samples.Sum(sample => (double)sample * sample);
+        double accumulated = 0;
+        int energy90 = 0;
+        while (accumulated < totalEnergy * 0.9)
+        {
+            accumulated += (double)samples[energy90] * samples[energy90];
+            energy90++;
+        }
+
+        Assert.InRange(energy90 / (double)sampleRate, energy90Seconds * 0.7, energy90Seconds * 1.3);
     }
 
     /// <summary>
@@ -127,8 +132,8 @@ public sealed class Cr78SynthesisTests
     public void Snare_HasTheDocumentedBodyResonance()
     {
         float[] samples = Render(Cr78Kit.CreateVoice(48_000, Cr78Instrument.SnareDrum, 1, 0, 55), 48_000);
-        double body = Magnitude(samples, 48_000, 340);
-        Assert.True(body > Magnitude(samples, 48_000, 265) * 2);
+        double body = Magnitude(samples, 48_000, 308);
+        Assert.True(body > Magnitude(samples, 48_000, 220) * 1.5);
         Assert.True(body > Magnitude(samples, 48_000, 425) * 2);
     }
 
@@ -140,8 +145,8 @@ public sealed class Cr78SynthesisTests
     {
         float[] samples = Render(Cr78Kit.CreateVoice(48_000, Cr78Instrument.Cowbell, 1, 0, 55), 48_000);
         double between = Magnitude(samples, 48_000, 670);
-        Assert.True(Magnitude(samples, 48_000, 555) > between * 3);
-        Assert.True(Magnitude(samples, 48_000, 800) > between * 3);
+        Assert.True(Magnitude(samples, 48_000, 546) > between * 3);
+        Assert.True(Magnitude(samples, 48_000, 775) > between * 3);
     }
 
     /// <summary>
@@ -302,7 +307,7 @@ public sealed class Cr78SynthesisTests
         Cr78VoiceBank bank = new(48_000, 42);
         for (int i = 0; i < 512; i++)
         {
-            bank.Trigger((Cr78Instrument)(i % 14), 1, 8_000);
+            bank.Trigger((Cr78Instrument)(i % 20), 1, 8_000);
             bank.Next();
         }
 
@@ -311,7 +316,7 @@ public sealed class Cr78SynthesisTests
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int hit = 0; hit < 2_048; hit++)
         {
-            bank.Trigger((Cr78Instrument)(hit % 14), 1, 8_000);
+            bank.Trigger((Cr78Instrument)(hit % 20), 1, 8_000);
             for (int i = 0; i < 32; i++)
             {
                 float sample = bank.Next();
@@ -329,7 +334,7 @@ public sealed class Cr78SynthesisTests
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Equal(0, allocated);
         Assert.True(double.IsFinite(checksum));
-        Assert.InRange(peak, 0.001f, 0.9051f);
+        Assert.InRange(peak, 0.001f, Cr78VoiceBank.OutputPeakCeiling);
         Assert.False(bank.IsActive);
     }
 

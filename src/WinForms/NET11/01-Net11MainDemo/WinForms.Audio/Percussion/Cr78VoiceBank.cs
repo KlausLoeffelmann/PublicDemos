@@ -1,13 +1,26 @@
-namespace WinForms.Audio.Percussion;
+﻿namespace WinForms.Audio.Percussion;
 
 /// <summary>
 ///  Owns one preallocated retriggerable channel per percussion sound, plus the metallic layer.
 /// </summary>
 internal sealed class Cr78VoiceBank
 {
-    private readonly Cr78Generator[] _generators = new Cr78Generator[14];
-    private readonly GainRamp[] _gains = new GainRamp[14];
+    /// <summary>
+    ///  Fixed player-output calibration: fourfold amplitude is approximately +16.04 dB.
+    /// </summary>
+    internal const float PercussionOutputGain = 6f;
+
+    /// <summary>
+    ///  Leaves a small PCM conversion margin when simultaneous strikes require peak limiting.
+    /// </summary>
+    internal const float OutputPeakCeiling = 0.98f;
+
+    private readonly Cr78Generator[] _generators = new Cr78Generator[Enum.GetValues<Cr78Instrument>().Length];
+    private readonly GainRamp[] _gains = new GainRamp[Enum.GetValues<Cr78Instrument>().Length];
+    private PercussionSampleSet _samples = PercussionSampleSet.Stock;
     private readonly int _rampSamples;
+    private readonly double _limiterRelease;
+    private double _limiterGain = 1;
     private GainRamp _master = new(1f);
     private float _metallicLevel = 1f;
     private bool _metallicEnabled = true;
@@ -21,11 +34,29 @@ internal sealed class Cr78VoiceBank
         Cr78Kit.ValidateSampleRate(sampleRate);
         ArgumentOutOfRangeException.ThrowIfZero(noiseSeed);
         _rampSamples = Math.Max(1, sampleRate / 200);
+        _limiterRelease = Math.Exp(-1d / (sampleRate * 0.05));
         for (int i = 0; i < _generators.Length; i++)
         {
             uint seed = (noiseSeed ^ (0x9E3779B9u * (uint)(i + 1))) | 1u;
             _generators[i] = new Cr78Generator(sampleRate, (Cr78Instrument)i, seed);
             _gains[i] = new GainRamp(1f);
+        }
+    }
+
+    /// <summary>
+    ///  Changes the prepared mapping at a block boundary; active strikes retain their owned source.
+    /// </summary>
+    internal void SetSamples(PercussionSampleSet samples)
+    {
+        if (ReferenceEquals(_samples, samples))
+        {
+            return;
+        }
+
+        _samples = samples;
+        foreach (Cr78Instrument instrument in Cr78Kit.Instruments)
+        {
+            _generators[(int)instrument].SetSample(samples[instrument]);
         }
     }
 
@@ -95,6 +126,9 @@ internal sealed class Cr78VoiceBank
                 initialize || !_generators[channel].IsActive ? 0 : _rampSamples);
         }
 
+        SetLegacyGain(Cr78Instrument.Maracas, instrumentVolumes[Cr78Kit.GetInstrumentIndex(Cr78Instrument.Maracas)]);
+        SetLegacyGain(Cr78Instrument.Claves, instrumentVolumes[Cr78Kit.GetInstrumentIndex(Cr78Instrument.Claves)]);
+
         // There is no waveform to de-click before the first strike. In particular a mute
         // set while stopped must not leak the first 5 ms of a subsequently queued audition.
         _master.SetTarget(masterVolume, initialize || !IsActive ? 0 : _rampSamples);
@@ -103,6 +137,13 @@ internal sealed class Cr78VoiceBank
         _gains[(int)Cr78Instrument.MetallicBeat].SetTarget(
             _metallicAudition ? 1f : metallicEnabled ? metallicLevel : 0f,
             initialize || !_generators[(int)Cr78Instrument.MetallicBeat].IsActive ? 0 : _rampSamples);
+
+        void SetLegacyGain(Cr78Instrument instrument, float volume)
+        {
+            int channel = (int)instrument;
+            _gains[channel].SetTarget(volume,
+                initialize || !_generators[channel].IsActive ? 0 : _rampSamples);
+        }
     }
 
     /// <summary>
@@ -117,7 +158,7 @@ internal sealed class Cr78VoiceBank
     }
 
     /// <summary>
-    ///  Advances even muted channels, then sums their ramped outputs through the player-local master.
+    ///  Advances muted channels, applies master/calibration gain, and limits overloaded mix peaks.
     /// </summary>
     internal float Next()
     {
@@ -134,7 +175,19 @@ internal sealed class Cr78VoiceBank
                 _metallicEnabled ? _metallicLevel : 0f, _rampSamples);
         }
 
-        return sample * _master.Next();
+        sample *= _master.Next() * PercussionOutputGain;
+        float magnitude = Math.Abs(sample);
+        double requiredGain = magnitude > OutputPeakCeiling ? OutputPeakCeiling / (double)magnitude : 1;
+        _limiterGain = requiredGain < _limiterGain
+            ? requiredGain
+            : Math.Min(requiredGain, 1f - (1f - _limiterGain) * _limiterRelease);
+        if (_limiterGain > 0.99999f && requiredGain == 1f)
+        {
+            _limiterGain = 1f;
+        }
+
+        // The clamp only guards rounding; overload is handled by gain reduction, not clipping.
+        return Math.Clamp((float)(sample * _limiterGain), -OutputPeakCeiling, OutputPeakCeiling);
     }
 
     private struct GainRamp(float value)

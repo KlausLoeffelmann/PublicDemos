@@ -1,7 +1,7 @@
 namespace WinForms.Audio.Percussion;
 
 /// <summary>
-///  Centralizes nominal tuning, D20 decay times, filter choices, and conservative output gains.
+///  Retains legacy DSP parameters and stock output bounds; measured stock timbres use MeasuredModels.json.
 /// </summary>
 internal readonly record struct Cr78Preset
 {
@@ -51,7 +51,7 @@ internal readonly record struct Cr78Preset
     internal double AttackMilliseconds { get; }
 
     /// <summary>
-    ///  Gets a peak bound; the fourteen bounds sum to 0.905, leaving summing headroom.
+    ///  Gets a peak bound before the stock-palette headroom scale in Cr78Generator.
     /// </summary>
     internal float Level { get; }
 
@@ -66,15 +66,19 @@ internal readonly record struct Cr78Preset
     internal double LowPassHz { get; }
 
     /// <summary>
-    ///  Selects factory tuning and D20 targets, with explicitly approximate secondary/filter values.
+    ///  Selects legacy tuning/filter targets and each sound's conservative output bound.
     /// </summary>
     internal static Cr78Preset For(Cr78Instrument instrument)
         => instrument switch
         {
             Cr78Instrument.BassDrum => new(62.5, 135, 0, 100, 0.6, 0.140f, 35, 1_100),
+            Cr78Instrument.BassDrumAccent => new(60, 150, 0, 90, 0.1, 0.140f, 35, 1_100),
             Cr78Instrument.SnareDrum => new(340, 185, 0, 60, 0.5, 0.100f, 1_000, 9_500),
+            Cr78Instrument.SnareDrumAccent => new(308, 195, 0, 50, 0.1, 0.100f, 1_000, 9_500),
             Cr78Instrument.RimShot => new(1_480, 2_430, 0, 5, 0.1, 0.120f, 600, 8_000),
             Cr78Instrument.HiHat => new(0, 0, 0, 60, 0.15, 0.050f, 6_500, 10_500),
+            Cr78Instrument.HiHatAccent => new(0, 0, 0, 30, 0.1, 0.050f, 6_500, 10_500),
+            Cr78Instrument.MetallicHiHat => new(5_884, 5_405, 3_947, 50, 0.1, 0.050f, 3_000, 11_000),
             Cr78Instrument.Cymbal => new(0, 0, 0, 350, 0.4, 0.050f, 4_000, 10_000),
             Cr78Instrument.Maracas => new(0, 0, 0, 20, 0.2, 0.040f, 2_800, 9_500),
             Cr78Instrument.Claves => new(2_630, 5_260, 0, 18, 0.15, 0.040f, 800, 9_000),
@@ -83,7 +87,9 @@ internal readonly record struct Cr78Preset
             Cr78Instrument.LowBongo => new(400, 648, 0, 40, 0.6, 0.040f, 400, 3_500),
             Cr78Instrument.LowConga => new(208, 338, 0, 150, 0.7, 0.080f, 200, 3_000),
             Cr78Instrument.Tambourine => new(2_800, 4_170, 6_300, 220, 0.25, 0.055f, 3_500, 10_000),
+            Cr78Instrument.Tambourine2 => new(0, 0, 0, 220, 0.25, 0.055f, 3_500, 10_000),
             Cr78Instrument.Guiro => new(2_110, 3_470, 0, 35, 0.6, 0.055f, 1_200, 8_000),
+            Cr78Instrument.Guiro2 => new(0, 0, 0, 35, 0.6, 0.055f, 1_200, 8_000),
             Cr78Instrument.MetallicBeat => new(6_170, 5_620, 4_080, 50, 0.15, 0.035f, 3_000, 11_000),
             _ => throw new ArgumentOutOfRangeException(nameof(instrument))
         };

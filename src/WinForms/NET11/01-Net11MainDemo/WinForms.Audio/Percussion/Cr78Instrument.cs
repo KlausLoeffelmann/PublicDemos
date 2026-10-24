@@ -1,7 +1,7 @@
 namespace WinForms.Audio.Percussion;
 
 /// <summary>
-///  The thirteen percussion sounds and the separately adjustable cymbal/hi-hat metallic layer.
+///  Stable sound identifiers for the fixed stock palette, legacy voices and auxiliary metallic layer.
 /// </summary>
 public enum Cr78Instrument
 {
@@ -46,17 +46,17 @@ public enum Cr78Instrument
     Cowbell,
 
     /// <summary>
-    ///  The nominally 600 Hz bongo.
+    ///  The measured high bongo, with its principal resonance near 590 Hz.
     /// </summary>
     HighBongo,
 
     /// <summary>
-    ///  The nominally 400 Hz bongo.
+    ///  The measured low bongo, with its principal resonance near 389 Hz.
     /// </summary>
     LowBongo,
 
     /// <summary>
-    ///  The nominally 208 Hz conga.
+    ///  The measured low conga, with its principal resonance near 196 Hz.
     /// </summary>
     LowConga,
 
@@ -71,7 +71,25 @@ public enum Cr78Instrument
     Guiro,
 
     /// <summary>
-    ///  The cymbal/hi-hat metallic layer; available for audition, not a fourteenth score track.
+    ///  The auxiliary cymbal/hi-hat metallic layer; available for audition, not a score track.
     /// </summary>
-    MetallicBeat
+    MetallicBeat,
+
+    /// <summary> An independently modeled accented kick drum. </summary>
+    BassDrumAccent,
+
+    /// <summary> An independently modeled accented snare drum. </summary>
+    SnareDrumAccent,
+
+    /// <summary> An independently modeled accented hi-hat. </summary>
+    HiHatAccent,
+
+    /// <summary> A metallic hi-hat strike, independent of the auxiliary metallic layer. </summary>
+    MetallicHiHat,
+
+    /// <summary> The second tambourine articulation. </summary>
+    Tambourine2,
+
+    /// <summary> A longer guiro articulation with a faster final scrape section. </summary>
+    Guiro2
 }

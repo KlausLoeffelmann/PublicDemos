@@ -1,8 +1,12 @@
-# Analog Rhythm Lab
+﻿# Analog Rhythm Lab
 
 A vanilla .NET 11 WinForms demo of procedural CR-78-style percussion, an editable
 original score, and a reusable frequency-spectrum control from `WinForms.Audio`.
-It contains no recorded drum samples, commercial song transcription, or WARP dependency.
+Stock playback requires no recorded drum samples or WARP dependency. Optional
+user-imported WAVs are kept in portable sound presets, separately from scores.
+
+The [development journal](DEVELOPMENT-JOURNAL.md) preserves the prompts, design
+decisions, and sound/UI iterations leading to this version.
 
 ## Run
 
@@ -18,12 +22,29 @@ the range selector navigates longer scores without changing their length or
 seeking playback. Toggle steps with the mouse or Space. Each row retains its
 instrument audition button.
 
+The editor strip and Edit menu change the score. **Add bar** inserts an empty bar
+after the target bar on every track. **Delete bar** removes that bar from every
+track; the last bar cannot be deleted. **Copy bar** inserts a duplicate, but only
+tracks checked in **Use** are copied. Fill and clear honor **Current bar** or
+**All bars** and skip unchecked tracks. Fill writes 16th, 8th, quarter, half, or
+whole notes, clears the other steps in that scope, and keeps the velocity and gate
+of hits that are already on the grid. The target bar is the selected step's bar,
+or the first visible bar. Click the Use header, **All tracks**, or **No tracks**
+to change every row. Eight named track-selection presets are application
+preferences, not part of the loop file or Undo history.
+
 **Play** starts or resumes, **Pause** holds the musical position, and **Stop**
 releases sounds and resets to the beginning. The audio device and spectrum stay
 running while paused, so audition still works. Score/tempo edits take effect at a
 bar boundary. Volume controls target Master or an individual percussion channel
 and also affect decaying tails. The shared metallic layer has its own enable
 button and remembered amount.
+
+The fixed playback baseline is **+12.04 dB** (`PercussionOutputGain = 4f` in
+`WinForms.Audio\Percussion\Cr78VoiceBank.cs`), for both synthesized and imported
+sounds. Dense mixes use peak-gain reduction with a 0.98 full-scale ceiling and
+50 ms recovery to avoid hard clipping; below limiting, existing channel balance
+and the master fader are unchanged apart from the fourfold baseline gain.
 
 ## Loop documents and editor history
 
@@ -38,10 +59,32 @@ history entry per slider gesture. Saving keeps history; undoing back to the save
 state clears the title's unsaved marker. Transport, viewport, and app options are
 not document edits. File -> Recent lists the last five successful opens/saves.
 `Examples\OriginalBallad.drumloop.json` contains the original demonstration groove.
+Version 2 loop files retain all seventeen fixed tracks. Version 1 files remain
+readable: maracas/claves migrate to tambourine 2/guiro 2, and the new accent and
+metallic-hi-hat tracks begin empty with default levels.
+
+## Recorded-sound presets
+
+Select a percussion row and use **Import WAV** to replace only that track's
+sound. **Synthesis** (Tools -> Reset current track to synthesis) restores its
+algorithmic model. Importing never adds or
+removes tracks, changes score events, or changes the eight track-selection presets.
+PCM 8/16/24/32-bit and 32-bit floating-point WAVs are supported, downmixed and
+resampled before playback. Individual imports are limited to 30 seconds/64 MiB;
+malformed or unsupported files report an error without replacing the current kit.
+
+**Load sounds / Save sounds** (also in Tools as Load/Save sound preset) use `.drumkit.json` manifests with
+adjacent WAV asset folders. Save copies the original WAV bytes, validates the
+copies, then atomically publishes relative paths. Move the manifest **and its
+asset folder together** to transfer a preset. Stock-only tracks need no files.
+Saving over a preset creates a new asset generation; older asset folders are
+retained rather than risking deletion of files used by another copy of a kit.
+Sound mappings are independent of musical Undo/Redo and loop files.
 
 ## Options and symbol icons
 
-Tools -> Options provides Classic/Dark mode/System, a default loop-file folder,
+Tools -> Options provides Classic/Dark mode/System, default loop, recordings and
+sound-preset folders,
 Small (32x32), Medium (48x48), or Large (64x64) toolbar icons, and four relative
 font sizes. Small keeps the current WinForms standard; Normal, Large, and XXL add
 2, 4, or 6 points without changing the selected font family or style. Icon and
@@ -54,12 +97,18 @@ bitmaps at their target size, with an explicit Segoe MDL2 Assets fallback.
 No WARP symbol library, downloaded font, or enlarged raster icon is involved.
 The toolbar owns/replaces its images; normal menu icon sizes remain independent.
 
-Preferences and recent files live in
+The WAV picker remembers its last successful import folder across launches.
+The double-buffered track grid uses restrained family/beat accents in Classic
+and Dark modes and respects Windows high-contrast colors.
+
+Preferences, recent files, the eight track-selection presets, window placement,
+splitter position and column settings live in
 `%LocalAppData%\DrumMachine.Demo\settings.json`, not inside loop documents.
 
-The stock palette comprises 11 primary voices, tambourine and guiro, and a
-metallic layer associated with cymbal/hi-hat. This models the sound character,
-not the original machine's programmer or four-track memory restrictions.
+The stock palette matches the seventeen supplied sound names, in musical order:
+kick/accented kick, snare/accented snare, rim shot, hi-hat/accented hi-hat/metallic
+hi-hat, cymbal, high/low bongo, low conga, cowbell, tambourine 1/2 and guiro 1/2.
+The independent cymbal/hi-hat metallic layer remains available as well.
 The score is original demo material, not a manufacturer's preset or a named song.
 The kit plays dry by default.
 
@@ -109,16 +158,16 @@ MSBuild `OutDir` rather than terminating that instance.
 
 ## Model fidelity
 
-The procedural models use original Roland specifications and service-note
-frequency/decay targets where available, with model-specific approximations
-documented alongside `WinForms.Audio\Percussion`. They are not a claim of
-transistor-level or bit-exact hardware emulation. The original adjustment table's
-decay definition matters; it is not automatically an exponential time constant.
+The new stock algorithms fit the temporary WAVs' damped resonances, pitch drift,
+noise coloration, amplitude envelopes and scrape rates. Only compact parameters
+are embedded; removing `Sounds` does not affect playback. Accent variants are
+independent fits rather than simple gain changes.
 
-Reference material:
+Both kicks retain the fitted attack, then use a single fixed 60 Hz body with
+a short exponential decay. The kick/accent finish at 160/140 ms, without the
+previous detuned, wavering sustain or a reverb-like tail.
 
-- [Roland CR-78 specifications](https://support.roland.com/hc/en-us/articles/201934399-CR-78-Technical-Specifications)
-- [Original service notes](https://archive.org/details/synthmanual-roland-cr-78-service-notes)
-
-Any later reference recordings must be lawfully usable and remain outside the
-repository. They may inform measured parameters, not become bundled sound assets.
+The offline tools in `DrumMachine.Analysis` regenerate models and compare actual
+.NET renders with the source WAVs. Spectral/temporal regression measurements are
+not a claim of perceptual, transistor-level or bit-exact equivalence.
+Implementation details are documented in `WinForms.Audio\Percussion\README.md`.

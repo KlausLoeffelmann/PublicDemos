@@ -15,7 +15,7 @@ internal sealed class LoopDocument : IEquatable<LoopDocument>
     public const int MaximumHits = 65_536;
 
     /// <summary>
-    ///  Creates a complete document; an omitted mixer defaults all thirteen levels to one hundred percent.
+    ///  Creates a complete document; an omitted mixer defaults all fixed-track levels to one hundred percent.
     /// </summary>
     public LoopDocument(
         PercussionScore score,
@@ -52,13 +52,13 @@ internal sealed class LoopDocument : IEquatable<LoopDocument>
             if (volumes.Count != Cr78Kit.Instruments.Count)
             {
                 throw new ArgumentException(
-                    "Percussion levels must include each of the thirteen score instruments.", nameof(percussionVolumes));
+                    "Percussion levels must include each fixed score instrument.", nameof(percussionVolumes));
             }
         }
 
         // PercussionScore already owns and validates its events. Sharing it preserves empty bars,
         // exact velocities, and cross-bar gates without copying a score on every fader preview.
-        Score = score;
+        Score = NormalizeScore(score);
         TempoBpm = tempoBpm;
         MasterVolumePercent = masterVolumePercent;
         PercussionVolumes = new ReadOnlyDictionary<Cr78Instrument, int>(volumes);
@@ -83,7 +83,7 @@ internal sealed class LoopDocument : IEquatable<LoopDocument>
     public int MasterVolumePercent { get; }
 
     /// <summary>
-    ///  Gets a defensive, read-only snapshot of all thirteen percussion levels.
+    ///  Gets a defensive, read-only snapshot of all fixed-track percussion levels.
     /// </summary>
     public IReadOnlyDictionary<Cr78Instrument, int> PercussionVolumes { get; }
 
@@ -115,6 +115,7 @@ internal sealed class LoopDocument : IEquatable<LoopDocument>
     {
         ArgumentNullException.ThrowIfNull(score);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(score.Hits.Count, MaximumHits);
+        score = NormalizeScore(score);
         return ScoresEqual(Score, score)
             ? this
             : new(score, TempoBpm, MasterVolumePercent, PercussionVolumes, Loop, MetallicEnabled, MetallicVolumePercent);
@@ -269,6 +270,13 @@ internal sealed class LoopDocument : IEquatable<LoopDocument>
 
         return true;
     }
+
+    private static PercussionScore NormalizeScore(PercussionScore score)
+        => score.Hits.Any(hit => Cr78Kit.GetCurrentInstrument(hit.Instrument) != hit.Instrument)
+            ? new PercussionScore(score.BarCount, score.Hits.Select(hit =>
+                new PercussionHit(hit.Bar, hit.Step, Cr78Kit.GetCurrentInstrument(hit.Instrument),
+                    hit.Velocity, hit.GateSteps)))
+            : score;
 
     private static void ValidateTempo(int tempoBpm)
     {

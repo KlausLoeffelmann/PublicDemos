@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using DrumMachine.Demo.Controls;
 using DrumMachine.Demo.Documents;
 using WinForms.Audio.Analysis;
@@ -65,6 +65,8 @@ internal partial class MainForm : Form
         }
 
         _volumeSelector.SelectedIndex = 0;
+        PopulateEditorChoices();
+        _presetName.KeyDown += PresetName_KeyDown;
         _updatingControls = false;
         RefreshDocumentControls(rebuildGrid: true);
         RefreshRecentFiles();
@@ -89,20 +91,40 @@ internal partial class MainForm : Form
 
         try
         {
-            AudioEngine engine = await Task.Run(() => AudioEngine.Create());
-            if (cancellation.IsCancellationRequested)
+            LoopDocument opening = _session.Current;
+            (AudioEngine engine, DrumMachinePlayer player) = await Task.Run(() =>
             {
+                cancellation.ThrowIfCancellationRequested();
+                AudioEngine createdEngine = AudioEngine.Create();
+                try
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    // Stock waveforms are generated here. Keep that work off the UI thread.
+                    DrumMachinePlayer createdPlayer = new(
+                        createdEngine, opening.Score, new Tempo(opening.TempoBpm));
+                    return (createdEngine, createdPlayer);
+                }
+                catch
+                {
+                    createdEngine.Dispose();
+                    throw;
+                }
+            }, cancellation);
+            if (cancellation.IsCancellationRequested || _closing || IsDisposed)
+            {
+                player.Dispose();
                 engine.Dispose();
                 return;
             }
 
             _engine = engine;
+            _player = player;
             _engine.Reverb = ReverbSettings.Off;
             // The player's master fader is ramped along with its percussion channels.
             // Leave the engine gain neutral so it is not applied a second time.
             _engine.MasterVolume = 1f;
-            _player = new DrumMachinePlayer(engine, _session.Current.Score, new Tempo(_session.Current.TempoBpm));
             ApplyToPlayer(reset: true);
+            await ApplySoundMappingsAsync();
             if (_player is null)
             {
                 return;
@@ -160,7 +182,7 @@ internal partial class MainForm : Form
             _confirmingClose = true;
             await RunDocumentCommandAsync(async () =>
             {
-                if (await ConfirmDiscardAsync())
+                if (await ConfirmDiscardAsync() && await ConfirmSoundPresetAsync())
                 {
                     await PersistPreferencesAsync();
                     _closeApproved = true;
@@ -201,6 +223,9 @@ internal partial class MainForm : Form
         _recentEmpty.Dispose();
         _openDialog.Dispose();
         _saveDialog.Dispose();
+        _wavImportDialog.Dispose();
+        _soundPresetOpenDialog.Dispose();
+        _soundPresetSaveDialog.Dispose();
         _lifetime.Dispose();
     }
 
@@ -218,6 +243,7 @@ internal partial class MainForm : Form
         if (_stepGrid is not null && !_updatingControls)
         {
             HighlightStep(-1, force: true);
+            RefreshTrackStyles();
         }
         RebuildIcons();
     }
@@ -325,9 +351,13 @@ internal partial class MainForm : Form
 
         LoopDocument document = _session.Current;
         float[] levels = Cr78Kit.Instruments.Select(instrument => document.PercussionVolumes[instrument] / 100f).ToArray();
-        WithPlayer(player => player.ApplyConfiguration(
-            document.Score, new Tempo(document.TempoBpm), document.MasterVolumePercent / 100f,
-            levels, document.Loop, document.MetallicEnabled, document.MetallicVolumePercent / 100f, reset));
+        WithPlayer(player =>
+        {
+            player.ApplyConfiguration(
+                document.Score, new Tempo(document.TempoBpm), document.MasterVolumePercent / 100f,
+                levels, document.Loop, document.MetallicEnabled, document.MetallicVolumePercent / 100f, reset);
+            ReapplyPreparedSamples();
+        });
     }
 
     private void WithPlayer(Action<DrumMachinePlayer> action)

@@ -22,12 +22,15 @@ internal static class LoopDocumentStore
     /// <summary>
     ///  The supported version of this explicit score and mixer schema.
     /// </summary>
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     /// <summary>
     ///  The stable procedural kit identity; documents never name executable types or sample paths.
     /// </summary>
-    public const string KitIdentifier = "cr78-procedural-v1";
+    public const string KitIdentifier = "cr78-measured-v2";
+
+    private static readonly Cr78Instrument[] s_legacyInstruments =
+        Enum.GetValues<Cr78Instrument>().Where(instrument => (int)instrument < 13).ToArray();
 
     /// <summary>
     ///  Bounds JSON allocation and parsing, in addition to the score's bar and document event limits.
@@ -86,15 +89,17 @@ internal static class LoopDocumentStore
             throw new InvalidDataException("This file is not a drum-loop document.");
         }
 
-        StrictJson.Integer(root.GetProperty("version"), "version", CurrentVersion, CurrentVersion);
-        if (StrictJson.String(root.GetProperty("kit"), "kit") != KitIdentifier)
+        int version = StrictJson.Integer(root.GetProperty("version"), "version", 1, CurrentVersion);
+        bool legacy = version == 1;
+        string kit = StrictJson.String(root.GetProperty("kit"), "kit");
+        if (kit != (legacy ? "cr78-procedural-v1" : KitIdentifier))
         {
             throw new InvalidDataException("This loop uses an unsupported percussion kit.");
         }
 
         int tempo = StrictJson.Integer(root.GetProperty("tempoBpm"), "tempoBpm", 40, 240);
         bool loop = StrictJson.Boolean(root.GetProperty("loop"), "loop");
-        PercussionScore score = ReadScore(root.GetProperty("score"), cancellationToken);
+        PercussionScore score = ReadScore(root.GetProperty("score"), legacy, cancellationToken);
 
         JsonElement mixer = root.GetProperty("mixer");
         StrictJson.RequireProperties(mixer,
@@ -103,18 +108,18 @@ internal static class LoopDocumentStore
         bool metallicEnabled = StrictJson.Boolean(mixer.GetProperty("metallicEnabled"), "metallicEnabled");
         int metallicVolume = StrictJson.Integer(
             mixer.GetProperty("metallicVolumePercent"), "metallicVolumePercent", 0, 100);
-        Dictionary<Cr78Instrument, int> levels = ReadLevels(mixer.GetProperty("percussionVolumes"));
+        Dictionary<Cr78Instrument, int> levels = ReadLevels(mixer.GetProperty("percussionVolumes"), legacy);
         return new LoopDocument(score, tempo, masterVolume, levels, loop, metallicEnabled, metallicVolume);
     }
 
-    private static PercussionScore ReadScore(JsonElement score, CancellationToken cancellationToken)
+    private static PercussionScore ReadScore(JsonElement score, bool legacy, CancellationToken cancellationToken)
     {
         StrictJson.RequireProperties(score, "bars", "stepsPerBar", "tracks");
         int bars = StrictJson.Integer(score.GetProperty("bars"), "bars", 1, PercussionScore.MaximumBars);
         StrictJson.Integer(score.GetProperty("stepsPerBar"), "stepsPerBar",
             PercussionScore.StepsPerBar, PercussionScore.StepsPerBar);
         JsonElement tracks = score.GetProperty("tracks");
-        RequireAllInstruments(tracks, "tracks");
+        RequireAllInstruments(tracks, "tracks", legacy);
 
         HashSet<Cr78Instrument> instruments = [];
         List<PercussionHit> hits = [];
@@ -122,7 +127,7 @@ internal static class LoopDocumentStore
         {
             cancellationToken.ThrowIfCancellationRequested();
             StrictJson.RequireProperties(track, "instrument", "hits");
-            Cr78Instrument instrument = ReadInstrument(track.GetProperty("instrument"));
+            Cr78Instrument instrument = ReadInstrument(track.GetProperty("instrument"), legacy);
             if (!instruments.Add(instrument))
             {
                 throw new InvalidDataException($"Duplicate score track '{InstrumentIdentifier(instrument)}'.");
@@ -158,14 +163,14 @@ internal static class LoopDocumentStore
         return new PercussionScore(bars, hits);
     }
 
-    private static Dictionary<Cr78Instrument, int> ReadLevels(JsonElement entries)
+    private static Dictionary<Cr78Instrument, int> ReadLevels(JsonElement entries, bool legacy)
     {
-        RequireAllInstruments(entries, "percussionVolumes");
+        RequireAllInstruments(entries, "percussionVolumes", legacy);
         Dictionary<Cr78Instrument, int> levels = [];
         foreach (JsonElement entry in entries.EnumerateArray())
         {
             StrictJson.RequireProperties(entry, "instrument", "volumePercent");
-            Cr78Instrument instrument = ReadInstrument(entry.GetProperty("instrument"));
+            Cr78Instrument instrument = ReadInstrument(entry.GetProperty("instrument"), legacy);
             int percent = StrictJson.Integer(entry.GetProperty("volumePercent"), "volumePercent", 0, 100);
             if (!levels.TryAdd(instrument, percent))
             {
@@ -173,15 +178,24 @@ internal static class LoopDocumentStore
             }
         }
 
+        if (legacy)
+        {
+            foreach (Cr78Instrument instrument in Cr78Kit.Instruments)
+            {
+                levels.TryAdd(instrument, 100);
+            }
+        }
+
         return levels;
     }
 
-    private static void RequireAllInstruments(JsonElement entries, string name)
+    private static void RequireAllInstruments(JsonElement entries, string name, bool legacy)
     {
         StrictJson.RequireArray(entries, name);
-        if (entries.GetArrayLength() != Cr78Kit.Instruments.Count)
+        int expected = legacy ? s_legacyInstruments.Length : Cr78Kit.Instruments.Count;
+        if (entries.GetArrayLength() != expected)
         {
-            throw new InvalidDataException($"'{name}' must contain all thirteen primary percussion instruments exactly once.");
+            throw new InvalidDataException($"'{name}' must contain all {expected} fixed percussion tracks exactly once.");
         }
     }
 
@@ -249,9 +263,13 @@ internal static class LoopDocumentStore
         => instrument switch
         {
             Cr78Instrument.BassDrum => "bassDrum",
+            Cr78Instrument.BassDrumAccent => "bassDrumAccent",
             Cr78Instrument.SnareDrum => "snareDrum",
+            Cr78Instrument.SnareDrumAccent => "snareDrumAccent",
             Cr78Instrument.RimShot => "rimShot",
             Cr78Instrument.HiHat => "hiHat",
+            Cr78Instrument.HiHatAccent => "hiHatAccent",
+            Cr78Instrument.MetallicHiHat => "metallicHiHat",
             Cr78Instrument.Cymbal => "cymbal",
             Cr78Instrument.Maracas => "maracas",
             Cr78Instrument.Claves => "claves",
@@ -260,17 +278,34 @@ internal static class LoopDocumentStore
             Cr78Instrument.LowBongo => "lowBongo",
             Cr78Instrument.LowConga => "lowConga",
             Cr78Instrument.Tambourine => "tambourine",
+            Cr78Instrument.Tambourine2 => "tambourine2",
             Cr78Instrument.Guiro => "guiro",
+            Cr78Instrument.Guiro2 => "guiro2",
             _ => throw new ArgumentOutOfRangeException(nameof(instrument))
         };
 
-    private static Cr78Instrument ReadInstrument(JsonElement value)
+    private static Cr78Instrument ReadInstrument(JsonElement value, bool legacy)
+    {
+        Cr78Instrument instrument = ReadInstrumentToken(value);
+        if (!(legacy ? s_legacyInstruments.Contains(instrument) : Cr78Kit.Instruments.Contains(instrument)))
+        {
+            throw new InvalidDataException("The loop contains an instrument outside its versioned fixed kit.");
+        }
+
+        return Cr78Kit.GetCurrentInstrument(instrument);
+    }
+
+    private static Cr78Instrument ReadInstrumentToken(JsonElement value)
         => StrictJson.String(value, "instrument") switch
         {
             "bassDrum" => Cr78Instrument.BassDrum,
+            "bassDrumAccent" => Cr78Instrument.BassDrumAccent,
             "snareDrum" => Cr78Instrument.SnareDrum,
+            "snareDrumAccent" => Cr78Instrument.SnareDrumAccent,
             "rimShot" => Cr78Instrument.RimShot,
             "hiHat" => Cr78Instrument.HiHat,
+            "hiHatAccent" => Cr78Instrument.HiHatAccent,
+            "metallicHiHat" => Cr78Instrument.MetallicHiHat,
             "cymbal" => Cr78Instrument.Cymbal,
             "maracas" => Cr78Instrument.Maracas,
             "claves" => Cr78Instrument.Claves,
@@ -279,7 +314,9 @@ internal static class LoopDocumentStore
             "lowBongo" => Cr78Instrument.LowBongo,
             "lowConga" => Cr78Instrument.LowConga,
             "tambourine" => Cr78Instrument.Tambourine,
+            "tambourine2" => Cr78Instrument.Tambourine2,
             "guiro" => Cr78Instrument.Guiro,
+            "guiro2" => Cr78Instrument.Guiro2,
             _ => throw new InvalidDataException("The loop contains an unknown or non-score percussion instrument.")
         };
 }

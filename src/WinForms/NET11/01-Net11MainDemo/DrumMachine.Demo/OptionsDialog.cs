@@ -31,6 +31,9 @@ internal partial class OptionsDialog : Form
             _ => 0
         };
         _folder.Text = settings.DefaultFolder;
+        _recordingsFolder.Text = settings.RecordingsFolder;
+        _presetFolder.Text = settings.SoundPresetFolder;
+        _importFolder.Text = settings.LastWavImportFolder;
         Result = settings;
     }
 
@@ -42,11 +45,24 @@ internal partial class OptionsDialog : Form
     private void OptionsDialog_Disposed(object? sender, EventArgs e) => _folderPicker.Dispose();
 
     private void Browse_Click(object? sender, EventArgs e)
+        => BrowseInto(_folder, "Default folder for percussion loop files");
+
+    private void BrowseRecordings_Click(object? sender, EventArgs e)
+        => BrowseInto(_recordingsFolder, "Default folder for recordings");
+
+    private void BrowsePresetFolder_Click(object? sender, EventArgs e)
+        => BrowseInto(_presetFolder, "Default folder for portable sound presets");
+
+    private void BrowseImportFolder_Click(object? sender, EventArgs e)
+        => BrowseInto(_importFolder, "Folder for the next WAV import");
+
+    private void BrowseInto(TextBox target, string description)
     {
-        _folderPicker.SelectedPath = _folder.Text;
+        _folderPicker.Description = description;
+        _folderPicker.SelectedPath = target.Text;
         if (_folderPicker.ShowDialog(this) == DialogResult.OK)
         {
-            _folder.Text = _folderPicker.SelectedPath;
+            target.Text = _folderPicker.SelectedPath;
         }
     }
 
@@ -54,17 +70,11 @@ internal partial class OptionsDialog : Form
     {
         try
         {
-            string enteredPath = _folder.Text.Trim();
-            if (!Path.IsPathFullyQualified(enteredPath))
+            if (!TryExistingFolder(_folder, "loop files", out string loopFolder)
+                || !TryExistingFolder(_recordingsFolder, "recordings", out string recordingsFolder)
+                || !TryExistingFolder(_presetFolder, "sound presets", out string presetFolder)
+                || !TryExistingFolder(_importFolder, "WAV imports", out string importFolder))
             {
-                _error.Text = "Enter a full folder path or choose Browse.";
-                return;
-            }
-
-            string path = Path.GetFullPath(enteredPath);
-            if (!Directory.Exists(path))
-            {
-                _error.Text = "Choose an existing folder for loop files.";
                 return;
             }
 
@@ -79,7 +89,10 @@ internal partial class OptionsDialog : Form
                     3 => AppFontSize.Xxl,
                     _ => AppFontSize.Small
                 },
-                DefaultFolder = path
+                DefaultFolder = loopFolder,
+                RecordingsFolder = recordingsFolder,
+                SoundPresetFolder = presetFolder,
+                LastWavImportFolder = importFolder
             };
             DialogResult = DialogResult.OK;
         }
@@ -87,5 +100,26 @@ internal partial class OptionsDialog : Form
         {
             _error.Text = $"The folder is not usable: {ex.Message}";
         }
+    }
+
+    private bool TryExistingFolder(TextBox input, string purpose, out string path)
+    {
+        string enteredPath = input.Text.Trim();
+        if (!Path.IsPathFullyQualified(enteredPath))
+        {
+            _error.Text = $"Enter a full folder path for {purpose}, or choose Browse.";
+            path = "";
+            return false;
+        }
+
+        path = Path.GetFullPath(enteredPath);
+        if (Directory.Exists(path))
+        {
+            return true;
+        }
+
+        _error.Text = $"Choose an existing folder for {purpose}.";
+        path = "";
+        return false;
     }
 }

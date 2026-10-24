@@ -13,13 +13,13 @@ internal sealed class PercussionSettings
     ///  Starts with unity percussion/master gains, looping, and a zero-level enabled metallic layer.
     /// </summary>
     internal PercussionSettings(PercussionScore score, Tempo tempo)
-        : this(score, tempo, true, 1f, CreateDefaultVolumes(), true, 0f, 1)
+        : this(score, tempo, true, 1f, CreateDefaultVolumes(), true, 0f, 1, PercussionSampleSet.Stock)
     {
     }
 
     private PercussionSettings(
         PercussionScore score, Tempo tempo, bool loop, float masterVolume, float[] instrumentVolumes,
-        bool metallicEnabled, float metallicLevel, long revision)
+        bool metallicEnabled, float metallicLevel, long revision, PercussionSampleSet samples)
     {
         Score = score;
         Tempo = tempo;
@@ -29,6 +29,7 @@ internal sealed class PercussionSettings
         MetallicEnabled = metallicEnabled;
         MetallicLevel = metallicLevel;
         Revision = revision;
+        Samples = samples;
     }
 
     /// <summary>
@@ -52,7 +53,7 @@ internal sealed class PercussionSettings
     internal float MasterVolume { get; }
 
     /// <summary>
-    ///  Gets the thirteen immutable gains in Cr78Kit.Instruments order.
+    ///  Gets the fixed-track immutable gains in Cr78Kit.Instruments order, not enum order.
     /// </summary>
     internal ReadOnlySpan<float> InstrumentVolumes => _instrumentVolumes;
 
@@ -72,6 +73,11 @@ internal sealed class PercussionSettings
     internal long Revision { get; }
 
     /// <summary>
+    ///  Gets owned sample overrides, prepared on the caller rather than the rendering thread.
+    /// </summary>
+    internal PercussionSampleSet Samples { get; }
+
+    /// <summary>
     ///  Copies the private gains for a caller-side single-fader edit.
     /// </summary>
     internal float[] CopyInstrumentVolumes() => (float[])_instrumentVolumes.Clone();
@@ -81,7 +87,8 @@ internal sealed class PercussionSettings
     /// </summary>
     internal PercussionSettings With(
         PercussionScore? score = null, Tempo? tempo = null, bool? loop = null, float? masterVolume = null,
-        float[]? instrumentVolumes = null, bool? metallicEnabled = null, float? metallicLevel = null)
+        float[]? instrumentVolumes = null, bool? metallicEnabled = null, float? metallicLevel = null,
+        PercussionSampleSet? samples = null)
     {
         score ??= Score;
         bool scoreChanged = !Score.ContentEquals(score);
@@ -92,14 +99,15 @@ internal sealed class PercussionSettings
         float nextMetallicLevel = metallicLevel ?? MetallicLevel;
         bool gainsChanged = instrumentVolumes is not null && !_instrumentVolumes.AsSpan().SequenceEqual(instrumentVolumes);
         if (!scoreChanged && nextTempo == Tempo && nextLoop == Loop && nextMaster == MasterVolume &&
-            !gainsChanged && nextMetallicEnabled == MetallicEnabled && nextMetallicLevel == MetallicLevel)
+            !gainsChanged && nextMetallicEnabled == MetallicEnabled && nextMetallicLevel == MetallicLevel &&
+            (samples is null || ReferenceEquals(samples, Samples)))
         {
             return this;
         }
 
         return new PercussionSettings(scoreChanged ? score : Score, nextTempo, nextLoop, nextMaster,
             gainsChanged ? instrumentVolumes! : _instrumentVolumes, nextMetallicEnabled, nextMetallicLevel,
-            Revision + (scoreChanged || nextTempo != Tempo ? 1 : 0));
+            Revision + (scoreChanged || nextTempo != Tempo ? 1 : 0), samples ?? Samples);
     }
 
     private static float[] CreateDefaultVolumes()
@@ -251,6 +259,18 @@ internal sealed class PercussionMailbox
     }
 
     /// <summary>
+    ///  Publishes a complete immutable sound mapping independently of score revisions.
+    /// </summary>
+    internal void SetSamples(PercussionSampleSet samples)
+    {
+        lock (_sync)
+        {
+            ThrowIfReleased();
+            Volatile.Write(ref _settings, _settings.With(samples: samples));
+        }
+    }
+
+    /// <summary>
     ///  Publishes a tempo revision without modifying an in-progress audio bar.
     /// </summary>
     internal void SetTempo(Tempo tempo)
@@ -319,7 +339,7 @@ internal sealed class PercussionMailbox
     internal float GetInstrumentVolume(Cr78Instrument instrument)
     {
         Cr78Kit.ValidateInstrument(instrument, allowMetallic: false);
-        return Settings.InstrumentVolumes[(int)instrument];
+        return Settings.InstrumentVolumes[Cr78Kit.GetInstrumentIndex(instrument)];
     }
 
     /// <summary>
@@ -332,13 +352,14 @@ internal sealed class PercussionMailbox
         lock (_sync)
         {
             ThrowIfReleased();
-            if (_settings.InstrumentVolumes[(int)instrument] == volume)
+            int index = Cr78Kit.GetInstrumentIndex(instrument);
+            if (_settings.InstrumentVolumes[index] == volume)
             {
                 return;
             }
 
             float[] volumes = _settings.CopyInstrumentVolumes();
-            volumes[(int)instrument] = volume;
+            volumes[index] = volume;
             Volatile.Write(ref _settings, _settings.With(instrumentVolumes: volumes));
         }
     }
@@ -357,7 +378,7 @@ internal sealed class PercussionMailbox
         Cr78Kit.ValidateLevel(metallicLevel, nameof(metallicLevel));
         if (instrumentVolumes.Count != Cr78Kit.Instruments.Count)
         {
-            throw new ArgumentException("Supply one gain for each of the thirteen percussion instruments.", nameof(instrumentVolumes));
+            throw new ArgumentException("Supply one gain for each fixed percussion track in kit order.", nameof(instrumentVolumes));
         }
 
         float[] volumes = new float[Cr78Kit.Instruments.Count];
