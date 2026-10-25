@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <RootNamespace>SplitFlap.Demo</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SplitFlap.Tests" />
+    <Compile Include="..\DemoSupport\RollingFileLog.cs" Link="Infrastructure\RollingFileLog.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.Drawing" />
+    <Using Include="System.Windows.Forms" />
+    <Using Include="SplitFlap.Visuals" />
+    <Using Include="SplitFlap.WinForms" />
+    <Using Include="WinForms.Audio.Core" />
+    <Using Include="WinForms.Audio.Synthesis" />
+    <Using Include="WinForms.Audio.Music" />
+    <Using Include="WinForms.Audio.Playback" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WinForms.Audio\WinForms.Audio.csproj" />
+    <ProjectReference Include="..\SplitFlap.Controls\SplitFlap.Controls.csproj" />
+  </ItemGroup>
+
+</Project>

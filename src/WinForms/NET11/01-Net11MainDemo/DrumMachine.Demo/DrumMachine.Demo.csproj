@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <RootNamespace>DrumMachine.Demo</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="Examples\*.drumloop.json" CopyToOutputDirectory="PreserveNewest" />
+    <InternalsVisibleTo Include="SplitFlap.Tests" />
+    <Compile Include="..\DemoSupport\RollingFileLog.cs" Link="Infrastructure\RollingFileLog.cs" />
+    <ProjectReference Include="..\WinForms.Audio\WinForms.Audio.csproj" />
+  </ItemGroup>
+
+</Project>

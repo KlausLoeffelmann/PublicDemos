@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="DrumMachine.Analysis/DrumMachine.Analysis.csproj" />
+  <Project Path="DrumMachine.Demo/DrumMachine.Demo.csproj" />
+  <Project Path="WinForms.Audio/WinForms.Audio.csproj" />
+  <Project Path="SplitFlap.Controls/SplitFlap.Controls.csproj" />
+  <Project Path="SplitFlap.Demo/SplitFlap.Demo.csproj" />
+  <Project Path="SplitFlap.Tests/SplitFlap.Tests.csproj" />
+</Solution>

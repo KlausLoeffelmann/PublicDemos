@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <RootNamespace>SplitFlap</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="System.ComponentModel" />
+    <Using Include="System.Drawing" />
+    <Using Include="System.Drawing.Drawing2D" />
+    <Using Include="System.Drawing.Text" />
+    <Using Include="System.Windows.Forms" />
+    <Using Include="SplitFlap.Visuals" />
+  </ItemGroup>
+
+</Project>
