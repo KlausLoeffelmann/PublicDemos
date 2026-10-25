@@ -112,6 +112,22 @@ WAVs are no longer available for a fresh comparison.
 
 ## Score/player behavior
 
+`PercussionWaveExporter.ExportAsync` renders a `PercussionWaveExportOptions`
+snapshot through that same `PercussionRenderer`, without opening an audio device.
+It supports a contiguous bar range and finite repetitions, retaining voice tails
+and fractional timing across wraps. Output is streamed stereo PCM16 (duplicated
+mono) with the engine's unity-master conversion, not normalized. The existing
+player-local master, channel gains, calibration, limiter and sample overrides
+are preserved. Fixed seed 42 makes stock exports reproducible without claiming
+sample-for-sample identity with random live noise.
+
+The default output length is the rounded duration of the entire requested
+sequence, not the rounded duration of one loop multiplied by repetitions.
+Optional final tails stop naturally without admitting another loop or forcing
+a release. Empty rests remain exact zeros. An export is bounded to one hour
+(including tail) and 10,000 repetitions; cancellation/failure cleans its owned
+temporary file and preserves an existing destination.
+
 `PercussionScore` copies, validates, sorts and indexes its events before audio
 admission. Duplicate cells, invalid positions, velocities, gates and undefined
 instruments are rejected. The 4096-bar bound is a software resource limit,

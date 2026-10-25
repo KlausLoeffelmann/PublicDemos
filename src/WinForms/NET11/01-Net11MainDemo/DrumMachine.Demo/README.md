@@ -63,6 +63,37 @@ Version 2 loop files retain all seventeen fixed tracks. Version 1 files remain
 readable: maracas/claves migrate to tambourine 2/guiro 2, and the new accent and
 metallic-hi-hat tracks begin empty with default levels.
 
+## Export a WAV for listening comparisons
+
+**File -> Export WAV** renders the current bar, the complete loop, or a chosen
+number of complete loops as **16-bit stereo PCM WAV**. The current bar is the
+editor's target bar; full-loop export starts with bar 1 regardless of the live
+playhead. The repetition count is independent of the document's Loop switch.
+
+Exports use the current tempo, master/per-track levels, metallic-layer settings,
+and imported sounds, including the current fixed output calibration and peak limiter.
+No normalization, dither, background noise, or extra reverb is added. Both stereo
+channels carry the same mono mix. The sample rate matches the audio engine when
+available, otherwise 48 kHz. Stock noise is seeded for reproducible exports;
+its exact waveform can differ from randomized live strikes.
+
+Rendering is offline and does not record the audio device or change playback,
+the loop document, or its unsaved state. Multiple loops render continuously:
+decays and fractional timing carry across boundaries, rather than repeating a
+separately rounded/clipped WAV chunk. A selected bar begins without the preceding
+bar's tails. By default, the file ends at the exact musical endpoint. Enable
+**Include final sound tail** to let the last sounds finish naturally.
+
+The save dialog starts in the configured recordings folder. Export is limited
+to 10,000 repetitions and one hour including any appended tail. Data is streamed
+to a temporary file; a failed/cancelled export does not replace an existing file.
+
+For the HDMI/TV/soundbar investigation, export several loops and play the WAV in
+the same media player and output configuration as the comparison recording.
+If attacks disappear there too, signal-dependent downstream muting becomes more
+likely. If only live playback loses them, investigate its output path instead.
+This test provides evidence; it does not by itself prove a particular noise gate.
+
 ## Recorded-sound presets
 
 Select a percussion row and use **Import WAV** to replace only that track's

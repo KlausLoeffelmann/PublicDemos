@@ -66,6 +66,11 @@ internal sealed class PercussionRenderer
     internal long LastHitFrame { get; private set; } = -1;
 
     /// <summary>
+    ///  Gets whether prepared strikes still have audio to render, independently of score transport.
+    /// </summary>
+    internal bool HasActiveSounds => _bank.IsActive;
+
+    /// <summary>
     ///  Consumes a bounded command batch only at a new engine block, never halfway through mixing one.
     /// </summary>
     internal void BeginBlock(long frame)

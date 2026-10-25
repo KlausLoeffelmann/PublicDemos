@@ -298,6 +298,7 @@ partial class MainForm
         _recentMenu.Enabled = editing;
         _saveMenuItem.Enabled = _saveButton.Enabled = editing && (_session.FilePath is null || _session.IsDirty);
         _saveAsMenuItem.Enabled = editing;
+        _exportWavMenuItem.Enabled = editing;
         _undoMenuItem.Enabled = editing && _session.CanUndo;
         _redoMenuItem.Enabled = editing && _session.CanRedo;
         _undoMenuItem.Text = _session.CanUndo ? $"&Undo {_session.UndoDescription}" : "&Undo";
@@ -412,7 +413,8 @@ partial class MainForm
             (ToolStripItem Item, ToolbarSymbol Symbol)[] menus =
             [
                 (_newMenuItem, ToolbarSymbol.New), (_openMenuItem, ToolbarSymbol.Open), (_saveMenuItem, ToolbarSymbol.Save),
-                (_saveAsMenuItem, ToolbarSymbol.Save), (_undoMenuItem, ToolbarSymbol.Undo), (_redoMenuItem, ToolbarSymbol.Redo),
+                (_saveAsMenuItem, ToolbarSymbol.Save), (_exportWavMenuItem, ToolbarSymbol.Save),
+                (_undoMenuItem, ToolbarSymbol.Undo), (_redoMenuItem, ToolbarSymbol.Redo),
                 (_optionsMenuItem, ToolbarSymbol.Options), (_quitMenuItem, ToolbarSymbol.Quit)
             ];
             foreach (var (item, symbol) in menus)

@@ -28,6 +28,7 @@ partial class MainForm
         _recentEmpty = new ToolStripMenuItem();
         _saveMenuItem = new ToolStripMenuItem();
         _saveAsMenuItem = new ToolStripMenuItem();
+        _exportWavMenuItem = new ToolStripMenuItem();
         _fileSeparator = new ToolStripSeparator();
         _quitMenuItem = new ToolStripMenuItem();
         _editMenu = new ToolStripMenuItem();
@@ -194,7 +195,7 @@ partial class MainForm
         // 
         // _fileMenu
         // 
-        _fileMenu.DropDownItems.AddRange(new ToolStripItem[] { _openMenuItem, _recentMenu, _saveMenuItem, _saveAsMenuItem, _fileSeparator, _quitMenuItem });
+        _fileMenu.DropDownItems.AddRange(new ToolStripItem[] { _openMenuItem, _recentMenu, _saveMenuItem, _saveAsMenuItem, _exportWavMenuItem, _fileSeparator, _quitMenuItem });
         _fileMenu.Name = "_fileMenu";
         _fileMenu.Size = new Size(57, 29);
         _fileMenu.Text = "&File";
@@ -236,7 +237,15 @@ partial class MainForm
         _saveAsMenuItem.Size = new Size(306, 34);
         _saveAsMenuItem.Text = "Save &As...";
         _saveAsMenuItem.Click += SaveAs_Click;
-        // 
+        //
+        // _exportWavMenuItem
+        //
+        _exportWavMenuItem.Name = "_exportWavMenuItem";
+        _exportWavMenuItem.Size = new Size(306, 34);
+        _exportWavMenuItem.Text = "Export &WAV...";
+        _exportWavMenuItem.ToolTipText = "Export the current bar, the full loop, or repeated loops as WAV. Playback and the document are not changed.";
+        _exportWavMenuItem.Click += ExportWav_Click;
+        //
         // _fileSeparator
         // 
         _fileSeparator.Name = "_fileSeparator";
@@ -1411,6 +1420,7 @@ partial class MainForm
     private ToolStripMenuItem _recentEmpty;
     private ToolStripMenuItem _saveMenuItem;
     private ToolStripMenuItem _saveAsMenuItem;
+    private ToolStripMenuItem _exportWavMenuItem;
     private ToolStripSeparator _fileSeparator;
     private ToolStripMenuItem _quitMenuItem;
     private ToolStripMenuItem _editMenu;
