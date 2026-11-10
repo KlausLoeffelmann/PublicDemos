@@ -1,0 +1,17 @@
+Win11FormBaseClass is an optional, inheritable Form with FormBorderStyle.None and a separate
+Win11ChromeRenderer. To use it, derive a form from Win11FormBaseClass instead of Form; existing
+forms are deliberately unchanged. Dock content normally: DisplayRectangle reserves the title bar
+and a DPI-scaled resize gutter (8 logical pixels) inside the one-pixel border, in addition to the
+form's Padding. This keeps docked controls from covering the resize targets. Absolute-positioned
+controls must be placed below the title bar. ClientSize includes the custom chrome, since it is
+painted in the client area.
+
+The chrome follows light/dark mode and High Contrast, scales with per-monitor DPI, and supports
+active/inactive captions, hover/pressed caption buttons, native dragging/resizing, title-bar
+double-click, Alt+Space/right-click system menus, and accessible caption-button default actions.
+The maximize hit target uses HTMAXBUTTON for Windows 11 Snap Layouts (subject to shell settings).
+ControlBox, ShowIcon, MinimizeBox, MaximizeBox, MinimumSize, and MaximumSize remain supported;
+Resizable=false disables edge resizing and maximizing. Keep FormBorderStyle set to None.
+Windows 11 DWM supplies rounded corners and the shadow; the title bar itself is opaque, not Mica.
+Native chrome is still preferable when exact OS fidelity, localization, and UI Automation parity
+are required. The custom renderer is a close approximation, not an OS theme replacement.
