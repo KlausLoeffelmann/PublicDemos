@@ -121,10 +121,13 @@
   <data name="AdrianaAslanGoldenGate_LenseMoments" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\AdrianaAslanGoldenGate_LenseMoments.JPG;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Jewels_LensMoments" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Jewels_LensMoments.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="IcedWaterfall_LensMoments_01" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\IcedWaterfall_LensMoments_01.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Jewels_LensMoments" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Jewels_LensMoments.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="NetConf2026Background" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\NetConf2026Background.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

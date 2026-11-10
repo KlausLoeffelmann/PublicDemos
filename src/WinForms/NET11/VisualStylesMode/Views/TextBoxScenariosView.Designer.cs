@@ -233,7 +233,7 @@ partial class TextBoxScenariosView
         label1.Name = "label1";
         label1.Size = new Size(261, 32);
         label1.TabIndex = 9;
-        label1.Text = "Numeric UpDown";
+        label1.Text = "NumericUpDown";
         // 
         // _richTextBoxGroupBox
         // 

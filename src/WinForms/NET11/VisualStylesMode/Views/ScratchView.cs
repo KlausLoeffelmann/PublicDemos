@@ -5,13 +5,13 @@ namespace VisualStylesModeDemo.Views;
 
 /// <summary>
 ///  Conceptual prototype scenario that explores how to draw a "proper" rounded rectangle with GDI+.
-///  A control strip tunes the shared parameters live while a grid renders the same rectangle with
-///  several techniques (columns) over dark, classic and colorful backgrounds (rows), making it easy
+///  A control strip tunes the shared parameters live while preview cards render the same rectangle
+///  with several techniques over the selected dark, classic, or colorful background, making it easy
 ///  to see how each technique's corner arcs blend with the straight edges across colors and themes.
 /// </summary>
 /// <remarks>
 ///  The prototype UI is built entirely in <see cref="BuildPrototypeUi"/> rather than the Designer,
-///  because it is a data-driven grid of custom preview panels (techniques x themes) rather than a
+///  because it is a data-driven collection of custom preview panels rather than a
 ///  fixed control layout.
 /// </remarks>
 public partial class ScratchView : UserControl, IScenarioView
@@ -39,6 +39,7 @@ public partial class ScratchView : UserControl, IScenarioView
             ColumnCount = 1,
             RowCount = 3,
         };
+
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -134,6 +135,7 @@ public partial class ScratchView : UserControl, IScenarioView
             Value = _parameters.SupersamplingFactor,
             Width = 56,
         };
+
         ssaa.ValueChanged += (_, _) => _parameters.SupersamplingFactor = (int)ssaa.Value;
         strip.Controls.Add(CreateCluster("SSAA factor", ssaa));
 
@@ -142,6 +144,7 @@ public partial class ScratchView : UserControl, IScenarioView
             DropDownStyle = ComboBoxStyle.DropDownList,
             Width = 110,
         };
+
         background.Items.AddRange([.. Enum.GetNames<PreviewBackgroundTheme>()]);
         background.SelectedItem = _parameters.BackgroundTheme.ToString();
         background.SelectedIndexChanged += (_, _) =>
@@ -177,6 +180,7 @@ public partial class ScratchView : UserControl, IScenarioView
             BackColor = _parameters.StrokeColor,
             Margin = new Padding(0, 0, 8, 0),
         };
+
         _parameters.Changed += (_, _) =>
         {
             if (_colorIndicator is not null)
@@ -218,6 +222,7 @@ public partial class ScratchView : UserControl, IScenarioView
             AccessibleName = $"{name} stroke color",
             TabStop = true,
         };
+
         swatch.FlatAppearance.BorderColor = Color.Gray;
         swatch.Click += (_, _) => _parameters.StrokeColor = color;
         return swatch;
@@ -232,6 +237,7 @@ public partial class ScratchView : UserControl, IScenarioView
             RowCount = 2,
             Padding = new Padding(6),
         };
+
         groups.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         groups.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
         groups.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
@@ -314,5 +320,5 @@ public partial class ScratchView : UserControl, IScenarioView
         Margin = new Padding(0, 0, 6, 0),
     };
 
-    private static string FormatDip(float dip) => $"{dip:0} px";
+    private static string FormatDip(float dip) => $"{dip:0} DIP";
 }

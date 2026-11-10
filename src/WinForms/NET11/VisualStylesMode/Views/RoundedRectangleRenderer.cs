@@ -195,11 +195,13 @@ internal static class RoundedRectangleRenderer
             RectangleF strokeRect = RectangleF.Inflate(area, -strokeInset, -strokeInset);
             float strokeRadius = Math.Max(0f, radius - strokeInset);
             using GraphicsPath strokePath = CreateRoundedPath(strokeRect, strokeRadius);
+
             using Pen pen = new(parameters.StrokeColor, penWidth)
             {
                 Alignment = PenAlignment.Center,
                 LineJoin = LineJoin.Round,
             };
+
             graphics.DrawPath(pen, strokePath);
         }
         finally
@@ -288,6 +290,7 @@ internal static class RoundedRectangleRenderer
                 (area.Y - hiArea.Y) * factor,
                 area.Width * factor,
                 area.Height * factor);
+
             float shapeRadius = radius * factor;
             float shapePen = penWidth * factor;
 

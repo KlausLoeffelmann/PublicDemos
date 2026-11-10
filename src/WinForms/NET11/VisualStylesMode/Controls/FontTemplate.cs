@@ -188,6 +188,7 @@ public sealed partial class FontTemplate : IEquatable<FontTemplate>
     private Font CreateFont(Font sourceFont)
     {
         FontStyle style = (sourceFont.Style & ~RemovedStyle) | AddedStyle;
+
         float sizeInPoints = Math.Max(
             MinimumFontSizeInPoints,
             sourceFont.SizeInPoints + SizeDeltaInPoints);

@@ -6,7 +6,7 @@ namespace VisualStylesModeDemo.Views;
 /// <summary>
 ///  Shared, observable parameter bag for the Rounded Rectangle prototype. Every preview cell reads
 ///  from the same instance and re-paints whenever <see cref="Changed"/> is raised, so tuning a
-///  control updates all techniques across all background themes simultaneously.
+///  control updates every technique with the selected background theme.
 /// </summary>
 /// <remarks>
 ///  All geometric values are expressed in device-independent pixels (DIPs); the preview panels scale

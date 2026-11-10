@@ -18,9 +18,9 @@ namespace VisualStylesModeDemo;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   To add another exploratory view (e.g. TreeView.NodeLeading, Application.SystemTextSize
+///   To add another exploratory view (e.g. TreeView.NodeLeading, system text-scale
 ///   live-update), create a new UserControl implementing <see cref="IScenarioView"/> under Views\
-///   and add one line to <see cref="CreateViews"/> below.
+///   and register it in <see cref="CreateViews"/> with a new <see cref="DemoView"/> identifier.
 ///  </para>
 /// </remarks>
 public partial class MainForm : Form
@@ -34,7 +34,7 @@ public partial class MainForm : Form
     private Font? _scaledUiFont;
     private bool _editModeEnabled;
     private Color _accentColor = SystemColors.Highlight;
-    private VisualStylesMode _selectedVisualStylesMode = VisualStylesMode.Net11;
+    private VisualStylesMode _selectedVisualStylesMode = DemoConstants.StartupVisualStylesMode;
     private FlatStyle _selectedFlatStyle = FlatStyle.Standard;
     private bool _useSuspendPaintingScope = true;
     private bool _applyVisualStylesRecursively = true;
@@ -53,11 +53,6 @@ public partial class MainForm : Form
 
         CreateViews();
 
-        if (_views.Count > 0)
-        {
-            SwitchToView(_views[0].Scenario);
-        }
-
         UpdateSelectionUi();
         _systemAppearanceTimer.Start();
     }
@@ -68,34 +63,35 @@ public partial class MainForm : Form
     /// </summary>
     private void CreateViews()
     {
-        RegisterView(new TextBoxScenariosView());
-        RegisterView(new ButtonVisualStylesView());
-        RegisterView(new CheckBoxRadioButtonVisualStylesView());
-        RegisterView(new CashRegisterView());
-        RegisterView(new CustomerEntryView());
-        RegisterView(new ParallelAnimationView());
-        RegisterView(new ScratchView());
+        RegisterView(new TextBoxScenariosView(), DemoView.TextBoxes);
+        RegisterView(new ButtonVisualStylesView(), DemoView.Buttons);
+        RegisterView(new CheckBoxRadioButtonVisualStylesView(), DemoView.CheckBoxesAndRadioButtons);
+        RegisterView(new CashRegisterView(), DemoView.CashRegister);
+        RegisterView(new CustomerEntryView(), DemoView.Customer);
+        RegisterView(new ParallelAnimationView(), DemoView.ParallelAnimations);
+        RegisterView(new ScratchView(), DemoView.RoundedRectangles);
 
-        // Future views, following the exact same pattern:
-        //   RegisterView(new TreeViewNodeLeadingScenariosView());
-        //   RegisterView(new SystemTextSizeScenariosView());
+        if (_activeView is null)
+        {
+            throw new InvalidOperationException("The configured startup view is not registered.");
+        }
     }
 
     protected override void SetVisibleCore(bool value)
     {
-        Debug.Print($"Before SetVisibleCore: IsFormRevealDeferred={FormRevealMode}");
+        Debug.Print($"Before SetVisibleCore: FormRevealMode={FormRevealMode}");
         base.SetVisibleCore(value);
-        Debug.Print($"After SetVisibleCore: IsFormRevealDeferred={FormRevealMode}");
+        Debug.Print($"After SetVisibleCore: FormRevealMode={FormRevealMode}");
     }
 
     protected override void OnHandleCreated(EventArgs e)
     {
-        Debug.Print($"Before OnHandleCreated: IsFormRevealDeferred={FormRevealMode}");
+        Debug.Print($"Before OnHandleCreated: FormRevealMode={FormRevealMode}");
         base.OnHandleCreated(e);
-        Debug.Print($"After OnHandleCreated: IsFormRevealDeferred={FormRevealMode}");
+        Debug.Print($"After OnHandleCreated: FormRevealMode={FormRevealMode}");
     }
 
-    private void RegisterView(UserControl view)
+    private void RegisterView(UserControl view, DemoView viewId)
     {
         if (view is not IScenarioView scenario)
         {
@@ -116,6 +112,16 @@ public partial class MainForm : Form
         // Let the shared IContainer own disposal of every view, whether active or not, so GDI
         // resources (e.g. the generated background-image Bitmaps) are cleaned up with the form.
         components.Add(view);
+
+        if (viewId == DemoConstants.StartupView)
+        {
+            if (view is CustomerEntryView customerView)
+            {
+                customerView.EnableRevealSlowdown();
+            }
+
+            SwitchToView(scenario);
+        }
     }
 
     private void SwitchToView(IScenarioView scenario)
@@ -142,7 +148,7 @@ public partial class MainForm : Form
 
         Control viewControl = (Control)scenario;
 
-        // Set AutoScaleMode to Inherited, if we're dealing with a container control
+        // Set AutoScaleMode to Inherit if we're dealing with a container control
         // so we're not running the DPI layout logic twice.
         if (viewControl is ContainerControl viewAsContainer)
         {
@@ -179,22 +185,22 @@ public partial class MainForm : Form
         UpdateSelectionUi();
     }
 
-    private void ClassicVisualStylesToolStripMenuItem_Click(object sender, EventArgs e) 
+    private void ClassicVisualStylesToolStripMenuItem_Click(object sender, EventArgs e)
         => SetVisualStylesMode(VisualStylesMode.Classic);
 
-    private void Net11VisualStylesToolStripMenuItem_Click(object sender, EventArgs e) 
+    private void Net11VisualStylesToolStripMenuItem_Click(object sender, EventArgs e)
         => SetVisualStylesMode(VisualStylesMode.Net11);
 
-    private void StandardFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) 
+    private void StandardFlatStyleToolStripMenuItem_Click(object sender, EventArgs e)
         => SetFlatStyle(FlatStyle.Standard);
 
-    private void FlatFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) 
+    private void FlatFlatStyleToolStripMenuItem_Click(object sender, EventArgs e)
         => SetFlatStyle(FlatStyle.Flat);
 
-    private void PopupFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) 
+    private void PopupFlatStyleToolStripMenuItem_Click(object sender, EventArgs e)
         => SetFlatStyle(FlatStyle.Popup);
 
-    private void SystemFlatStyleToolStripMenuItem_Click(object sender, EventArgs e) 
+    private void SystemFlatStyleToolStripMenuItem_Click(object sender, EventArgs e)
         => SetFlatStyle(FlatStyle.System);
 
     private void SetVisualStylesMode(VisualStylesMode visualStylesMode)
@@ -545,7 +551,7 @@ public partial class MainForm : Form
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
             File.WriteAllText(path, JsonSerializer.Serialize(
-                settings, 
+                settings,
                 new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -598,6 +604,7 @@ public partial class MainForm : Form
                 this,
                 "Enable Edit mode and double-click at least one control before saving its property settings.",
                 Text);
+
             return;
         }
 
@@ -625,7 +632,7 @@ public partial class MainForm : Form
         }
 
         File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(
-            data, 
+            data,
             new JsonSerializerOptions { WriteIndented = true }));
     }
 
@@ -749,7 +756,7 @@ public partial class MainForm : Form
         _selectionAdorner.SynchronizeBoundsAndRender();
     }
 
-    private void SystemAppearanceTimer_Tick(object sender, EventArgs e) 
+    private void SystemAppearanceTimer_Tick(object sender, EventArgs e)
         => UpdateSystemAppearance();
 
     private void ApplySystemTextSize()
@@ -795,8 +802,8 @@ public partial class MainForm : Form
         switch (e.Changed)
         {
             case SystemVisualSettingsCategories.AccentColor:
-            UpdateSystemAppearance();
-            break;
+                UpdateSystemAppearance();
+                break;
 
             case SystemVisualSettingsCategories.TextScale:
                 ApplySystemTextSize();

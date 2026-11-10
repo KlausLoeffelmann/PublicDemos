@@ -130,7 +130,7 @@ partial class ButtonVisualStylesView
         _flatStyleGroupBox.Size = new Size(719, 474);
         _flatStyleGroupBox.TabIndex = 0;
         _flatStyleGroupBox.TabStop = false;
-        _flatStyleGroupBox.Text = "FlatStyle variations - Force Button same size";
+        _flatStyleGroupBox.Text = "FlatStyle variations - equal-sized buttons";
         _flatStyleGroupBox.VisualStylesMode = VisualStylesMode.Net11;
         // 
         // _flatStyleTableLayoutPanel
@@ -316,7 +316,7 @@ partial class ButtonVisualStylesView
         _visualStylesGroupBox.Size = new Size(719, 474);
         _visualStylesGroupBox.TabIndex = 1;
         _visualStylesGroupBox.TabStop = false;
-        _visualStylesGroupBox.Text = "Per-control VisualStylesMode - Controls have same width";
+        _visualStylesGroupBox.Text = "Per-control VisualStylesMode - equal-width controls";
         _visualStylesGroupBox.VisualStylesMode = VisualStylesMode.Net11;
         // 
         // _visualStylesTableLayoutPanel

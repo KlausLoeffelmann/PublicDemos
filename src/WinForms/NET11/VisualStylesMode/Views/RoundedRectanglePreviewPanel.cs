@@ -76,6 +76,7 @@ internal sealed class RoundedRectanglePreviewPanel : Panel
 
         float rectWidth = Math.Min(_parameters.RectWidth * dpiScale, availableWidth);
         float rectHeight = Math.Min(_parameters.RectHeight * dpiScale, availableHeight);
+
         RectangleF area = new(
             availableX + ((availableWidth - rectWidth) / 2f),
             availableY + ((availableHeight - rectHeight) / 2f),
@@ -121,6 +122,7 @@ internal sealed class RoundedRectanglePreviewPanel : Panel
                         Color.FromArgb(64, 160, 255),
                         Color.FromArgb(200, 80, 200),
                         LinearGradientMode.ForwardDiagonal);
+
                     graphics.FillRectangle(brush, client);
                 }
 
@@ -132,6 +134,7 @@ internal sealed class RoundedRectanglePreviewPanel : Panel
     {
         int captionHeight = (int)Math.Ceiling(CaptionHeightDip * dpiScale);
         Rectangle captionBounds = new(client.X, client.Y, client.Width, captionHeight);
+
         TextRenderer.DrawText(
             graphics,
             RoundedRectangleRenderer.GetCaption(Technique),

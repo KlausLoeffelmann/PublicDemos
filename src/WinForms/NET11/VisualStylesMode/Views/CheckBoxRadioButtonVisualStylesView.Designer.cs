@@ -79,14 +79,12 @@ partial class CheckBoxRadioButtonVisualStylesView
         _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
         _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
         _matrixTableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
-
         _matrixTableLayoutPanel.RowCount = 5;
         _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
         _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
         _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
         _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
         _matrixTableLayoutPanel.RowStyles.Add(new RowStyle());
-
         _matrixTableLayoutPanel.Location = new Point(3, 51);
         _matrixTableLayoutPanel.Name = "_matrixTableLayoutPanel";
         _matrixTableLayoutPanel.Size = new Size(900, 340);

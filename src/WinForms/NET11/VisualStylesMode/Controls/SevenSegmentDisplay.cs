@@ -102,6 +102,7 @@ internal sealed class SevenSegmentDisplay : Control
             padding / 2,
             Math.Max(0, ClientSize.Width - (padding * 2)),
             labelHeight);
+
         TextRenderer.DrawText(
             graphics,
             DisplayMode.ToString().ToUpperInvariant(),
@@ -143,11 +144,13 @@ internal sealed class SevenSegmentDisplay : Control
                 digitBounds.Top,
                 cellWidth,
                 digitBounds.Height);
+
             DrawDigit(graphics, cell, digits[index], thickness, litBrush, dimBrush);
         }
 
         float dotSize = Math.Max(3F, thickness * 0.8F);
         float dotCellRight = digitBounds.Left + ((digitCount - 2) * cellWidth);
+
         graphics.FillEllipse(
             litBrush,
             dotCellRight - dotSize,

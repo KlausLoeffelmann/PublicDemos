@@ -39,8 +39,7 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
     private readonly List<RadioButton> _radioButtons = [];
     private readonly Dictionary<ButtonBase, AnimationState> _animationStates = [];
 
-    // Deliberately NOT seeded: the user asked for genuinely random start/stop timing so the
-    // stress pattern differs on every run, unlike the deterministic matrix-shuffle seed above.
+    // Keep burst timing random while the matrix arrangement remains reproducible.
     private readonly Random _animationRandom = new();
 
     private long _phaseCount;
@@ -163,6 +162,7 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
                 break;
 
             case ControlKind.CheckBox:
+
                 CheckBox checkBox = new()
                 {
                     Appearance = descriptor.Appearance,
@@ -174,6 +174,7 @@ public partial class ParallelAnimationView : UserControl, IScenarioView
                 break;
 
             case ControlKind.RadioButton:
+
                 RadioButton radioButton = new()
                 {
                     Appearance = descriptor.Appearance,

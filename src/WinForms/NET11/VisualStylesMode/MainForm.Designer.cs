@@ -176,7 +176,7 @@ partial class MainForm
         _net11VisualStylesToolStripMenuItem.CheckState = CheckState.Checked;
         _net11VisualStylesToolStripMenuItem.Name = "_net11VisualStylesToolStripMenuItem";
         _net11VisualStylesToolStripMenuItem.Size = new Size(543, 44);
-        _net11VisualStylesToolStripMenuItem.Text = "&Net 11+";
+        _net11VisualStylesToolStripMenuItem.Text = "&Net11";
         _net11VisualStylesToolStripMenuItem.Click += Net11VisualStylesToolStripMenuItem_Click;
         // 
         // _flatStyleSeparator
@@ -418,7 +418,7 @@ partial class MainForm
         Margin = new Padding(4);
         MinimumSize = new Size(1111, 689);
         Name = "MainForm";
-        Text = "VisualStylesModeDemo - WinForms NET11 API scratchpad";
+        Text = "VisualStylesModeDemo - WinForms .NET 11 API scratchpad";
         DpiChanged += MainForm_DpiChanged;
         SystemVisualSettingsChanged += MainForm_SystemVisualSettingsChanged;
         _menuStrip.ResumeLayout(false);

@@ -76,6 +76,7 @@ internal sealed class IconFactoryComponent : Component
 
         using Font font = new(_fontName, pixelSize * 0.72F, FontStyle.Regular, GraphicsUnit.Pixel);
         using SolidBrush brush = new(color);
+
         using StringFormat format = new()
         {
             Alignment = StringAlignment.Center,

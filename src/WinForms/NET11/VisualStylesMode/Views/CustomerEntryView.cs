@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using VisualStylesModeDemo.Components;
 
 namespace VisualStylesModeDemo.Views;
 
 /// <summary>
-///  A dense, responsive customer-entry form that exercises common WinForms input controls and an
-///  embedded RichTextBox editing toolbar.
+///  A dense, responsive customer-entry form that exercises common WinForms input controls and a
+///  notes editing toolbar above the RichTextBox.
 /// </summary>
 public partial class CustomerEntryView : UserControl, IScenarioView
 {
@@ -18,11 +19,22 @@ public partial class CustomerEntryView : UserControl, IScenarioView
     public CustomerEntryView()
     {
         InitializeComponent();
+        _birthDateTextBox.Text = new DateTime(1987, 6, 15).ToString("d", CultureInfo.CurrentCulture);
+        _customerSinceTextBox.Text = DateTime.Today.ToString("d", CultureInfo.CurrentCulture);
         PopulateSelections();
         UpdateFormattingButtons();
     }
 
     public string DisplayName => "Customer Entry Form";
+
+    /// <summary>Enables the bounded startup-only reveal comparison outside the Designer.</summary>
+    internal void EnableRevealSlowdown()
+    {
+        components.Add(new CustomerRevealSlowdown(
+            this,
+            DemoConstants.CustomerFirstPaintDelayMilliseconds,
+            DemoConstants.CustomerRevealBudgetMilliseconds));
+    }
 
     protected override void OnHandleCreated(EventArgs e)
     {
@@ -38,28 +50,6 @@ public partial class CustomerEntryView : UserControl, IScenarioView
         {
             ApplyNotesToolStripImages();
         }
-    }
-
-    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-    {
-        if (_notesRichTextBox.ContainsFocus)
-        {
-            FontStyle style = keyData switch
-            {
-                Keys.Control | Keys.B => FontStyle.Bold,
-                Keys.Control | Keys.I => FontStyle.Italic,
-                Keys.Control | Keys.U => FontStyle.Underline,
-                _ => FontStyle.Regular,
-            };
-
-            if (style != FontStyle.Regular)
-            {
-                ToggleSelectionStyle(style);
-                return true;
-            }
-        }
-
-        return base.ProcessCmdKey(ref msg, keyData);
     }
 
     private void PopulateSelections()
@@ -92,42 +82,35 @@ public partial class CustomerEntryView : UserControl, IScenarioView
         _iconFactoryComponent.SetImage(_underlineToolStripButton, SymbolGlyph.Underline, 24, DeviceDpi, iconColor);
     }
 
-    private void CutToolStripButton_Click(object sender, EventArgs e) => _notesRichTextBox.Cut();
+    private void CutToolStripButton_Click(object sender, EventArgs e)
+        => _notesRichTextBox.Cut();
 
-    private void CopyToolStripButton_Click(object sender, EventArgs e) => _notesRichTextBox.Copy();
+    private void CopyToolStripButton_Click(object sender, EventArgs e)
+        => _notesRichTextBox.Copy();
 
-    private void PasteToolStripButton_Click(object sender, EventArgs e) => _notesRichTextBox.Paste();
+    private void PasteToolStripButton_Click(object sender, EventArgs e)
+        => _notesRichTextBox.Paste();
 
-    private void BoldToolStripButton_Click(object sender, EventArgs e) => ToggleSelectionStyle(FontStyle.Bold);
+    private void BoldToolStripButton_Click(object sender, EventArgs e)
+        => ToggleSelectionStyle(FontStyle.Bold);
 
-    private void ItalicToolStripButton_Click(object sender, EventArgs e) => ToggleSelectionStyle(FontStyle.Italic);
+    private void ItalicToolStripButton_Click(object sender, EventArgs e)
+        => ToggleSelectionStyle(FontStyle.Italic);
 
-    private void UnderlineToolStripButton_Click(object sender, EventArgs e) => ToggleSelectionStyle(FontStyle.Underline);
+    private void UnderlineToolStripButton_Click(object sender, EventArgs e)
+        => ToggleSelectionStyle(FontStyle.Underline);
 
-    private void NotesRichTextBox_SelectionChanged(object sender, EventArgs e) => UpdateFormattingButtons();
+    private void NotesRichTextBox_SelectionChanged(object sender, EventArgs e)
+        => UpdateFormattingButtons();
 
     private void NotesRichTextBox_HandleCreated(object sender, EventArgs e)
     {
-        PositionNotesToolStrip();
         ApplyNotesTextPadding();
     }
 
     private void NotesRichTextBox_LayoutChanged(object sender, EventArgs e)
     {
-        PositionNotesToolStrip();
         ApplyNotesTextPadding();
-    }
-
-    private void PositionNotesToolStrip()
-    {
-        int insetX = _notesRichTextBox.Margin.Left + 4;
-        int insetY = _notesRichTextBox.Margin.Top + 4;
-
-        _notesToolStrip.Bounds = new Rectangle(
-            x: 0,
-            y: 0,
-            width: Math.Max(0, _notesRichTextBox.ClientSize.Width - _notesRichTextBox.Padding.Horizontal),
-            height: (int)(Font.SizeInPoints * DeviceDpi / 72F + 8F));
     }
 
     private void ApplyNotesTextPadding()
@@ -168,23 +151,30 @@ public partial class CustomerEntryView : UserControl, IScenarioView
         _underlineToolStripButton.Checked = (style & FontStyle.Underline) != 0;
     }
 
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (_notesRichTextBox.ContainsFocus)
+        {
+            FontStyle style = keyData switch
+            {
+                Keys.Control | Keys.B => FontStyle.Bold,
+                Keys.Control | Keys.I => FontStyle.Italic,
+                Keys.Control | Keys.U => FontStyle.Underline,
+                _ => FontStyle.Regular,
+            };
+
+            if (style != FontStyle.Regular)
+            {
+                ToggleSelectionStyle(style);
+                return true;
+            }
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
     [DllImport("user32.dll")]
     private static extern nint SendMessage(nint window, int message, nint wParam, ref NativeRect rectangle);
-
-    private void PreferredContactComboBox_MouseClick(object sender, MouseEventArgs e)
-    {
-
-    }
-
-    private void _identityGroupBox_Enter(object sender, EventArgs e)
-    {
-
-    }
-
-    private void _addressGroupBox_Enter(object sender, EventArgs e)
-    {
-
-    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct NativeRect(int left, int top, int right, int bottom)
@@ -196,8 +186,12 @@ public partial class CustomerEntryView : UserControl, IScenarioView
     }
 }
 
+/// <summary>
+///  Diagnostic ComboBox that traces native messages while investigating rendering.
+/// </summary>
 public class ComboBoxEx : ComboBox
 {
+    /// <inheritdoc/>
     protected override void DefWndProc(ref Message m)
     {
         base.DefWndProc(ref m);

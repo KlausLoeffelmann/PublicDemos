@@ -40,8 +40,8 @@ internal sealed class ControlSelectionAdornerForm : Form
 
         // This overlay is a WS_EX_LAYERED window painted exclusively through UpdateLayeredWindow;
         // it never runs the normal WM_PAINT/layout reveal cycle that FormRevealMode.Deferred waits
-        // on. The application default reveal mode is Deferred, so leaving this form on the default
-        // (Inherit) would keep it DWM-cloaked forever and Edit mode would show nothing. Force the
+        // on. When the application default reveal mode is Deferred, leaving this form on Inherit
+        // would keep it DWM-cloaked forever and Edit mode would show nothing. Force the
         // legacy immediate reveal so the overlay appears as soon as it is shown.
         FormRevealMode = FormRevealMode.Classic;
 
@@ -300,7 +300,7 @@ internal sealed class ControlSelectionAdornerForm : Form
 
             exposedRegion.Exclude(childRegion);
 
-            // Controls index 0 is the front-most sibling. Remove everything already occupied by a
+            // Control index 0 is the front-most sibling. Remove everything already occupied by a
             // higher sibling before deciding whether this child can be the deepest hit.
             childRegion.Exclude(higherSiblingRegion);
             if (HasVisibleArea(childRegion))
@@ -389,11 +389,13 @@ internal sealed class ControlSelectionAdornerForm : Form
                 graphics.FillRectangle(fill, screenBounds);
 
                 float inset = penWidth / 2F;
+
                 RectangleF frame = new(
                     screenBounds.X + inset,
                     screenBounds.Y + inset,
                     Math.Max(0F, screenBounds.Width - penWidth),
                     Math.Max(0F, screenBounds.Height - penWidth));
+
                 graphics.DrawRectangle(pen, frame);
             }
         }
@@ -435,6 +437,7 @@ internal sealed class ControlSelectionAdornerForm : Form
             NativePoint source = new(0, 0);
             NativePoint destination = new(Left, Top);
             NativeSize size = new(Width, Height);
+
             BlendFunction blend = new()
             {
                 BlendOp = AcSrcOver,

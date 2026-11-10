@@ -33,15 +33,17 @@ partial class ScratchView
     /// </summary>
     private void InitializeComponent()
     {
-        components = new System.ComponentModel.Container();
         SuspendLayout();
         // 
         // ScratchView
         // 
-        AutoScaleDimensions = new SizeF(10F, 25F);
-        AutoScaleMode = AutoScaleMode.Font;
+        AutoScaleMode = AutoScaleMode.Inherit;
+        BackgroundImage = Properties.Resources.NetConf2026Background;
+        BackgroundImageLayout = ImageLayout.None;
+        Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        Margin = new Padding(6);
         Name = "ScratchView";
-        Size = new Size(1128, 832);
+        Size = new Size(549, 402);
         ResumeLayout(false);
     }
 

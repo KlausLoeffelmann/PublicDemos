@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using VisualStylesModeDemo.Components;
 
 namespace VisualStylesModeDemo.Views;
 
 /// <summary>
-///  A dense, responsive customer-entry form that exercises common WinForms input controls and an
-///  embedded RichTextBox editing toolbar.
+///  Preserves the intentionally broken, embedded notes toolbar for comparison with
+///  <see cref="CustomerEntryView"/>. Do not repair its layout as part of routine cleanup.
 /// </summary>
 public partial class CustomerEntryView_Broken : UserControl, IScenarioView
 {
@@ -18,11 +18,13 @@ public partial class CustomerEntryView_Broken : UserControl, IScenarioView
     public CustomerEntryView_Broken()
     {
         InitializeComponent();
+        _birthDateTextBox.Text = new DateTime(1987, 6, 15).ToString("d", CultureInfo.CurrentCulture);
+        _customerSinceTextBox.Text = DateTime.Today.ToString("d", CultureInfo.CurrentCulture);
         PopulateSelections();
         UpdateFormattingButtons();
     }
 
-    public string DisplayName => "Customer Entry Form";
+    public string DisplayName => "Customer Entry Form (Broken Layout)";
 
     protected override void OnHandleCreated(EventArgs e)
     {
@@ -120,9 +122,6 @@ public partial class CustomerEntryView_Broken : UserControl, IScenarioView
 
     private void PositionNotesToolStrip()
     {
-        int insetX = _notesRichTextBox.Margin.Left + 4;
-        int insetY = _notesRichTextBox.Margin.Top + 4;
-
         _notesToolStrip.Bounds = new Rectangle(
             x: 0,
             y: 0,

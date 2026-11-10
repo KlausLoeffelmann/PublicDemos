@@ -14,8 +14,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="WarpToolkit.WinForms" Version="$(WarpToolkitVersion)" />
-    <PackageReference Include="WarpToolkit.WinForms.AppServices" Version="$(WarpToolkitVersion)" />
+    <PackageReference Include="WarpToolkit.WinForms" Version="0.9.852-preview.g888af68ad8" />
+    <PackageReference Include="WarpToolkit.WinForms.AppServices" Version="0.9.852-preview.g888af68ad8" />
+    <PackageReference Include="WarpToolkit.WinForms.DirectX" Version="0.9.852-preview.g888af68ad8" />
     <ProjectReference Include="..\WarpClock.Abstractions\WarpClock.Abstractions.csproj" />
     <ProjectReference Include="..\WarpClock.Engine\WarpClock.Engine.csproj" />
     <ProjectReference Include="..\WarpClock.Themes.Builtin\WarpClock.Themes.Builtin.csproj" />

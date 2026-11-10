@@ -76,11 +76,13 @@ public partial class ButtonVisualStylesView : UserControl, IScenarioView
     {
         Bitmap bitmap = new(size.Width, size.Height);
         using Graphics graphics = Graphics.FromImage(bitmap);
+
         using System.Drawing.Drawing2D.LinearGradientBrush brush = new(
             new Rectangle(Point.Empty, size),
             startColor,
             endColor,
             System.Drawing.Drawing2D.LinearGradientMode.ForwardDiagonal);
+
         graphics.FillRectangle(brush, new Rectangle(Point.Empty, size));
 
         return bitmap;

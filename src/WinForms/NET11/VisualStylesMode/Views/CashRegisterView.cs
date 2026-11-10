@@ -337,6 +337,7 @@ public partial class CashRegisterView : UserControl, IScenarioView, IFlatStyleSc
     private static Color Blend(Color background, Color overlay, float amount)
     {
         float inverse = 1F - amount;
+
         return Color.FromArgb(
             255,
             (int)Math.Round((background.R * inverse) + (overlay.R * amount)),
