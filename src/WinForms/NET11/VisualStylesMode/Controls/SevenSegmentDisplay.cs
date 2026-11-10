@@ -27,6 +27,14 @@ internal sealed class SevenSegmentDisplay : Control
         0b_0110_1111,
     ];
 
+    private const int DigitCount = 10;
+
+    // Width-to-height ratio of a single digit cell, close to a real seven-segment LED.
+    private const float DigitAspectRatio = 0.58F;
+
+    // Natural digit height at 96 DPI; the preferred size is derived from it.
+    private const int LogicalDigitHeight = 72;
+
     private decimal _value;
     private RegisterDisplayMode _displayMode;
 
@@ -43,6 +51,10 @@ internal sealed class SevenSegmentDisplay : Control
         ForeColor = Color.FromArgb(255, 118, 35);
         AccessibleRole = AccessibleRole.StaticText;
         TabStop = false;
+
+        // Let layout containers size the display from its DPI-aware preferred size rather than
+        // from the fixed Designer pixel size, so the digits keep their proportions.
+        AutoSize = true;
     }
 
     [Browsable(false)]
@@ -85,6 +97,25 @@ internal sealed class SevenSegmentDisplay : Control
 
     protected override AccessibleObject CreateAccessibilityInstance() => new DisplayAccessibleObject(this);
 
+    public override Size GetPreferredSize(Size proposedSize)
+    {
+        (int padding, int labelHeight) = GetChromeMetrics();
+        int digitHeight = (int)Math.Round(LogicalDigitHeight * DeviceDpi / 96F);
+
+        return new Size(
+            (int)Math.Round(DigitCount * digitHeight * DigitAspectRatio) + (padding * 2),
+            (padding / 2) + labelHeight + digitHeight + padding);
+    }
+
+    private (int Padding, int LabelHeight) GetChromeMetrics()
+    {
+        float scale = DeviceDpi / 96F;
+
+        return (
+            Math.Max(6, (int)Math.Round(10 * scale)),
+            Math.Max(Font.Height, (int)Math.Round(18 * scale)));
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
@@ -93,9 +124,7 @@ internal sealed class SevenSegmentDisplay : Control
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
         graphics.Clear(BackColor);
 
-        float scale = DeviceDpi / 96F;
-        int padding = Math.Max(6, (int)Math.Round(10 * scale));
-        int labelHeight = Math.Max(Font.Height, (int)Math.Round(18 * scale));
+        (int padding, int labelHeight) = GetChromeMetrics();
 
         Rectangle labelBounds = new(
             padding,
@@ -122,39 +151,49 @@ internal sealed class SevenSegmentDisplay : Control
             return;
         }
 
-        const int digitCount = 10;
         string amountText = Math.Abs(Value).ToString("0.00", CultureInfo.InvariantCulture);
         string digits = amountText.Replace(".", string.Empty, StringComparison.Ordinal);
-        if (digits.Length > digitCount)
+        if (digits.Length > DigitCount)
         {
-            digits = new string('9', digitCount);
+            digits = new string('9', DigitCount);
         }
 
-        digits = digits.PadLeft(digitCount);
-        float cellWidth = digitBounds.Width / (float)digitCount;
-        float thickness = Math.Max(2F, Math.Min(cellWidth, digitBounds.Height) * 0.12F);
+        digits = digits.PadLeft(DigitCount);
+
+        // Keep the digit proportions fixed regardless of the control's shape: whichever of width
+        // or height is the tighter constraint determines the digit size.
+        float digitHeight = Math.Min(
+            digitBounds.Height,
+            digitBounds.Width / (float)DigitCount / DigitAspectRatio);
+
+        float cellWidth = digitHeight * DigitAspectRatio;
+        float thickness = Math.Max(2F, Math.Min(cellWidth, digitHeight) * 0.12F);
+
+        // Right-align the digits like a real register display, and center them vertically.
+        float digitsLeft = digitBounds.Right - (DigitCount * cellWidth);
+        float digitsTop = digitBounds.Top + ((digitBounds.Height - digitHeight) / 2F);
 
         using SolidBrush litBrush = new(ForeColor);
         using SolidBrush dimBrush = new(Color.FromArgb(38, ForeColor));
 
-        for (int index = 0; index < digitCount; index++)
+        for (int index = 0; index < DigitCount; index++)
         {
             RectangleF cell = new(
-                digitBounds.Left + (index * cellWidth),
-                digitBounds.Top,
+                digitsLeft + (index * cellWidth),
+                digitsTop,
                 cellWidth,
-                digitBounds.Height);
+                digitHeight);
 
             DrawDigit(graphics, cell, digits[index], thickness, litBrush, dimBrush);
         }
 
         float dotSize = Math.Max(3F, thickness * 0.8F);
-        float dotCellRight = digitBounds.Left + ((digitCount - 2) * cellWidth);
+        float dotCellRight = digitsLeft + ((DigitCount - 2) * cellWidth);
 
         graphics.FillEllipse(
             litBrush,
             dotCellRight - dotSize,
-            digitBounds.Bottom - dotSize,
+            digitsTop + digitHeight - dotSize,
             dotSize,
             dotSize);
     }

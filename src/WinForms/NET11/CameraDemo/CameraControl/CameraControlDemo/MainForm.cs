@@ -22,6 +22,8 @@ public partial class MainForm : Form
     /// </summary>
     private bool _closing;
 
+    private bool _captureDisposed;
+
     /// <summary>
     ///  Initializes a new instance of the <see cref="MainForm"/> class.
     /// </summary>
@@ -32,7 +34,7 @@ public partial class MainForm : Form
         _capture = new CameraCapture(_cameraView);
         _capture.Error += Capture_Error;
 
-        _cameraView.KeepAspectRatio = _keepAspectRatioCheckBox.Checked;
+        _cameraView.KeepAspectRatio = _keepAspectRatioButton.Checked;
         _cameraView.StatusText = "Looking for cameras\u2026";
     }
 
@@ -47,20 +49,30 @@ public partial class MainForm : Form
     }
 
     /// <summary>
-    ///  Closes the window when Esc is pressed.
+    ///  Renders toolbar symbols once the form has its monitor DPI.
     /// </summary>
-    /// <param name="msg">The window message.</param>
-    /// <param name="keyData">The pressed keys.</param>
-    /// <returns><see langword="true"/> when the key was handled.</returns>
-    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    /// <param name="e">Unused event data.</param>
+    protected override void OnLoad(EventArgs e)
     {
-        if (keyData == Keys.Escape)
-        {
-            Close();
-            return true;
-        }
+        base.OnLoad(e);
+        UpdateToolbarImages();
+    }
 
-        return base.ProcessCmdKey(ref msg, keyData);
+    /// <inheritdoc/>
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        UpdateToolbarImages();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnSystemColorsChanged(EventArgs e)
+    {
+        base.OnSystemColorsChanged(e);
+        if (IsHandleCreated && _imageFactory is not null)
+        {
+            UpdateToolbarImages();
+        }
     }
 
     /// <summary>
@@ -69,18 +81,38 @@ public partial class MainForm : Form
     /// <param name="e">The closing event data.</param>
     protected override async void OnFormClosing(FormClosingEventArgs e)
     {
-        if (!_closing)
+        base.OnFormClosing(e);
+
+        if (e.Cancel || _captureDisposed)
         {
-            _closing = true;
-            e.Cancel = true;
-
-            await _capture.DisposeAsync();
-
-            Close();
             return;
         }
 
-        base.OnFormClosing(e);
+        e.Cancel = true;
+
+        if (_closing)
+        {
+            return;
+        }
+
+        _closing = true;
+        SetBusy(true);
+
+        try
+        {
+            await _capture.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"The camera could not be released: {ex.Message}",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally
+        {
+            _capture.Error -= Capture_Error;
+            _captureDisposed = true;
+            Close();
+        }
     }
 
     /// <summary>
@@ -89,21 +121,31 @@ public partial class MainForm : Form
     /// <returns>A task that completes once the preview is running.</returns>
     private async Task ReloadDevicesAsync()
     {
+        if (_closing)
+        {
+            return;
+        }
+
         SetBusy(true);
 
         try
         {
             IReadOnlyList<CameraDevice> devices = await CameraCapture.GetDevicesAsync();
 
+            if (_closing)
+            {
+                return;
+            }
+
             _suppressSelectionChanged = true;
 
             try
             {
-                _cameraComboBox.DataSource = null;
-                _cameraComboBox.DataSource = devices.ToList();
+                _cameraComboBox.ComboBox.DataSource = null;
+                _cameraComboBox.ComboBox.DataSource = devices.ToList();
                 _cameraComboBox.SelectedIndex = devices.Count > 0 ? 0 : -1;
 
-                _formatComboBox.DataSource = null;
+                _formatComboBox.ComboBox.DataSource = null;
             }
             finally
             {
@@ -112,6 +154,12 @@ public partial class MainForm : Form
 
             if (devices.Count == 0)
             {
+                await _capture.StopAsync();
+                if (_closing)
+                {
+                    return;
+                }
+
                 _cameraView.ClearFrame();
                 _cameraView.StatusText = "No camera found.";
 
@@ -158,7 +206,7 @@ public partial class MainForm : Form
 
             bool started = await _capture.StartAsync(device, format);
 
-            if (!started)
+            if (!started || _closing)
             {
                 return;
             }
@@ -169,8 +217,8 @@ public partial class MainForm : Form
 
                 try
                 {
-                    _formatComboBox.DataSource = null;
-                    _formatComboBox.DataSource = _capture.SupportedFormats.ToList();
+                    _formatComboBox.ComboBox.DataSource = null;
+                    _formatComboBox.ComboBox.DataSource = _capture.SupportedFormats.ToList();
                     _formatComboBox.SelectedIndex =
                         _capture.SupportedFormats.Count > 0 ? 0 : -1;
                 }
@@ -181,6 +229,10 @@ public partial class MainForm : Form
             }
 
             _cameraView.StatusText = "Waiting for the first frame\u2026";
+        }
+        catch (Exception ex)
+        {
+            ShowError($"The camera preview could not be restarted: {ex.Message}");
         }
         finally
         {
@@ -221,10 +273,10 @@ public partial class MainForm : Form
     /// <summary>
     ///  Switches the view between letterboxed and unscaled 1:1 rendering.
     /// </summary>
-    /// <param name="sender">The check box.</param>
+    /// <param name="sender">The fit-frame toolbar button.</param>
     /// <param name="e">Unused event data.</param>
-    private void KeepAspectRatioCheckBox_CheckedChanged(object? sender, EventArgs e)
-        => _cameraView.KeepAspectRatio = _keepAspectRatioCheckBox.Checked;
+    private void KeepAspectRatioButton_CheckedChanged(object? sender, EventArgs e)
+        => _cameraView.KeepAspectRatio = _keepAspectRatioButton.Checked;
 
     /// <summary>
     ///  Re-enumerates the cameras.
@@ -241,6 +293,11 @@ public partial class MainForm : Form
     /// <param name="e">The error data.</param>
     private void Capture_Error(object? sender, CameraErrorEventArgs e)
     {
+        if (_closing || IsDisposed || !IsHandleCreated)
+        {
+            return;
+        }
+
         if (InvokeRequired)
         {
             _ = InvokeAsync(() => ShowError(e.Message));
@@ -273,17 +330,49 @@ public partial class MainForm : Form
     }
 
     /// <summary>
-    ///  Disables the control bar while the camera is being (re-)started.
+    ///  Disables capture settings without blocking the presentation controls.
     /// </summary>
     /// <param name="busy"><see langword="true"/> while an operation is running.</param>
     private void SetBusy(bool busy)
     {
-        _controlBar.Enabled = !busy;
+        if (_closing && !busy)
+        {
+            return;
+        }
+
+        _cameraComboBox.Enabled = !busy;
+        _formatComboBox.Enabled = !busy;
+        _refreshButton.Enabled = !busy;
         UseWaitCursor = busy;
     }
 
-    private void button1_Click(object sender, EventArgs e)
+    private void FullScreenButton_Click(object? sender, EventArgs e)
+        => _kioskModeManager.ToggleFullScreen();
+
+    private void KioskModeManager_FullScreenChanged(object? sender, EventArgs e)
     {
-        kioskModeComponent1.ToggleFullScreen();
+        if (_closing)
+        {
+            return;
+        }
+
+        bool fullScreen = _kioskModeManager.FullScreen;
+        _fullScreenButton.Checked = fullScreen;
+        _fullScreenButton.Text = fullScreen ? "Exit f&ullscreen" : "F&ullscreen";
+        _fullScreenButton.ToolTipText = fullScreen
+            ? "Return to the window (F11 or Esc)"
+            : "Enter fullscreen (F11); press Esc to return to the window";
+        UpdateToolbarImages();
+    }
+
+    private void UpdateToolbarImages()
+    {
+        _imageFactory.SetImage(_cameraLabel, CameraSymbol.Camera, DeviceDpi);
+        _imageFactory.SetImage(_formatLabel, CameraSymbol.Resolution, DeviceDpi);
+        _imageFactory.SetImage(_keepAspectRatioButton, CameraSymbol.FitFrame, DeviceDpi);
+        _imageFactory.SetImage(_refreshButton, CameraSymbol.Refresh, DeviceDpi);
+        _imageFactory.SetImage(_fullScreenButton,
+            _kioskModeManager.FullScreen ? CameraSymbol.BackToWindow : CameraSymbol.FullScreen,
+            DeviceDpi);
     }
 }

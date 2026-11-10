@@ -155,10 +155,10 @@ partial class ButtonVisualStylesView
         _flatStyleTableLayoutPanel.Location = new Point(15, 59);
         _flatStyleTableLayoutPanel.Name = "_flatStyleTableLayoutPanel";
         _flatStyleTableLayoutPanel.RowCount = 4;
-        _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
-        _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
-        _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
-        _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
+        _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
+        _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
+        _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
+        _flatStyleTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
         _flatStyleTableLayoutPanel.Size = new Size(689, 400);
         _flatStyleTableLayoutPanel.TabIndex = 0;
         // 

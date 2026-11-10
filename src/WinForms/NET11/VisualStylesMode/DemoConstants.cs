@@ -9,7 +9,7 @@ namespace VisualStylesModeDemo;
 internal static class DemoConstants
 {
     /// <summary>Initial application and active-view styling: Classic or Net11.</summary>
-    internal const VisualStylesMode StartupVisualStylesMode = VisualStylesMode.Net11;
+    internal const VisualStylesMode StartupVisualStylesMode = VisualStylesMode.Classic;
 
     /// <summary>The scenario selected when the host opens.</summary>
     internal const DemoView StartupView = DemoView.Customer;

@@ -29,20 +29,24 @@
         private void InitializeComponent()
         {
             _rootLayout = new TableLayoutPanel();
-            _controlBar = new FlowLayoutPanel();
-            _cameraLabel = new Label();
-            _cameraComboBox = new ComboBox();
-            _formatLabel = new Label();
-            _formatComboBox = new ComboBox();
-            _keepAspectRatioCheckBox = new CheckBox();
-            _refreshButton = new Button();
-            button1 = new Button();
+            _controlBar = new ToolStrip();
+            _cameraLabel = new ToolStripLabel();
+            _cameraComboBox = new ToolStripComboBox();
+            _formatLabel = new ToolStripLabel();
+            _formatComboBox = new ToolStripComboBox();
+            _captureSeparator = new ToolStripSeparator();
+            _keepAspectRatioButton = new ToolStripButton();
+            _refreshButton = new ToolStripButton();
+            _viewSeparator = new ToolStripSeparator();
+            _fullScreenButton = new ToolStripButton();
             _cameraView = new CameraView();
-            kioskModeComponent1 = new KioskModeComponent();
+            components = new System.ComponentModel.Container();
+            _imageFactory = new ToolbarImageFactory(components);
+            _kioskModeManager = new KioskModeManager(components);
+            SuspendLayout();
             _rootLayout.SuspendLayout();
             _controlBar.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)kioskModeComponent1).BeginInit();
-            SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)_kioskModeManager).BeginInit();
             // 
             // _rootLayout
             // 
@@ -62,107 +66,95 @@
             // 
             // _controlBar
             // 
-            _controlBar.AutoSize = true;
-            _controlBar.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            _controlBar.Controls.Add(_cameraLabel);
-            _controlBar.Controls.Add(_cameraComboBox);
-            _controlBar.Controls.Add(_formatLabel);
-            _controlBar.Controls.Add(_formatComboBox);
-            _controlBar.Controls.Add(_keepAspectRatioCheckBox);
-            _controlBar.Controls.Add(_refreshButton);
-            _controlBar.Controls.Add(button1);
-            _controlBar.Dock = DockStyle.Fill;
+            _controlBar.AccessibleName = "Camera controls";
+            _controlBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _controlBar.Dock = DockStyle.None;
+            _controlBar.GripStyle = ToolStripGripStyle.Hidden;
+            _controlBar.Items.AddRange(new ToolStripItem[] { _cameraLabel, _cameraComboBox, _formatLabel, _formatComboBox, _captureSeparator, _keepAspectRatioButton, _refreshButton, _viewSeparator, _fullScreenButton });
             _controlBar.Location = new Point(11, 11);
+            _controlBar.Margin = new Padding(3);
             _controlBar.Name = "_controlBar";
+            _controlBar.Padding = new Padding(4);
             _controlBar.Size = new Size(1217, 41);
             _controlBar.TabIndex = 0;
+            _controlBar.TabStop = true;
             // 
             // _cameraLabel
             // 
-            _cameraLabel.Anchor = AnchorStyles.Left;
-            _cameraLabel.AutoSize = true;
-            _cameraLabel.Location = new Point(3, 12);
-            _cameraLabel.Margin = new Padding(3, 8, 3, 0);
+            _cameraLabel.ImageScaling = ToolStripItemImageScaling.None;
             _cameraLabel.Name = "_cameraLabel";
-            _cameraLabel.Size = new Size(76, 25);
-            _cameraLabel.TabIndex = 0;
             _cameraLabel.Text = "&Camera:";
             // 
             // _cameraComboBox
             // 
-            _cameraComboBox.Anchor = AnchorStyles.Left;
+            _cameraComboBox.AccessibleName = "Camera";
+            _cameraComboBox.AutoSize = false;
             _cameraComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            _cameraComboBox.Location = new Point(85, 4);
+            _cameraComboBox.DropDownWidth = 400;
             _cameraComboBox.Name = "_cameraComboBox";
-            _cameraComboBox.Size = new Size(320, 33);
-            _cameraComboBox.TabIndex = 1;
+            _cameraComboBox.Size = new Size(250, 33);
+            _cameraComboBox.ToolTipText = "Select the camera to preview";
             _cameraComboBox.SelectedIndexChanged += CameraComboBox_SelectedIndexChanged;
             // 
             // _formatLabel
             // 
-            _formatLabel.Anchor = AnchorStyles.Left;
-            _formatLabel.AutoSize = true;
-            _formatLabel.Location = new Point(424, 12);
-            _formatLabel.Margin = new Padding(16, 8, 3, 0);
+            _formatLabel.ImageScaling = ToolStripItemImageScaling.None;
+            _formatLabel.Margin = new Padding(12, 1, 0, 2);
             _formatLabel.Name = "_formatLabel";
-            _formatLabel.Size = new Size(99, 25);
-            _formatLabel.TabIndex = 2;
             _formatLabel.Text = "&Resolution:";
             // 
             // _formatComboBox
             // 
-            _formatComboBox.Anchor = AnchorStyles.Left;
+            _formatComboBox.AccessibleName = "Capture resolution and frame rate";
+            _formatComboBox.AutoSize = false;
             _formatComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            _formatComboBox.Location = new Point(529, 4);
+            _formatComboBox.DropDownWidth = 400;
             _formatComboBox.Name = "_formatComboBox";
-            _formatComboBox.Size = new Size(122, 33);
-            _formatComboBox.TabIndex = 3;
+            _formatComboBox.Size = new Size(260, 33);
+            _formatComboBox.ToolTipText = "Select the capture resolution, frame rate, and pixel format";
             _formatComboBox.SelectedIndexChanged += FormatComboBox_SelectedIndexChanged;
-            // 
-            // _keepAspectRatioCheckBox
-            // 
-            _keepAspectRatioCheckBox.Anchor = AnchorStyles.Left;
-            _keepAspectRatioCheckBox.AutoSize = true;
-            _keepAspectRatioCheckBox.Checked = true;
-            _keepAspectRatioCheckBox.CheckState = CheckState.Checked;
-            _keepAspectRatioCheckBox.Location = new Point(670, 9);
-            _keepAspectRatioCheckBox.Margin = new Padding(16, 6, 3, 0);
-            _keepAspectRatioCheckBox.Name = "_keepAspectRatioCheckBox";
-            _keepAspectRatioCheckBox.Size = new Size(174, 29);
-            _keepAspectRatioCheckBox.TabIndex = 4;
-            _keepAspectRatioCheckBox.Text = "&Keep aspect ratio";
-            _keepAspectRatioCheckBox.UseVisualStyleBackColor = true;
-            _keepAspectRatioCheckBox.CheckedChanged += KeepAspectRatioCheckBox_CheckedChanged;
+            //
+            // _captureSeparator
+            //
+            _captureSeparator.Name = "_captureSeparator";
+            //
+            // _keepAspectRatioButton
+            //
+            _keepAspectRatioButton.Checked = true;
+            _keepAspectRatioButton.CheckOnClick = true;
+            _keepAspectRatioButton.CheckState = CheckState.Checked;
+            _keepAspectRatioButton.ImageScaling = ToolStripItemImageScaling.None;
+            _keepAspectRatioButton.Name = "_keepAspectRatioButton";
+            _keepAspectRatioButton.Text = "&Fit frame";
+            _keepAspectRatioButton.ToolTipText = "Fit the frame while preserving its aspect ratio; turn off for unscaled 1:1 pixels";
+            _keepAspectRatioButton.CheckedChanged += KeepAspectRatioButton_CheckedChanged;
             // 
             // _refreshButton
             // 
-            _refreshButton.Anchor = AnchorStyles.Left;
-            _refreshButton.AutoSize = true;
-            _refreshButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            _refreshButton.Location = new Point(863, 3);
-            _refreshButton.Margin = new Padding(16, 3, 3, 3);
+            _refreshButton.ImageScaling = ToolStripItemImageScaling.None;
             _refreshButton.Name = "_refreshButton";
-            _refreshButton.Padding = new Padding(8, 0, 8, 0);
-            _refreshButton.Size = new Size(96, 35);
-            _refreshButton.TabIndex = 5;
             _refreshButton.Text = "Re&fresh";
-            _refreshButton.UseVisualStyleBackColor = true;
+            _refreshButton.ToolTipText = "Refresh the camera list and restart the preview";
             _refreshButton.Click += RefreshButton_Click;
+            //
+            // _viewSeparator
+            //
+            _viewSeparator.Name = "_viewSeparator";
             // 
-            // button1
+            // _fullScreenButton
             // 
-            button1.Location = new Point(965, 3);
-            button1.Name = "button1";
-            button1.Size = new Size(180, 34);
-            button1.TabIndex = 6;
-            button1.Text = "Toogle Fullscreen";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
+            _fullScreenButton.Alignment = ToolStripItemAlignment.Right;
+            _fullScreenButton.ImageScaling = ToolStripItemImageScaling.None;
+            _fullScreenButton.Name = "_fullScreenButton";
+            _fullScreenButton.Overflow = ToolStripItemOverflow.Never;
+            _fullScreenButton.Text = "F&ullscreen";
+            _fullScreenButton.ToolTipText = "Enter fullscreen (F11); press Esc to return to the window";
+            _fullScreenButton.Click += FullScreenButton_Click;
             // 
             // _cameraView
             // 
             _cameraView.BackColor = Color.Black;
-            _cameraView.Dock = DockStyle.Fill;
+            _cameraView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _cameraView.ForeColor = Color.Gainsboro;
             _cameraView.Location = new Point(11, 58);
             _cameraView.Name = "_cameraView";
@@ -170,9 +162,12 @@
             _cameraView.TabIndex = 1;
             _cameraView.TabStop = false;
             // 
-            // kioskModeComponent1
+            // _kioskModeManager
             // 
-            kioskModeComponent1.ContainerControl = this;
+            _kioskModeManager.ContainerControl = this;
+            _kioskModeManager.EscapeExitsFullScreen = true;
+            _kioskModeManager.ToggleFullScreenKeys = Keys.F11;
+            _kioskModeManager.FullScreenChanged += KioskModeManager_FullScreenChanged;
             // 
             // MainForm
             // 
@@ -189,22 +184,25 @@
             _rootLayout.PerformLayout();
             _controlBar.ResumeLayout(false);
             _controlBar.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)kioskModeComponent1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)_kioskModeManager).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
 
         private TableLayoutPanel _rootLayout;
-        private FlowLayoutPanel _controlBar;
-        private Label _cameraLabel;
-        private ComboBox _cameraComboBox;
-        private Label _formatLabel;
-        private ComboBox _formatComboBox;
-        private CheckBox _keepAspectRatioCheckBox;
-        private Button _refreshButton;
+        private ToolStrip _controlBar;
+        private ToolStripLabel _cameraLabel;
+        private ToolStripComboBox _cameraComboBox;
+        private ToolStripLabel _formatLabel;
+        private ToolStripComboBox _formatComboBox;
+        private ToolStripSeparator _captureSeparator;
+        private ToolStripButton _keepAspectRatioButton;
+        private ToolStripButton _refreshButton;
+        private ToolStripSeparator _viewSeparator;
+        private ToolStripButton _fullScreenButton;
         private CameraView _cameraView;
-        private Button button1;
-        private KioskModeComponent kioskModeComponent1;
+        private KioskModeManager _kioskModeManager;
+        private ToolbarImageFactory _imageFactory;
     }
 }
