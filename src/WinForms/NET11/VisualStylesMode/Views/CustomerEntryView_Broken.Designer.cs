@@ -506,7 +506,6 @@ partial class CustomerEntryView_Broken
         _preferredContactComboBox.Name = "_preferredContactComboBox";
         _preferredContactComboBox.Size = new Size(589, 44);
         _preferredContactComboBox.TabIndex = 7;
-        _preferredContactComboBox.MouseClick += PreferredContactComboBox_MouseClick;
         // 
         // _contactPermissionsLabel
         // 

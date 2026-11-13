@@ -3,8 +3,8 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using VisualStylesModeDemo.Components;
+using static VisualStylesModeDemo.Views.NativeMethods;
 
 namespace VisualStylesModeDemo.Views;
 
@@ -19,21 +19,28 @@ public partial class CustomerEntryView : UserControl, IScenarioView
     public CustomerEntryView()
     {
         InitializeComponent();
-        _birthDateTextBox.Text = new DateTime(1987, 6, 15).ToString("d", CultureInfo.CurrentCulture);
-        _customerSinceTextBox.Text = DateTime.Today.ToString("d", CultureInfo.CurrentCulture);
+
+        _birthDateTextBox.Text 
+            = new DateTime(1987, 6, 15)
+                .ToString("d", CultureInfo.CurrentCulture);
+
+        _customerSinceTextBox.Text 
+            = DateTime.Today.ToString("d", CultureInfo.CurrentCulture);
+
         PopulateSelections();
         UpdateFormattingButtons();
     }
 
-    public string DisplayName => "Customer Entry Form";
+    public string DisplayName 
+        => "Customer Entry Form";
 
     /// <summary>Enables the bounded startup-only reveal comparison outside the Designer.</summary>
     internal void EnableRevealSlowdown()
     {
         components.Add(new CustomerRevealSlowdown(
-            this,
-            DemoConstants.CustomerFirstPaintDelayMilliseconds,
-            DemoConstants.CustomerRevealBudgetMilliseconds));
+            root: this,
+            delayMilliseconds: DemoConstants.CustomerFirstPaintDelayMilliseconds,
+            budgetMilliseconds: DemoConstants.CustomerRevealBudgetMilliseconds));
     }
 
     protected override void OnHandleCreated(EventArgs e)
@@ -74,13 +81,26 @@ public partial class CustomerEntryView : UserControl, IScenarioView
     private void ApplyNotesToolStripImages()
     {
         Color iconColor = SystemColors.ControlText;
-        _iconFactoryComponent.SetImage(_cutToolStripButton, SymbolGlyph.Cut, 24, DeviceDpi, iconColor);
-        _iconFactoryComponent.SetImage(_copyToolStripButton, SymbolGlyph.Copy, 24, DeviceDpi, iconColor);
-        _iconFactoryComponent.SetImage(_pasteToolStripButton, SymbolGlyph.Paste, 24, DeviceDpi, iconColor);
-        _iconFactoryComponent.SetImage(_boldToolStripButton, SymbolGlyph.Bold, 24, DeviceDpi, iconColor);
-        _iconFactoryComponent.SetImage(_italicToolStripButton, SymbolGlyph.Italic, 24, DeviceDpi, iconColor);
-        _iconFactoryComponent.SetImage(_underlineToolStripButton, SymbolGlyph.Underline, 24, DeviceDpi, iconColor);
-    }
+
+        (ToolStripButton tsButton, SymbolGlyph glyph)[] tsButtons =
+        [
+            (_cutToolStripButton, SymbolGlyph.Cut),
+            (_copyToolStripButton, SymbolGlyph.Copy),
+            (_pasteToolStripButton, SymbolGlyph.Paste),
+            (_boldToolStripButton, SymbolGlyph.Bold),
+            (_italicToolStripButton, SymbolGlyph.Italic),
+            (_underlineToolStripButton, SymbolGlyph.Underline)
+        ];
+
+        Array.ForEach(
+            tsButtons,
+            action: button => _iconFactoryComponent.SetImage(
+                item: button.tsButton,
+                glyph: button.glyph,
+                logicalSize: 24,
+                dpi: DeviceDpi,
+                color: iconColor));
+            }
 
     private void CutToolStripButton_Click(object sender, EventArgs e)
         => _notesRichTextBox.Cut();
@@ -103,15 +123,11 @@ public partial class CustomerEntryView : UserControl, IScenarioView
     private void NotesRichTextBox_SelectionChanged(object sender, EventArgs e)
         => UpdateFormattingButtons();
 
-    private void NotesRichTextBox_HandleCreated(object sender, EventArgs e)
-    {
-        ApplyNotesTextPadding();
-    }
+    private void NotesRichTextBox_HandleCreated(object sender, EventArgs e) 
+        => ApplyNotesTextPadding();
 
-    private void NotesRichTextBox_LayoutChanged(object sender, EventArgs e)
-    {
-        ApplyNotesTextPadding();
-    }
+    private void NotesRichTextBox_LayoutChanged(object sender, EventArgs e) 
+        => ApplyNotesTextPadding();
 
     private void ApplyNotesTextPadding()
     {
@@ -138,6 +154,7 @@ public partial class CustomerEntryView : UserControl, IScenarioView
         FontStyle newStyle = sourceFont.Style ^ style;
 
         using Font selectionFont = new(sourceFont, newStyle);
+
         _notesRichTextBox.SelectionFont = selectionFont;
         UpdateFormattingButtons();
         _notesRichTextBox.Focus();
@@ -145,10 +162,17 @@ public partial class CustomerEntryView : UserControl, IScenarioView
 
     private void UpdateFormattingButtons()
     {
-        FontStyle style = _notesRichTextBox.SelectionFont?.Style ?? FontStyle.Regular;
-        _boldToolStripButton.Checked = (style & FontStyle.Bold) != 0;
-        _italicToolStripButton.Checked = (style & FontStyle.Italic) != 0;
-        _underlineToolStripButton.Checked = (style & FontStyle.Underline) != 0;
+        FontStyle style = _notesRichTextBox.SelectionFont?.Style 
+            ?? FontStyle.Regular;
+
+        _boldToolStripButton.Checked 
+            = (style & FontStyle.Bold) != 0;
+
+        _italicToolStripButton.Checked 
+            = (style & FontStyle.Italic) != 0;
+
+        _underlineToolStripButton.Checked 
+            = (style & FontStyle.Underline) != 0;
     }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -172,22 +196,11 @@ public partial class CustomerEntryView : UserControl, IScenarioView
 
         return base.ProcessCmdKey(ref msg, keyData);
     }
-
-    [DllImport("user32.dll")]
-    private static extern nint SendMessage(nint window, int message, nint wParam, ref NativeRect rectangle);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct NativeRect(int left, int top, int right, int bottom)
-    {
-        public int Left = left;
-        public int Top = top;
-        public int Right = right;
-        public int Bottom = bottom;
-    }
 }
 
 /// <summary>
-///  Diagnostic ComboBox that traces native messages while investigating rendering.
+///  Diagnostic ComboBox that traces native messages while 
+///  investigating rendering.
 /// </summary>
 public class ComboBoxEx : ComboBox
 {
@@ -195,6 +208,8 @@ public class ComboBoxEx : ComboBox
     protected override void DefWndProc(ref Message m)
     {
         base.DefWndProc(ref m);
-        Debug.WriteLine($"[{DateTime.Now:HH:mm:ss-fff}]ComboBoxEx: {m.Msg} - {m.WParam} - {m.LParam}");
+        Debug.WriteLine(
+            $"[{DateTime.Now:HH:mm:ss-fff}]ComboBoxEx:" +
+            $" {m.Msg} - {m.WParam} - {m.LParam}");
     }
 }

@@ -21,7 +21,10 @@ public partial class ButtonVisualStylesView : UserControl, IScenarioView
 
         // A single shared ICommand bound to two buttons with different CommandParameter values,
         // exercising Button.Command / Button.CommandParameter (see RelayCommand.cs).
-        _sharedCommand = new RelayCommand(OnCommandExecuted, _ => _commandCanExecute);
+        _sharedCommand = new RelayCommand(
+            execute: OnCommandExecuted,
+            canExecute: _ => _commandCanExecute);
+
         _commandAlphaButton.Command = _sharedCommand;
         _commandAlphaButton.CommandParameter = "Alpha";
         _commandBetaButton.Command = _sharedCommand;
@@ -29,10 +32,27 @@ public partial class ButtonVisualStylesView : UserControl, IScenarioView
         _commandToggleEnabledButton.Click += CommandToggleEnabledButton_Click;
 
         // Generated placeholder art for the BackgroundImage scenarios (no external assets needed).
-        _backgroundImageTileButton.BackgroundImage = CreateCheckerboardBitmap(new Size(24, 24), Color.SteelBlue, Color.LightSteelBlue);
-        _backgroundImageStretchButton.BackgroundImage = CreateGradientBitmap(new Size(120, 60), Color.DarkSlateBlue, Color.MediumPurple);
-        _backgroundImageZoomButton.BackgroundImage = CreateGradientBitmap(new Size(60, 60), Color.DarkGreen, Color.YellowGreen);
-        _backgroundImageCenterButton.BackgroundImage = CreateGradientBitmap(new Size(40, 40), Color.DarkRed, Color.Orange);
+        _backgroundImageTileButton.BackgroundImage 
+            = CreateCheckerboardBitmap(
+                tileSize: new Size(24, 24),
+                colorA: Color.SteelBlue,
+                colorB: Color.LightSteelBlue);
+
+        _backgroundImageStretchButton.BackgroundImage = CreateGradientBitmap(
+            size: new Size(120, 60), 
+            startColor: Color.DarkSlateBlue, 
+            endColor: Color.MediumPurple);
+
+        _backgroundImageZoomButton.BackgroundImage 
+            = CreateGradientBitmap(
+                size: new Size(60, 60), 
+                startColor: Color.DarkGreen, 
+                endColor: Color.YellowGreen);
+
+        _backgroundImageCenterButton.BackgroundImage = CreateGradientBitmap(
+            size: new Size(40, 40), 
+            startColor: Color.DarkRed, 
+            endColor: Color.Orange);
     }
 
     public string DisplayName => "Button Visual Styles";
@@ -78,10 +98,10 @@ public partial class ButtonVisualStylesView : UserControl, IScenarioView
         using Graphics graphics = Graphics.FromImage(bitmap);
 
         using System.Drawing.Drawing2D.LinearGradientBrush brush = new(
-            new Rectangle(Point.Empty, size),
-            startColor,
-            endColor,
-            System.Drawing.Drawing2D.LinearGradientMode.ForwardDiagonal);
+            rect: new Rectangle(Point.Empty, size),
+            color1: startColor,
+            color2: endColor,
+            linearGradientMode: System.Drawing.Drawing2D.LinearGradientMode.ForwardDiagonal);
 
         graphics.FillRectangle(brush, new Rectangle(Point.Empty, size));
 

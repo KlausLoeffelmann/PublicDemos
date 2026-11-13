@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using static VisualStylesModeDemo.Views.NativeMethods;
 
 namespace VisualStylesModeDemo;
 
@@ -14,15 +15,6 @@ namespace VisualStylesModeDemo;
 /// </summary>
 internal sealed class ControlSelectionAdornerForm : Form
 {
-    private const int WsExLayered = 0x00080000;
-    private const int WsExNoActivate = 0x08000000;
-    private const int WsExToolWindow = 0x00000080;
-    private const int WmMouseActivate = 0x0021;
-    private const int MaNoActivate = 3;
-    private const byte AcSrcOver = 0;
-    private const byte AcSrcAlpha = 1;
-    private const int UlwAlpha = 0x00000002;
-
     private readonly List<Control> _selectedControls = [];
     private Control? _target;
     private Control? _viewport;
@@ -208,6 +200,7 @@ internal sealed class ControlSelectionAdornerForm : Form
         // coordinates. Per-monitor DPI virtualization can otherwise apply a second conversion to
         // synthetic/layered-window coordinates and hit an ancestor instead of the visible leaf.
         Point screenPoint = Cursor.Position;
+
         if (!_target.RectangleToScreen(_target.ClientRectangle).Contains(screenPoint))
         {
             return;
@@ -271,6 +264,7 @@ internal sealed class ControlSelectionAdornerForm : Form
 
         using Region visibleRegion = availableRegion.Clone();
         visibleRegion.Intersect(GetControlScreenBounds(control));
+
         if (!HasVisibleArea(visibleRegion))
         {
             return;
@@ -285,6 +279,7 @@ internal sealed class ControlSelectionAdornerForm : Form
         for (int index = 0; index < control.Controls.Count; index++)
         {
             Control child = control.Controls[index];
+
             if (!child.Visible || child.IsDisposed)
             {
                 continue;
@@ -293,6 +288,7 @@ internal sealed class ControlSelectionAdornerForm : Form
             Rectangle childBounds = GetControlScreenBounds(child);
             using Region childRegion = new(childBounds);
             childRegion.Intersect(childClip);
+
             if (!HasVisibleArea(childRegion))
             {
                 continue;
@@ -303,6 +299,7 @@ internal sealed class ControlSelectionAdornerForm : Form
             // Control index 0 is the front-most sibling. Remove everything already occupied by a
             // higher sibling before deciding whether this child can be the deepest hit.
             childRegion.Exclude(higherSiblingRegion);
+
             if (HasVisibleArea(childRegion))
             {
                 CollectHitTestableControls(child, childRegion, candidates);
@@ -332,7 +329,10 @@ internal sealed class ControlSelectionAdornerForm : Form
     private void PruneSelection()
     {
         int removed = _selectedControls.RemoveAll(
-            control => control.IsDisposed || !control.Visible || (_target is not null && !IsDescendantOrSelf(_target, control)));
+            control => control.IsDisposed 
+                || !control.Visible 
+                || (_target is not null 
+                    && !IsDescendantOrSelf(_target, control)));
 
         if (removed > 0)
         {
@@ -373,6 +373,7 @@ internal sealed class ControlSelectionAdornerForm : Form
 
             float scale = DeviceDpi / 96F;
             float penWidth = Math.Max(2F, 2F * scale);
+
             using Pen pen = new(_accentColor, penWidth);
             using SolidBrush fill = new(Color.FromArgb(32, _accentColor));
 
@@ -380,6 +381,7 @@ internal sealed class ControlSelectionAdornerForm : Form
             {
                 Rectangle screenBounds = GetControlScreenBounds(control);
                 screenBounds.Intersect(Bounds);
+
                 if (screenBounds.Width <= 0 || screenBounds.Height <= 0)
                 {
                     continue;
@@ -410,7 +412,11 @@ internal sealed class ControlSelectionAdornerForm : Form
 
     private bool PruneSelectionWithoutRendering() =>
         _selectedControls.RemoveAll(
-            control => control.IsDisposed || !control.Visible || (_target is not null && !IsDescendantOrSelf(_target, control))) > 0;
+            control 
+                => control.IsDisposed 
+                    || !control.Visible 
+                    || (_target is not null 
+                        && !IsDescendantOrSelf(_target, control))) > 0;
 
     private static Rectangle GetControlScreenBounds(Control control)
     {
@@ -446,15 +452,15 @@ internal sealed class ControlSelectionAdornerForm : Form
             };
 
             if (!UpdateLayeredWindow(
-                    Handle,
-                    screenDc,
-                    ref destination,
-                    ref size,
-                    memoryDc,
-                    ref source,
-                    0,
-                    ref blend,
-                    UlwAlpha))
+                    window: Handle,
+                    destinationDc: screenDc,
+                    destination: ref destination,
+                    size: ref size,
+                    sourceDc: memoryDc,
+                    source: ref source,
+                    colorKey: 0,
+                    blend: ref blend,
+                    flags: UlwAlpha))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
@@ -472,7 +478,7 @@ internal sealed class ControlSelectionAdornerForm : Form
             }
 
             DeleteDC(memoryDc);
-            ReleaseDC(0, screenDc);
+            _ = ReleaseDC(0, screenDc);
         }
     }
 
@@ -500,7 +506,8 @@ internal sealed class ControlSelectionAdornerForm : Form
             scrollable.Scroll += Viewport_Scroll;
         }
 
-        if (_target is ScrollableControl targetScrollable && !ReferenceEquals(targetScrollable, _viewport))
+        if (_target is ScrollableControl targetScrollable 
+            && !ReferenceEquals(targetScrollable, _viewport))
         {
             targetScrollable.Scroll += Viewport_Scroll;
         }
@@ -542,9 +549,11 @@ internal sealed class ControlSelectionAdornerForm : Form
         }
     }
 
-    private void GeometryChanged(object? sender, EventArgs e) => SynchronizeBoundsAndRender();
+    private void GeometryChanged(object? sender, EventArgs e) 
+        => SynchronizeBoundsAndRender();
 
-    private void Viewport_Scroll(object? sender, ScrollEventArgs e) => SynchronizeBoundsAndRender();
+    private void Viewport_Scroll(object? sender, ScrollEventArgs e) 
+        => SynchronizeBoundsAndRender();
 
     protected override void Dispose(bool disposing)
     {
@@ -555,60 +564,4 @@ internal sealed class ControlSelectionAdornerForm : Form
 
         base.Dispose(disposing);
     }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct NativePoint(int x, int y)
-    {
-        public int X = x;
-        public int Y = y;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct NativeSize(int width, int height)
-    {
-        public int Width = width;
-        public int Height = height;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    private struct BlendFunction
-    {
-        public byte BlendOp;
-        public byte BlendFlags;
-        public byte SourceConstantAlpha;
-        public byte AlphaFormat;
-    }
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool UpdateLayeredWindow(
-        nint window,
-        nint destinationDc,
-        ref NativePoint destination,
-        ref NativeSize size,
-        nint sourceDc,
-        ref NativePoint source,
-        int colorKey,
-        ref BlendFunction blend,
-        int flags);
-
-    [DllImport("user32.dll")]
-    private static extern nint GetDC(nint window);
-
-    [DllImport("user32.dll")]
-    private static extern int ReleaseDC(nint window, nint dc);
-
-    [DllImport("gdi32.dll")]
-    private static extern nint CreateCompatibleDC(nint dc);
-
-    [DllImport("gdi32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool DeleteDC(nint dc);
-
-    [DllImport("gdi32.dll")]
-    private static extern nint SelectObject(nint dc, nint objectHandle);
-
-    [DllImport("gdi32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool DeleteObject(nint objectHandle);
 }

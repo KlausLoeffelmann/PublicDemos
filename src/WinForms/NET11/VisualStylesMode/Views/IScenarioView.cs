@@ -13,6 +13,4 @@ internal interface IScenarioView
     ///  The display name used for the View menu item and the status bar.
     /// </summary>
     string DisplayName { get; }
-    void SuspendLayout();
-    void ResumeLayout();
 }

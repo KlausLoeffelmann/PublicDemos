@@ -7,7 +7,8 @@ namespace VisualStylesModeDemo.Views;
 
 /// <summary>
 ///  Minimal <see cref="ICommand"/> implementation used to exercise <see cref="Button.Command"/> /
-///  <see cref="Button.CommandParameter"/> in the Button Visual Styles scenario view.
+///  <see cref="Button.CommandParameter"/> in the Button Visual Styles 
+///  scenario view.
 /// </summary>
 internal sealed class RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null) : ICommand
 {

@@ -69,11 +69,11 @@ public partial class MainForm : Form
         RegisterView(new CashRegisterView(), DemoView.CashRegister);
         RegisterView(new CustomerEntryView(), DemoView.Customer);
         RegisterView(new ParallelAnimationView(), DemoView.ParallelAnimations);
-        RegisterView(new ScratchView(), DemoView.RoundedRectangles);
 
         if (_activeView is null)
         {
-            throw new InvalidOperationException("The configured startup view is not registered.");
+            throw new InvalidOperationException(
+                "The configured startup view is not registered.");
         }
     }
 
@@ -113,15 +113,17 @@ public partial class MainForm : Form
         // resources (e.g. the generated background-image Bitmaps) are cleaned up with the form.
         components.Add(view);
 
-        if (viewId == DemoConstants.StartupView)
+        if (viewId != DemoConstants.StartupView)
         {
-            if (view is CustomerEntryView customerView)
-            {
-                customerView.EnableRevealSlowdown();
-            }
-
-            SwitchToView(scenario);
+            return;
         }
+
+        if (view is CustomerEntryView customerView)
+        {
+            customerView.EnableRevealSlowdown();
+        }
+
+        SwitchToView(scenario);
     }
 
     private void SwitchToView(IScenarioView scenario)
